@@ -2,17 +2,13 @@ package org.brightify.hyperdrive.krpc.api
 
 import io.ktor.http.cio.websocket.*
 
-interface WebSocketFrameConverter<FRAME: Frame> {
-    fun upstreamFrameToWebSocketFrame(frame: RPCFrame<RPCEvent.Upstream>): FRAME
+interface WebSocketFrameConverter<FRAME: Frame, OUTGOING: RPCEvent, INCOMING: RPCEvent> {
+    fun rpcFrameToWebSocketFrame(frame: OutgoingRPCFrame<OUTGOING>): FRAME
 
-    fun downstreamFrameToWebSocketFrame(frame: RPCFrame<RPCEvent.Downstream>): FRAME
-
-    fun upstreamFrameFromWebSocketFrame(frame: FRAME, resolveCall: (RPCFrame.Header<RPCEvent.Upstream>) -> CallDescriptor): RPCFrame<RPCEvent.Upstream>
-
-    fun downstreamFrameFromWebSocketFrame(frame: FRAME, resolveCall: (RPCFrame.Header<RPCEvent.Downstream>) -> CallDescriptor): RPCFrame<RPCEvent.Downstream>
+    fun rpcFrameFromWebSocketFrame(frame: FRAME): IncomingRPCFrame<INCOMING>
 
     class UnsupportedFrameTypeException(
         val frameType: FrameType,
-        val converter: WebSocketFrameConverter<*>
+        val converter: WebSocketFrameConverter<*, *, *>
     ): RuntimeException("Frame type ${frameType.name} is not supported by converter $converter!")
 }

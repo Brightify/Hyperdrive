@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     idea
 }
@@ -16,6 +18,12 @@ buildscript {
 allprojects {
     group = "org.brightify.hyperdrive"
     version = "1.0-SNAPSHOT"
+
+    tasks.withType(KotlinCompile::class).all {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
 }
 
 subprojects {

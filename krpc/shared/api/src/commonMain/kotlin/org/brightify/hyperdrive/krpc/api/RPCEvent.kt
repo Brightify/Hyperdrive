@@ -1,10 +1,8 @@
 package org.brightify.hyperdrive.krpc.api
 
-import kotlinx.serialization.Contextual
-import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 
-typealias RPCFrameIndex = Int
+typealias RPCReference = Int
 
 @Serializable
 data class ServiceCallIdentifier(
@@ -12,89 +10,108 @@ data class ServiceCallIdentifier(
     val callId: String
 )
 
-sealed class ClientRPC {
-    class SingleRPC<REQUEST, RESPONSE>: ClientRPC() {
-
-    }
-
-    class OutStream<REQUEST, OUT_FLOW, RESPONSE>: ClientRPC() {
-
-    }
-
-    class InStream<REQUEST, IN_FLOW>: ClientRPC() {
-
-    }
-
-    class BiStream<REQUEST, OUT_FLOW, IN_FLOW>: ClientRPC() {
-
-    }
-}
-
-
-
 @Serializable
 sealed class RPCEvent {
     @Serializable
     sealed class Upstream: RPCEvent() {
         @Serializable
-        sealed class SingleCall: Upstream() {
-            @Serializable
-            class Request(val serviceCall: ServiceCallIdentifier): SingleCall()
-        }
+        class Open(val serviceCall: ServiceCallIdentifier): Upstream()
         @Serializable
-        sealed class OutStream: Upstream() {
-            @Serializable
-            class Open(val serviceCall: ServiceCallIdentifier): OutStream()
-            @Serializable
-            class SendUpstream: OutStream()
-            @Serializable
-            class Close(val error: @Contextual Throwable?): OutStream()
-        }
+        object Data: Upstream()
         @Serializable
-        sealed class InStream: Upstream() {
-            @Serializable
-            class Open: InStream()
-        }
+        object Error: Upstream()
         @Serializable
-        sealed class BiStream {
-            @Serializable
-            class Open: BiStream()
-            @Serializable
-            class SendUpstream: BiStream()
-            @Serializable
-            class Close(val error: @Contextual Throwable?): BiStream()
-        }
+        object Close: Upstream()
     }
 
     @Serializable
     sealed class Downstream: RPCEvent() {
         @Serializable
-        sealed class SingleCall: Downstream() {
-            @Serializable
-            class Response(val requestIndex: RPCFrameIndex): SingleCall()
-            @Serializable
-            class Error(val requestIndex: RPCFrameIndex): SingleCall()
-        }
+        object Opened: Downstream()
         @Serializable
-        sealed class ClientStream: Downstream() {
-            @Serializable
-            class Response(): ClientStream()
-            @Serializable
-            class Error(val result: @Contextual Throwable): ClientStream()
-        }
+        object Data: Downstream()
         @Serializable
-        sealed class ServerStream: Downstream() {
-            @Serializable
-            class SendDownstream: ServerStream()
-            @Serializable
-            class Close(val error: @Contextual Throwable?): ServerStream()
-        }
+        object Response: Downstream()
         @Serializable
-        sealed class BidiStream: Downstream() {
-            @Serializable
-            class SendDownstream: BidiStream()
-            @Serializable
-            class Close(val error: @Contextual Throwable?): BidiStream()
-        }
+        object Close: Downstream()
+        @Serializable
+        object Warning: Downstream()
+        @Serializable
+        object Error: Downstream()
     }
 }
+
+//@Serializable
+//sealed class RPCEvent {
+//    @Serializable
+//    sealed class Upstream: RPCEvent() {
+//        @Serializable
+//        sealed class SingleCall: Upstream() {
+//            @Serializable
+//            class Request(val serviceCall: ServiceCallIdentifier): SingleCall()
+//        }
+//        @Serializable
+//        sealed class OutStream: Upstream() {
+//            @Serializable
+//            class Open(val serviceCall: ServiceCallIdentifier): OutStream()
+//
+//            @Serializable
+//            object SendUpstream: OutStream()
+//
+//            @Serializable
+//            object Close: OutStream()
+//        }
+//        @Serializable
+//        sealed class InStream: Upstream() {
+//            @Serializable
+//            class Open(val serviceCall: ServiceCallIdentifier): InStream()
+//        }
+//        @Serializable
+//        sealed class BiStream {
+//            @Serializable
+//            object Open: BiStream()
+//
+//            @Serializable
+//            object SendUpstream: BiStream()
+//
+//            @Serializable
+//            object Close: BiStream()
+//        }
+//    }
+//
+//    @Serializable
+//    sealed class Downstream: RPCEvent() {
+//        @Serializable
+//        sealed class SingleCall: Downstream() {
+//            @Serializable
+//            object Response: SingleCall()
+//
+//            @Serializable
+//            object Error: SingleCall()
+//        }
+//        @Serializable
+//        sealed class OutStream: Downstream() {
+//            @Serializable
+//            object Response: OutStream()
+//
+//            @Serializable
+//            object Error: OutStream()
+//        }
+//        @Serializable
+//        sealed class InStream: Downstream() {
+//            @Serializable
+//            object SendDownstream: InStream()
+//
+//            @Serializable
+//            object Close: InStream()
+//        }
+//        @Serializable
+//        sealed class BiStream: Downstream() {
+//            @Serializable
+//            object SendDownstream: BiStream()
+//
+//            @Serializable
+//            object Close: BiStream()
+//        }
+//    }
+//}

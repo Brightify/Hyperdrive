@@ -16,7 +16,7 @@ kotlin {
     macosX64()
     js()
 
-    val serialization_version = "1.0.0-RC"
+    val serialization_version = "1.0.0"
     val ktor_version = "1.4.0"
 
     sourceSets {
@@ -30,6 +30,7 @@ kotlin {
                 implementation("io.ktor:ktor-client-websockets:$ktor_version")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
 
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9-native-mt") {

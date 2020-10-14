@@ -1,8 +1,7 @@
 package org.brightify.hyperdrive.krpc.api
 
-interface RPCTransport<INCOMING: RPCEvent, OUTGOING: RPCEvent> {
-    suspend fun receive(resolveCall: (RPCFrame.Header<INCOMING>) -> CallDescriptor): RPCFrame<INCOMING>
+interface RPCTransport<OUTGOING: RPCEvent, INCOMING: RPCEvent> {
+    suspend fun receive(): IncomingRPCFrame<INCOMING>
 
-
-    suspend fun send(frame: RPCFrame<OUTGOING>)
+    suspend fun send(frame: OutgoingRPCFrame<OUTGOING>)
 }
