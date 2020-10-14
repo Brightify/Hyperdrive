@@ -1,7 +1,6 @@
 package org.brightify.hyperdrive.krpc.test
 
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.take
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -12,32 +11,19 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.withIndex
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.yield
-import kotlinx.serialization.serializer
 import org.brightify.hyperdrive.client.impl.ProtoBufWebSocketFrameConverter
 import org.brightify.hyperdrive.client.impl.ServiceClientImpl
 import org.brightify.hyperdrive.client.impl.SingleFrameConverterWrapper
 import org.brightify.hyperdrive.client.impl.WebSocketClient
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdUpstreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.RPCError
 import org.brightify.hyperdrive.krpc.api.RPCFrameDeserializationStrategy
 import org.brightify.hyperdrive.krpc.api.RPCFrameSerializationStrategy
-import org.brightify.hyperdrive.krpc.api.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.api.ServiceDescription
 import org.brightify.hyperdrive.krpc.server.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.server.impl.KtorServer
-import org.brightify.hyperdrive.krpc.test.BasicTestServiceClient
+import org.brightify.hyperdrive.krpc.server.impl.KtorServerFrontend
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.assertThrows
-import java.lang.IllegalStateException
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 
 class GeneratedServiceTest {
@@ -82,13 +68,13 @@ class GeneratedServiceTest {
     }
 
 
-    private lateinit var server: KtorServer
+    private lateinit var serverFrontend: KtorServerFrontend
     private lateinit var client: ServiceClientImpl
 
     @BeforeEach
     fun setup() {
         println("New test ------------------------")
-        server = KtorServer(
+        serverFrontend = KtorServerFrontend(
             frameConverter = SingleFrameConverterWrapper.binary(
                 ProtoBufWebSocketFrameConverter(
                     outgoingSerializer = RPCFrameSerializationStrategy(),
@@ -98,7 +84,7 @@ class GeneratedServiceTest {
             serviceRegistry = DefaultServiceRegistry(),
             responseScope = GlobalScope
         )
-        server.register(BasicTestServiceDescriptor.describe(serviceImpl))
+        serverFrontend.register(BasicTestServiceDescriptor.describe(serviceImpl))
 
         val clientTransport = WebSocketClient(
             connectionScope = GlobalScope,
@@ -115,7 +101,7 @@ class GeneratedServiceTest {
     @AfterEach
     fun tearDown() {
         client.shutdown()
-        server.shutdown()
+        serverFrontend.shutdown()
     }
 
     @Test
