@@ -14,14 +14,6 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.brightify.hyperdrive.krpc.api.RPCError
 
-class UnrecognizedRPCError(
-    override val statusCode: RPCError.StatusCode,
-    override val debugMessage: String,
-    val errorType: String,
-): RPCError() {
-
-}
-
 class RPCErrorSerializer(
     register: PolymorphicModuleBuilder<RPCError>.() -> Unit = { },
 ): KSerializer<Throwable> {

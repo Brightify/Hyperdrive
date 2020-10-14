@@ -14,7 +14,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
@@ -23,42 +22,16 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.serializer
-import org.brightify.hyperdrive.krpc.api.*
-import org.brightify.hyperdrive.krpc.api.error.NonRPCErrorThrownError
+import org.brightify.hyperdrive.krpc.api.CallDescriptor
+import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.api.RPCEvent
+import org.brightify.hyperdrive.krpc.api.RPCFrame
+import org.brightify.hyperdrive.krpc.api.RPCReference
+import org.brightify.hyperdrive.krpc.api.ServiceDescription
+import org.brightify.hyperdrive.krpc.api.WebSocketFrameConverter
 import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
 import org.brightify.hyperdrive.krpc.server.api.Server
-import kotlin.reflect.KClass
-
-class DefaultServiceRegistry: ServiceRegistry {
-    private val services: MutableMap<String, ServiceDescription> = mutableMapOf()
-    private val serviceCalls: MutableMap<String, Map<String, CallDescriptor>> = mutableMapOf()
-
-    override fun register(description: ServiceDescription) {
-        services[description.identifier] = description
-
-        serviceCalls[description.identifier] = description.calls.map {
-            it.identifier.callId to it
-        }.toMap()
-    }
-
-    override fun <T: CallDescriptor> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T? {
-        val knownCall = serviceCalls[id.serviceId]?.get(id.callId) ?: return null
-        return if (type.isInstance(knownCall)) {
-            knownCall as T
-        } else {
-            null
-        }
-    }
-}
-
-interface ServiceRegistry {
-    fun register(description: ServiceDescription)
-
-    fun <T: CallDescriptor> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T?
-}
-
-private typealias ClientReference = Int
 
 class KtorServer(
 //    val pingService: PingService
@@ -303,200 +276,6 @@ class KtorServer(
                                 openStreams[clientReference]?.remove(rpcFrame.header.callReference)
                             }
                         }
-
-//                        when (val event = rpcFrame.header.event) {
-//                            is RPCEvent.Upstream.SingleCall.Request -> {
-//                                val call = serviceRegistry.getCallById(event.serviceCall, CallDescriptor.Single::class) as CallDescriptor.Single<Any?, Any?>?
-//                                responseScope.launch {
-//                                    send(
-//                                        frameConverter.rpcFrameToWebSocketFrame(
-//                                            if (call != null) {
-//                                                val data = rpcFrame.decoder.decodeSerializableValue(call.requestSerializer as DeserializationStrategy<Any?>)
-//                                                try {
-//                                                    OutgoingRPCFrame(
-//                                                        RPCFrame.Header(
-//                                                            rpcFrame.header.callReference,
-//                                                            RPCEvent.Downstream.SingleCall.Response
-//                                                        ),
-//                                                        call.responseSerializer as SerializationStrategy<Any?>,
-//                                                        call.perform(data)
-//                                                    )
-//                                                } catch (t: Throwable) {
-//                                                    OutgoingRPCFrame(
-//                                                        RPCFrame.Header(
-//                                                            rpcFrame.header.callReference,
-//                                                            RPCEvent.Downstream.SingleCall.Error
-//                                                        ),
-//                                                        serializer<Throwable>() as SerializationStrategy<Any?>,
-//                                                        t
-//                                                    )
-//                                                }
-//                                            } else {
-//                                                OutgoingRPCFrame(
-//                                                    RPCFrame.Header(
-//                                                        rpcFrame.header.callReference,
-//                                                        RPCEvent.Downstream.SingleCall.Error
-//                                                    ),
-//                                                    serializer<NotImplementedError>() as SerializationStrategy<Any?>,
-//                                                    NotImplementedError("Not implemented!")
-//                                                )
-//                                            }
-//                                        )
-//                                    )
-//                                }
-//                            }
-//                            is RPCEvent.Upstream.OutStream.Open -> {
-//                                val call = serviceRegistry.getCallById(event.serviceCall, CallDescriptor.ColdUpstream::class) as CallDescriptor.ColdUpstream<Any?, Any?, Any?>?
-//
-//                                responseScope.launch {
-//                                    if (call != null) {
-//                                        val data = rpcFrame.decoder.decodeSerializableValue(call.requestSerializer as DeserializationStrategy<Any?>)
-//                                        val channel = Channel<Decoder>()
-//                                        openStreams.getOrPut(clientReference, ::mutableMapOf)[rpcFrame.header.callReference] = channel
-//                                        send(
-//                                            frameConverter.rpcFrameToWebSocketFrame(
-//                                                try {
-//                                                    OutgoingRPCFrame(
-//                                                        RPCFrame.Header(
-//                                                            rpcFrame.header.callReference,
-//                                                            RPCEvent.Downstream.SingleCall.Response
-//                                                        ),
-//                                                        call.responseSerializer as SerializationStrategy<Any?>,
-//                                                        call.perform(data, channel.consumeAsFlow().map {
-//                                                            it.decodeSerializableValue(call.clientStreamSerializer as DeserializationStrategy<Any>)
-//                                                        })
-//                                                    )
-//                                                } catch (t: Throwable) {
-//                                                    OutgoingRPCFrame(
-//                                                        RPCFrame.Header(
-//                                                            rpcFrame.header.callReference,
-//                                                            RPCEvent.Downstream.SingleCall.Error
-//                                                        ),
-//                                                        serializer<Throwable>() as SerializationStrategy<Any?>,
-//                                                        t
-//                                                    )
-//                                                }
-//                                            )
-//                                        )
-//                                    } else {
-//                                        send(
-//                                            frameConverter.rpcFrameToWebSocketFrame(
-//                                                OutgoingRPCFrame(
-//                                                    RPCFrame.Header(
-//                                                        rpcFrame.header.callReference,
-//                                                        RPCEvent.Downstream.OutStream.Error
-//                                                    ),
-//                                                    serializer<NotImplementedError>() as SerializationStrategy<Any?>,
-//                                                    NotImplementedError("Not implemented!")
-//                                                )
-//                                            )
-//                                        )
-//                                    }
-//                                }
-//                            }
-//                            is RPCEvent.Upstream.OutStream.SendUpstream -> {
-//                                // TODO: Send error if we can't find the reference
-//                                responseScope.launch {
-//                                    openStreams[clientReference]?.get(rpcFrame.header.callReference)?.send(rpcFrame.decoder)
-//                                        ?: error("Call reference doesn't exist!")
-//                                }
-//                            }
-//                            is RPCEvent.Upstream.OutStream.Close -> {
-//                                openStreams[clientReference]?.get(rpcFrame.header.callReference)?.close()
-//                                openStreams[clientReference]?.remove(rpcFrame.header.callReference)
-//                            }
-//                            is RPCEvent.Upstream.InStream.Open -> {
-//                                val call = serviceRegistry.getCallById(event.serviceCall, CallDescriptor.ColdDownstream::class) as CallDescriptor.ColdDownstream<Any?, Any?>?
-//                                responseScope.launch {
-//                                    if (call != null) {
-//                                        val data = rpcFrame.decoder.decodeSerializableValue(call.requestSerializer as DeserializationStrategy<Any?>)
-//                                        val channel = Channel<Decoder>()
-//                                        openStreams.getOrPut(clientReference, ::mutableMapOf)[rpcFrame.header.callReference] = channel
-//                                        send(
-//                                            frameConverter.rpcFrameToWebSocketFrame(
-//                                                try {
-//                                                    OutgoingRPCFrame(
-//                                                        RPCFrame.Header(
-//                                                            rpcFrame.header.callReference,
-//                                                            RPCEvent.Downstream.SingleCall.Response
-//                                                        ),
-//                                                        call.responseSerializer as SerializationStrategy<Any?>,
-//                                                        call.perform(data, channel.consumeAsFlow().map {
-//                                                            it.decodeSerializableValue(call.clientStreamSerializer as DeserializationStrategy<Any>)
-//                                                        })
-//                                                    )
-//                                                } catch (t: Throwable) {
-//                                                    OutgoingRPCFrame(
-//                                                        RPCFrame.Header(
-//                                                            rpcFrame.header.callReference,
-//                                                            RPCEvent.Downstream.SingleCall.Error
-//                                                        ),
-//                                                        serializer<Throwable>() as SerializationStrategy<Any?>,
-//                                                        t
-//                                                    )
-//                                                }
-//                                            )
-//                                        )
-//                                    } else {
-//                                        send(
-//                                            frameConverter.rpcFrameToWebSocketFrame(
-//                                                OutgoingRPCFrame(
-//                                                    RPCFrame.Header(
-//                                                        rpcFrame.header.callReference,
-//                                                        RPCEvent.Downstream.OutStream.Error
-//                                                    ),
-//                                                    serializer<NotImplementedError>() as SerializationStrategy<Any?>,
-//                                                    NotImplementedError("Not implemented!")
-//                                                )
-//                                            )
-//                                        )
-//                                    }
-//                                }
-//
-//                                responseScope.launch {
-//
-//
-//                                    val flow = call.perform(data)
-//
-//
-//                                    send(
-//                                        frameConverter.rpcFrameToWebSocketFrame(
-//                                            if (call != null) {
-//                                                val data = rpcFrame.decoder.decodeSerializableValue(call.requestSerializer as DeserializationStrategy<Any?>)
-//                                                try {
-//                                                    OutgoingRPCFrame(
-//                                                        RPCFrame.Header(
-//                                                            rpcFrame.header.callReference,
-//                                                            RPCEvent.Downstream.SingleCall.Response
-//                                                        ),
-//                                                        call.responseSerializer as SerializationStrategy<Any?>,
-//                                                        call.perform(data)
-//                                                    )
-//                                                } catch (t: Throwable) {
-//                                                    OutgoingRPCFrame(
-//                                                        RPCFrame.Header(
-//                                                            rpcFrame.header.callReference,
-//                                                            RPCEvent.Downstream.SingleCall.Error
-//                                                        ),
-//                                                        serializer<Throwable>() as SerializationStrategy<Any?>,
-//                                                        t
-//                                                    )
-//                                                }
-//                                            } else {
-//                                                OutgoingRPCFrame(
-//                                                    RPCFrame.Header(
-//                                                        rpcFrame.header.callReference,
-//                                                        RPCEvent.Downstream.SingleCall.Error
-//                                                    ),
-//                                                    serializer<NotImplementedError>() as SerializationStrategy<Any?>,
-//                                                    NotImplementedError("Not implemented!")
-//                                                )
-//                                            }
-//                                        )
-//                                    )
-//                                }
-//                            }
-//                        }
                     }
                 } catch (e: ClosedReceiveChannelException) {
                     // Client disconnected, clean up and do nothing.

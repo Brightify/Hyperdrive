@@ -8,12 +8,6 @@ import org.brightify.hyperdrive.krpc.api.Service
 import org.brightify.hyperdrive.krpc.api.Error
 
 @Serializable
-data class RPCData<T>(
-    val serializer: KSerializer<T>,
-    val data: T,
-)
-
-@Serializable
 class IllegalArgumentError(override val message: String): RPCNotFoundError("Illegal argument: $message.")
 
 @Service
