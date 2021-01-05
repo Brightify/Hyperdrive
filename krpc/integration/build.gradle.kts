@@ -2,10 +2,10 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     id("org.brightify.hyperdrive")
-    kotlin("plugin.serialization") version "1.4.0"
+    kotlin("plugin.serialization") version "1.4.20"
 }
 
-val serialization_version = "1.0.0"
+val serialization_version = "1.0.1"
 dependencies {
     testImplementation(project(":krpc:krpc-annotations"))
     testImplementation(project(":krpc:krpc-server-api"))
@@ -19,7 +19,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.9-native-mt")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.2-native-mt")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")

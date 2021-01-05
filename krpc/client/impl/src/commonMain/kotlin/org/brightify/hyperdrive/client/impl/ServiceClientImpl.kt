@@ -82,9 +82,11 @@ class ServiceClientImpl(
                         }
                     }
                 } catch (e: ClosedReceiveChannelException) {
+                    e.printStackTrace()
                     // Disconnected from server, wait and then try again
                     delay(500)
                 } catch (e: EOFException) {
+                    e.printStackTrace()
                     // Disconnected from server, wait and then try again
                     delay(500)
                 } catch (t: Throwable) {

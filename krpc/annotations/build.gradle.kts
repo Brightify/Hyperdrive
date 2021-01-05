@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "1.4.0"
+    kotlin("plugin.serialization") version "1.4.20"
 }
 
 kotlin {
@@ -15,7 +15,7 @@ kotlin {
     js()
 
     sourceSets {
-        val serialization_version = "1.0.0"
+        val serialization_version = "1.0.1"
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))

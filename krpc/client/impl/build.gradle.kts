@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "1.4.0"
+    kotlin("plugin.serialization") version "1.4.20"
 }
 
 kotlin {
@@ -17,8 +17,8 @@ kotlin {
     macosX64()
     js()
 
-    val ktor_version = "1.4.0"
-    val serialization_version = "1.0.0"
+    val ktor_version = "1.5.0"
+    val serialization_version = "1.0.1"
 
     sourceSets {
         val commonMain by getting {
@@ -41,7 +41,8 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-okhttp:$ktor_version")
+//                implementation("io.ktor:ktor-client-okhttp:$ktor_version")
+                implementation("io.ktor:ktor-client-cio:$ktor_version")
             }
         }
 

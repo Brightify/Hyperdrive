@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "1.4.0"
+    kotlin("plugin.serialization") version "1.4.20"
     id("org.brightify.hyperdrive")
 }
 
@@ -16,8 +16,8 @@ kotlin {
     macosX64()
     js()
 
-    val serialization_version = "1.0.0"
-    val ktor_version = "1.4.0"
+    val serialization_version = "1.0.1"
+    val ktor_version = "1.5.0"
 
     sourceSets {
         val commonMain by getting {
@@ -33,9 +33,9 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
 
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9-native-mt") {
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2-native-mt") {
                     version {
-                        strictly("1.3.9-native-mt")
+                        strictly("1.4.2-native-mt")
                     }
                 }
             }

@@ -18,9 +18,9 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":krpc:krpc-shared-api"))
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9-native-mt") {
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2-native-mt") {
                     version {
-                        strictly("1.3.9-native-mt")
+                        strictly("1.4.2-native-mt")
                     }
                 }
 

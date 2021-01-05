@@ -11,7 +11,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":krpc:krpc-annotations"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
     implementation("com.squareup:kotlinpoet:1.6.0")
 
     implementation("com.google.devtools.ksp:symbol-processing-api:1.4.20-dev-experimental-20201222")
@@ -22,9 +22,9 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.2.20")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.4")
     testImplementation("com.google.devtools.ksp:symbol-processing-api:1.4.20-dev-experimental-20201222")
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing-ksp:1.2.20")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing-ksp:1.3.4")
     testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
 }
 
