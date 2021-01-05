@@ -3,7 +3,7 @@ package org.brightify.hyperdrive.krpc.util
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
-import org.jetbrains.kotlin.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.KSTypeReference
 
 fun KSTypeReference?.asTypeName(): TypeName {
     val resolved = this!!.resolve()!!

@@ -13,12 +13,12 @@ import com.squareup.kotlinpoet.joinToCode
 import org.brightify.hyperdrive.krpc.api.Error
 import org.brightify.hyperdrive.krpc.util.asTypeName
 import org.brightify.hyperdrive.krpc.util.singleTypeParameter
-import org.jetbrains.kotlin.ksp.getClassDeclarationByName
-import org.jetbrains.kotlin.ksp.processing.Resolver
-import org.jetbrains.kotlin.ksp.symbol.KSFunctionDeclaration
-import org.jetbrains.kotlin.ksp.symbol.KSType
-import org.jetbrains.kotlin.ksp.symbol.KSTypeReference
-import org.jetbrains.kotlin.ksp.symbol.KSVariableParameter
+import com.google.devtools.ksp.getClassDeclarationByName
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.KSValueParameter
 
 sealed class Call(val method: KSFunctionDeclaration) {
     open fun clientMethodBuilder(descriptor: TypeName): FunSpec.Builder = FunSpec.builder(method.simpleName.asString())
@@ -52,7 +52,7 @@ sealed class Call(val method: KSFunctionDeclaration) {
 
     class SingleCall(
         method: KSFunctionDeclaration,
-        private val requestType: List<KSVariableParameter>,
+        private val requestType: List<KSValueParameter>,
         private val responseType: KSTypeReference
     ): Call(method) {
 
@@ -114,7 +114,7 @@ sealed class Call(val method: KSFunctionDeclaration) {
         }
     }
 
-    class ClientStream(method: KSFunctionDeclaration, val requestType: List<KSVariableParameter>, val upstreamFlow: KSVariableParameter, val responseType: KSTypeReference): Call(method) {
+    class ClientStream(method: KSFunctionDeclaration, val requestType: List<KSValueParameter>, val upstreamFlow: KSValueParameter, val responseType: KSTypeReference): Call(method) {
         private val request: TypeName = if (requestType.isEmpty()) {
             ClassName("kotlin", "Unit")
         } else {
@@ -182,7 +182,7 @@ sealed class Call(val method: KSFunctionDeclaration) {
         }
     }
 
-    class ServerStream(method: KSFunctionDeclaration, val requestType: List<KSVariableParameter>, val downstreamFlow: KSTypeReference): Call(method) {
+    class ServerStream(method: KSFunctionDeclaration, val requestType: List<KSValueParameter>, val downstreamFlow: KSTypeReference): Call(method) {
         private val request: TypeName = if (requestType.isEmpty()) {
             ClassName("kotlin", "Unit")
         } else {
@@ -240,7 +240,7 @@ sealed class Call(val method: KSFunctionDeclaration) {
         }
     }
 
-    class BiStream(method: KSFunctionDeclaration, val requestType: List<KSVariableParameter>, val upstreamFlow: KSVariableParameter, val downstreamFlow: KSTypeReference): Call(method) {
+    class BiStream(method: KSFunctionDeclaration, val requestType: List<KSValueParameter>, val upstreamFlow: KSValueParameter, val downstreamFlow: KSTypeReference): Call(method) {
         private val request: TypeName = if (requestType.isEmpty()) {
             ClassName("kotlin", "Unit")
         } else {

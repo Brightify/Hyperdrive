@@ -1,7 +1,7 @@
 package org.brightify.hyperdrive.krpc.util
 
-import org.jetbrains.kotlin.ksp.symbol.KSTypeArgument
-import org.jetbrains.kotlin.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.KSTypeArgument
+import com.google.devtools.ksp.symbol.KSTypeReference
 
 fun KSTypeReference?.singleTypeParameter(): KSTypeArgument {
     val resolved = this!!.resolve()!!

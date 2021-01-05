@@ -33,7 +33,7 @@ pluginManagement {
                 "kotlin-ksp",
                 "org.jetbrains.kotlin.kotlin-ksp",
                 "org.jetbrains.kotlin.ksp" -> {
-                    useModule("org.jetbrains.kotlin:kotlin-ksp:${requested.version}")
+                    useModule("com.google.devtools.ksp:symbol-processing:${requested.version}")
                 }
 
             }

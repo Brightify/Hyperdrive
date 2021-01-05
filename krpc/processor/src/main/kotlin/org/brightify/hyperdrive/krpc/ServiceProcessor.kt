@@ -13,16 +13,13 @@ import com.squareup.kotlinpoet.joinToCode
 import kotlinx.coroutines.flow.Flow
 import org.brightify.hyperdrive.krpc.api.Service
 import org.brightify.hyperdrive.krpc.util.primaryConstructor
-import org.jetbrains.kotlin.ksp.getClassDeclarationByName
-import org.jetbrains.kotlin.ksp.getDeclaredFunctions
-import org.jetbrains.kotlin.ksp.processing.CodeGenerator
-import org.jetbrains.kotlin.ksp.processing.KSPLogger
-import org.jetbrains.kotlin.ksp.processing.Resolver
-import org.jetbrains.kotlin.ksp.processing.SymbolProcessor
-import org.jetbrains.kotlin.ksp.symbol.KSClassDeclaration
-import org.jetbrains.kotlin.ksp.symbol.KSTypeReference
-import org.jetbrains.kotlin.ksp.symbol.KSVariableParameter
-import org.jetbrains.kotlin.ksp.symbol.Modifier
+import com.google.devtools.ksp.getClassDeclarationByName
+import com.google.devtools.ksp.getDeclaredFunctions
+import com.google.devtools.ksp.processing.*
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.KSValueParameter
+import com.google.devtools.ksp.symbol.Modifier
 
 @AutoService(SymbolProcessor::class)
 class ServiceProcessor: SymbolProcessor {
@@ -81,7 +78,7 @@ class ServiceProcessor: SymbolProcessor {
                             return@mapNotNull null
                         }
 
-                        val (clientRequestParameters: List<KSVariableParameter>, clientStreamingFlow: KSVariableParameter?) = if (1 == 1) {
+                        val (clientRequestParameters: List<KSValueParameter>, clientStreamingFlow: KSValueParameter?) = if (1 == 1) {
                             val lastParam = method.parameters.lastOrNull()
                             val lastParamType = lastParam?.type
                             if (lastParamType != null && isFlow(lastParamType)) {
@@ -151,14 +148,14 @@ class ServiceProcessor: SymbolProcessor {
                         .addFunction(describeService)
                         .build()
 
-                    codeGenerator.createNewFile(symbol.packageName.asString(), clientName).bufferedWriter().use {
+                    codeGenerator.createNewFile(Dependencies.ALL_FILES, symbol.packageName.asString(), clientName).bufferedWriter().use {
                         FileSpec.builder(symbol.packageName.asString(), clientName)
                             .addType(client)
                             .build()
                             .writeTo(it)
                     }
 
-                    codeGenerator.createNewFile(symbol.packageName.asString(), descriptorName.simpleName).bufferedWriter().use {
+                    codeGenerator.createNewFile(Dependencies.ALL_FILES, symbol.packageName.asString(), descriptorName.simpleName).bufferedWriter().use {
                         FileSpec.builder(symbol.packageName.asString(), descriptorName.simpleName)
                             .addType(descriptor)
                             .build()
