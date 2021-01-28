@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.ksp.gradle
+package com.google.devtools.ksp.gradle
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -24,13 +24,13 @@ import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry
-import org.jetbrains.kotlin.ksp.gradle.model.builder.KspModelBuilder
+import com.google.devtools.ksp.gradle.model.builder.KspModelBuilder
 import org.jetbrains.kotlin.gradle.plugin.*
-import org.jetbrains.kotlin.ksp.gradle.KspGradleSubplugin.Companion.KSP_CONFIGURATION_NAME
-import org.jetbrains.kotlin.ksp.gradle.KspGradleSubplugin.Companion.getKspClassOutputDir
-import org.jetbrains.kotlin.ksp.gradle.KspGradleSubplugin.Companion.getKspJavaOutputDir
-import org.jetbrains.kotlin.ksp.gradle.KspGradleSubplugin.Companion.getKspKotlinOutputDir
-import org.jetbrains.kotlin.ksp.gradle.KspGradleSubplugin.Companion.getKspResourceOutputDir
+import com.google.devtools.ksp.gradle.KspGradleSubplugin.Companion.KSP_CONFIGURATION_NAME
+import com.google.devtools.ksp.gradle.KspGradleSubplugin.Companion.getKspClassOutputDir
+import com.google.devtools.ksp.gradle.KspGradleSubplugin.Companion.getKspJavaOutputDir
+import com.google.devtools.ksp.gradle.KspGradleSubplugin.Companion.getKspKotlinOutputDir
+import com.google.devtools.ksp.gradle.KspGradleSubplugin.Companion.getKspResourceOutputDir
 import java.io.File
 import javax.inject.Inject
 import com.google.auto.service.AutoService
@@ -75,7 +75,7 @@ class KspGradleSubplugin @Inject internal constructor(private val registry: Tool
 @AutoService(KotlinGradleSubplugin::class)
 class KspKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
     companion object {
-        const val KSP_ARTIFACT_NAME = "kotlin-ksp"
+        const val KSP_ARTIFACT_NAME = "symbol-processing"
     }
 
     override fun isApplicable(project: Project, task: AbstractCompile) = KspGradleSubplugin.isEnabled(project)
@@ -130,5 +130,5 @@ class KspKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
 
     override fun getCompilerPluginId() = "org.jetbrains.kotlin.ksp"
     override fun getPluginArtifact(): SubpluginArtifact =
-        SubpluginArtifact(groupId = "org.jetbrains.kotlin", artifactId = KSP_ARTIFACT_NAME, version = "1.4.0-dev-experimental-20200828")
+        SubpluginArtifact(groupId = "com.google.devtools.ksp", artifactId = KSP_ARTIFACT_NAME, version = "1.4.20-dev-experimental-20201222")
 }
