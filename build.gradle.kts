@@ -51,3 +51,23 @@ idea {
         isDownloadSources = true
     }
 }
+
+subprojects {
+    apply(plugin = "maven-publish")
+
+    publishing {
+        repositories {
+            maven("https://maven.pkg.jetbrains.space/brightify/p/hd/hyperdrive-snapshots") {
+                name = "hyperdriveSnapshots"
+                credentials(PasswordCredentials::class)
+            }
+        }
+    }
+}
+
+idea {
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
+}

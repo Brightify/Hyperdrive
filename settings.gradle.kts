@@ -1,56 +1,74 @@
 pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        jcenter()
+        mavenCentral()
+    }
     resolutionStrategy {
         eachPlugin {
+            if (requested.id.namespace == "com.android" || requested.id.name == "kotlin-android-extensions") {
+                useModule("com.android.tools.build:gradle:4.0.1")
+            }
+
             when (requested.id.id) {
-                "kotlin-ksp",
-                "org.jetbrains.kotlin.kotlin-ksp",
-                "org.jetbrains.kotlin.ksp" -> {
+                "symbol-processing" ->
                     useModule("com.google.devtools.ksp:symbol-processing:${requested.version}")
-                }
             }
         }
     }
-
-    plugins {
-        id("org.brightify.hyperdrive.symbol-processing") version "1.0-SNAPSHOT"
-    }
-
-    repositories {
-        gradlePluginPortal()
-        maven("https://dl.bintray.com/kotlin/kotlin-eap")
-        google()
-        maven("https://maven.pkg.jetbrains.space/brightify/p/hd/hyperdrive-snapshots") {
-            name = "hyperdriveSnapshots"
-            credentials(PasswordCredentials::class)
-        }
-    }
 }
+
 enableFeaturePreview("GRADLE_METADATA")
 
 rootProject.name = "Hyperdrive"
-include("krpc")
 
-include("krpc:krpc-annotations")
-project(":krpc:krpc-annotations").projectDir = file("krpc/annotations")
+val krpcModules = listOf(
+    "annotations" to emptyList(),
+    "shared" to listOf(
+        "api",
+        "impl"
+    ),
+    "client" to listOf(
+        "api",
+        "impl"
+    ),
+    "server" to listOf(
+        "api",
+        "impl"
+    ),
+    "processor" to emptyList(),
+    "integration" to emptyList()
+)
 
-include("krpc:krpc-shared-api")
-project(":krpc:krpc-shared-api").projectDir = file("krpc/shared/api")
-include("krpc:krpc-shared-impl")
-project(":krpc:krpc-shared-impl").projectDir = file("krpc/shared/impl")
+val multiplatformXModules = listOf(
+    "annotations",
+    "api",
+    "core",
+    "plugin",
+    "plugin-gradle",
+    "plugin-native",
+    "plugin-ide",
+    "processor"
+)
 
-include("krpc:krpc-client-api")
-project(":krpc:krpc-client-api").projectDir = file("krpc/client/api")
-include("krpc:krpc-client-impl")
-project(":krpc:krpc-client-impl").projectDir = file("krpc/client/impl")
+val krpcProjects = krpcModules.flatMap {
+    val (module, submodules) = it
+    if (submodules.isEmpty()) {
+        listOf("krpc-$module" to "krpc/$module")
+    } else {
+        submodules.map { submodule ->
+            "krpc-$module-$submodule" to "krpc/$module/$submodule"
+        }
+    }
+}
 
-include("krpc:krpc-server-api")
-project(":krpc:krpc-server-api").projectDir = file("krpc/server/api")
-include("krpc:krpc-server-impl")
-project(":krpc:krpc-server-impl").projectDir = file("krpc/server/impl")
+val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" }
 
-include("krpc:krpc-processor")
-project(":krpc:krpc-processor").projectDir = file("krpc/processor")
+val projects = krpcProjects + multiplatformXProjects
 
-include("krpc:krpc-integration")
-project(":krpc:krpc-integration").projectDir = file("krpc/integration")
-
+for ((name, path) in projects) {
+    include(":$name")
+    val project = project(":$name")
+    project.projectDir = File(settingsDir, path)
+}
