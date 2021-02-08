@@ -5,7 +5,7 @@ buildscript {
     }
 
     dependencies {
-        classpath(kotlin("gradle-plugin", version = "1.4.20"))
+        classpath(kotlin("gradle-plugin", version = "1.4.21"))
     }
 
     allprojects {
@@ -19,28 +19,19 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.4.0"
-    kotlin("kapt") version "1.4.0"
+    kotlin("jvm") version "1.4.21"
+    kotlin("kapt") version "1.4.21"
     `java-gradle-plugin`
-}
-
-gradlePlugin {
-    plugins {
-        create("simplePlugin") {
-            id = "org.brightify.hyperdrive"
-            implementationClass = "com.google.devtools.ksp.gradle.KspGradleSubplugin"
-        }
-    }
 }
 
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(gradleApi())
     implementation(gradleKotlinDsl())
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.4.0")
-    implementation(kotlin("gradle-plugin", version = "1.4.0"))
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.4.21")
+    implementation(kotlin("gradle-plugin", version = "1.4.21"))
 
-    implementation("com.google.devtools.ksp:symbol-processing:1.4.20-dev-experimental-20201222")
+    implementation("com.google.devtools.ksp:symbol-processing:1.4.20-dev-experimental-20210203")
 //    implementation("org.jetbrains.kotlin:kotlin-ksp:1.4.0-dev-experimental-20200828:sources")
 //    implementation("org.jetbrains.kotlin:kotlin-ksp:1.4.0-dev-experimental-20200828:javadoc")
 

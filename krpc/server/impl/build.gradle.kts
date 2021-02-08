@@ -3,7 +3,7 @@ plugins {
     kotlin("kapt")
 }
 
-val ktor_version = "1.5.0"
+val ktor_version = "1.5.1"
 val serialization_version = "1.0.1"
 
 dependencies {

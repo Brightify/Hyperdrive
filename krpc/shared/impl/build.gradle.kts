@@ -3,19 +3,15 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
 plugins {
     kotlin("multiplatform")
-    id("org.brightify.hyperdrive")
-}
-
-group = "org.brightify.hyperdrive"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
+    id("org.brightify.hyperdrive.symbol-processing")
 }
 
 kotlin {
     jvm()
     ios()
+    tvos()
+    macosX64()
+    js()
 
     sourceSets {
         val commonMain by getting {

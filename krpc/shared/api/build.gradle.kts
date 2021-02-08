@@ -2,14 +2,11 @@ import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "1.4.20"
-    id("org.brightify.hyperdrive")
+    kotlin("plugin.serialization") version Versions.kotlin
+    id("org.brightify.hyperdrive.symbol-processing")
 }
 
 kotlin {
-    /* Targets configuration omitted.
-    *  To find out how to configure the targets, please follow the link:
-    *  https://kotlinlang.org/docs/reference/building-mpp-with-gradle.html#setting-up-targets */
     jvm()
     ios()
     tvos()
@@ -17,7 +14,7 @@ kotlin {
     js()
 
     val serialization_version = "1.0.1"
-    val ktor_version = "1.5.0"
+    val ktor_version = "1.5.1"
 
     sourceSets {
         val commonMain by getting {

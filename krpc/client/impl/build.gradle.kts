@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "1.4.20"
+    kotlin("plugin.serialization") version Versions.kotlin
 }
 
 kotlin {
@@ -11,13 +11,12 @@ kotlin {
     *  To find out how to configure the targets, please follow the link:
     *  https://kotlinlang.org/docs/reference/building-mpp-with-gradle.html#setting-up-targets */
     jvm()
-
     ios()
     tvos()
     macosX64()
     js()
 
-    val ktor_version = "1.5.0"
+    val ktor_version = "1.5.1"
     val serialization_version = "1.0.1"
 
     sourceSets {

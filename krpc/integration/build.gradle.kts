@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    id("org.brightify.hyperdrive")
+    id("org.brightify.hyperdrive.symbol-processing")
     kotlin("plugin.serialization") version "1.4.20"
 }
 
