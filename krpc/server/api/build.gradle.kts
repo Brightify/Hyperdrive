@@ -5,8 +5,8 @@ plugins {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":krpc:krpc-annotations"))
-    implementation(project(":krpc:krpc-shared-api"))
+    implementation(project(":krpc-annotations"))
+    implementation(project(":krpc-shared-api"))
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))

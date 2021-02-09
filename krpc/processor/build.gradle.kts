@@ -11,7 +11,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":krpc:krpc-annotations"))
+    implementation(project(":krpc-annotations"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
     implementation("com.squareup:kotlinpoet:1.6.0")
 

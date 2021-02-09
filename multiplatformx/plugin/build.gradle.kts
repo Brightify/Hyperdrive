@@ -4,7 +4,6 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     id("com.github.gmazzo.buildconfig") version Versions.buildConfig
-    id("com.github.johnrengelman.shadow") version "6.1.0"
 }
 
 buildConfig {
@@ -29,8 +28,6 @@ dependencies {
     implementation(kotlin("stdlib"))
     compileOnly(kotlin("compiler-embeddable"))
 
-    implementation(project(":multiplatformx-core"))
-
     compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")
     kapt("com.google.auto.service:auto-service:${Versions.autoService}")
 
@@ -43,10 +40,6 @@ dependencies {
 
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
-}
-
-tasks.shadowJar {
-    relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
 }
 
 publishing {

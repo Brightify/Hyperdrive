@@ -4,6 +4,13 @@ pluginManagement {
         google()
         jcenter()
         mavenCentral()
+        maven("https://maven.pkg.jetbrains.space/brightify/p/hd/hyperdrive-snapshots") {
+            name = "hyperdriveSnapshots"
+            credentials(PasswordCredentials::class)
+        }
+    }
+    plugins {
+        id("org.brightify.hyperdrive.symbol-processing") version "1.0-SNAPSHOT"
     }
     resolutionStrategy {
         eachPlugin {
@@ -23,6 +30,17 @@ enableFeaturePreview("GRADLE_METADATA")
 
 rootProject.name = "Hyperdrive"
 
+val mainModules = listOf(
+    "plugin",
+    "plugin-native",
+    "plugin-gradle",
+    "plugin-ide"
+)
+
+val mainProjects = mainModules.map {
+    it to it
+}
+
 val krpcModules = listOf(
     "annotations" to emptyList(),
     "shared" to listOf(
@@ -41,17 +59,6 @@ val krpcModules = listOf(
     "integration" to emptyList()
 )
 
-val multiplatformXModules = listOf(
-    "annotations",
-    "api",
-    "core",
-    "plugin",
-    "plugin-gradle",
-    "plugin-native",
-    "plugin-ide",
-    "processor"
-)
-
 val krpcProjects = krpcModules.flatMap {
     val (module, submodules) = it
     if (submodules.isEmpty()) {
@@ -63,9 +70,18 @@ val krpcProjects = krpcModules.flatMap {
     }
 }
 
+val multiplatformXModules = listOf(
+    "annotations",
+    "api",
+    "core",
+    "plugin",
+    "processor"
+)
+
 val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" }
 
-val projects = krpcProjects + multiplatformXProjects
+
+val projects = mainProjects + krpcProjects + multiplatformXProjects
 
 for ((name, path) in projects) {
     include(":$name")

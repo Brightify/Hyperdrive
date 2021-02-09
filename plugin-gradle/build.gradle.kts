@@ -11,9 +11,9 @@ buildConfig {
     packageName(project.group.toString())
     buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"org.brightify.hyperdrive\"")
     buildConfigField("String", "KOTLIN_PLUGIN_GROUP", "\"${project.group}\"")
-    buildConfigField("String", "KOTLIN_PLUGIN_NAME", "\"${project(":multiplatformx-plugin").name}\"")
-    buildConfigField("String", "KOTLIN_NATIVE_PLUGIN_NAME", "\"${project(":multiplatformx-plugin-native").name}\"")
     buildConfigField("String", "KOTLIN_PLUGIN_VERSION", "\"${project.version}\"")
+    buildConfigField("String", "KOTLIN_PLUGIN_NAME", "\"${project(":plugin").name}\"")
+    buildConfigField("String", "KOTLIN_NATIVE_PLUGIN_NAME", "\"${project(":plugin-native").name}\"")
 }
 
 tasks.withType(KotlinCompile::class).all {
@@ -51,9 +51,6 @@ dependencies {
 
     compileOnly(gradleApi())
     compileOnly(gradleKotlinDsl())
-
-    implementation(project(":multiplatformx-plugin"))
-    implementation(project(":multiplatformx-core"))
 
     compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")
     kapt("com.google.auto.service:auto-service:${Versions.autoService}")

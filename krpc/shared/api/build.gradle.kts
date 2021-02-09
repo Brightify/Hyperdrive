@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization") version Versions.kotlin
-    id("org.brightify.hyperdrive.symbol-processing")
 }
 
 kotlin {
@@ -23,7 +22,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
 
-                implementation(project(":krpc:krpc-annotations"))
+                implementation(project(":krpc-annotations"))
                 implementation("io.ktor:ktor-client-websockets:$ktor_version")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
@@ -53,11 +52,6 @@ kotlin {
             }
         }
     }
-}
-
-dependencies {
-    "ksp"(project(":krpc:krpc-processor"))
-
 }
 
 tasks.withType<KotlinJvmTest> {

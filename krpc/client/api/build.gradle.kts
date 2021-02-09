@@ -17,7 +17,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(project(":krpc:krpc-shared-api"))
+                api(project(":krpc-shared-api"))
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2-native-mt") {
                     version {
                         strictly("1.4.2-native-mt")

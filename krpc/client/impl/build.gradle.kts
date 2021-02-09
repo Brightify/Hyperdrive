@@ -22,8 +22,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":krpc:krpc-annotations"))
-                implementation(project(":krpc:krpc-client-api"))
+                implementation(project(":krpc-annotations"))
+                implementation(project(":krpc-client-api"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")

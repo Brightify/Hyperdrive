@@ -19,8 +19,8 @@ kotlin {
 
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(project(":krpc:krpc-annotations"))
-                implementation(project(":krpc:krpc-shared-api"))
+                implementation(project(":krpc-annotations"))
+                implementation(project(":krpc-shared-api"))
             }
         }
         val commonTest by getting {
@@ -39,10 +39,6 @@ kotlin {
             }
         }
     }
-}
-
-dependencies {
-    "ksp"(project(":krpc:krpc-processor"))
 }
 
 tasks.withType<KotlinJvmTest> {

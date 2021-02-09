@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import javax.inject.Inject
 
 @AutoService(KotlinCompilerPluginSupportPlugin::class)
-class MultiplatformxGradleSubplugin @Inject internal constructor(
+class KotlinCompilerGradleSubplugin @Inject internal constructor(
     private val registry: ToolingModelBuilderRegistry
 ): KotlinCompilerPluginSupportPlugin {
 

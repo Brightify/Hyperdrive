@@ -8,9 +8,9 @@ val serialization_version = "1.0.1"
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":krpc:krpc-server-api"))
-    implementation(project(":krpc:krpc-shared-api"))
-    implementation(project(":krpc:krpc-annotations"))
+    implementation(project(":krpc-server-api"))
+    implementation(project(":krpc-shared-api"))
+    implementation(project(":krpc-annotations"))
 
     implementation("io.ktor:ktor-server-core:$ktor_version")
     implementation("io.ktor:ktor-server-netty:$ktor_version")
