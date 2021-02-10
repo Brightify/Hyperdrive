@@ -1,4 +1,4 @@
-package org.brightify.hyperdrive
+package org.brightify.hyperdrive.autofactory
 
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name

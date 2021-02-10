@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
 plugins {
     kotlin("multiplatform")
-    id("org.brightify.hyperdrive.symbol-processing")
 }
 
 kotlin {
@@ -19,8 +18,8 @@ kotlin {
 
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(project(":krpc-annotations"))
-                implementation(project(":krpc-shared-api"))
+                api(project(":krpc-annotations"))
+                api(project(":krpc-shared-api"))
             }
         }
         val commonTest by getting {

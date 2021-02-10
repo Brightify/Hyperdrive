@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     kotlin("kapt")
+    `maven-publish`
 }
 
 val ktor_version = "1.5.1"
@@ -8,9 +9,9 @@ val serialization_version = "1.0.1"
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":krpc-server-api"))
-    implementation(project(":krpc-shared-api"))
-    implementation(project(":krpc-annotations"))
+    api(project(":krpc-server-api"))
+    api(project(":krpc-shared-api"))
+    api(project(":krpc-annotations"))
 
     implementation("io.ktor:ktor-server-core:$ktor_version")
     implementation("io.ktor:ktor-server-netty:$ktor_version")
@@ -32,5 +33,13 @@ kapt {
 tasks {
     test {
         useJUnitPlatform()
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
     }
 }

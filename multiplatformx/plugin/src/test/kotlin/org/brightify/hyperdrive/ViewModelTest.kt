@@ -6,32 +6,31 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-internal class AutoFactoryTest {
+internal class ViewModelTest {
 
     @Test
-    fun testAutoFactory() {
+    fun testViewModel() {
         val serviceSource = SourceFile.kotlin("TestViewModel.kt", """
-            import org.brightify.hyperdrive.multiplatformx.AutoFactory
-            import org.brightify.hyperdrive.multiplatformx.Provided
+            import org.brightify.hyperdrive.multiplatformx.ViewModel
+            import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+            import kotlinx.coroutines.flow.StateFlow
             
-            @AutoFactory
-            class TestViewModel(
-                private val a: Int,
-                @Provided
-                private val b: String
-            )
-        """.trimIndent())
-
-
-        val usage = SourceFile.kotlin("Usage.kt", """
-            fun x() {
-                val f = TestViewModel.Factory(10)
-                f.create("hello")
+            @ViewModel
+            class TestViewModel: BaseViewModel() {
+               
+                var x: String? by published(null)
+                
+//                val observeX: StateFlow<String?> by observe(this::x)
+                
+                init {
+                    println(observeX)
+                }
             }
         """.trimIndent())
 
+
         val result = KotlinCompilation().apply {
-            sources = listOf(serviceSource, usage)
+            sources = listOf(serviceSource)
 
             compilerPlugins = listOf<ComponentRegistrar>(
                 MultiplatformXComponentRegistrar()
@@ -59,12 +58,10 @@ internal class AutoFactoryTest {
 //            this.cla
 //        }
 
-        val factoryClass = result.classLoader.loadClass("TestViewModel\$Factory")
-        val ctor = factoryClass.getDeclaredConstructor(Int::class.java)
-        val factory = ctor.newInstance(10)
-        val create = factoryClass.getDeclaredMethod("create", String::class.java)
-        val createdInstance = create.invoke(factory, "Hello")
-        println(createdInstance)
+        val viewModelClass = result.classLoader.loadClass("TestViewModel")
+        val ctor = viewModelClass.getDeclaredConstructor()
+        val viewModel = ctor.newInstance()
+        println(viewModel)
     }
 
 }

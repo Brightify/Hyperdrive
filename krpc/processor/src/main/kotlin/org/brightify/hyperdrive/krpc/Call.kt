@@ -17,8 +17,36 @@ import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeParameter
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueParameter
+import com.squareup.kotlinpoet.TypeVariableName
+
+fun KSType.asTypeName(): TypeName {
+    val declaration = declaration
+    if (declaration is KSTypeParameter) {
+        return TypeVariableName(declaration.name.asString())
+    }
+
+    val className = declaration.qualifiedName?.asString()?.let(ClassName::bestGuess)
+        ?: ClassName(declaration.packageName.asString(), declaration.simpleName.asString())
+
+    return if (arguments.isEmpty()) {
+        className
+    } else {
+        className.parameterizedBy(arguments.map { it.type.asTypeName() })
+    }.copy(nullable = isMarkedNullable)
+}
+
+fun KSTypeReference?.asTypeName(): TypeName {
+    val resolved = this!!.resolve()!!
+
+    return resolved.asTypeName()
+}
+
+fun KSTypeParameter.asTypeName(): TypeName {
+    return ClassName(packageName.asString(), simpleName.asString())
+}
 
 sealed class Call(val method: KSFunctionDeclaration) {
     open fun clientMethodBuilder(descriptor: TypeName): FunSpec.Builder = FunSpec.builder(method.simpleName.asString())
@@ -36,18 +64,18 @@ sealed class Call(val method: KSFunctionDeclaration) {
             .flatMap {
                 it.arguments.flatMap {
                     (it.value as List<KSType>).map {
-                        CodeBlock.of("subclass($it::class, $it.serializer())")
+                        CodeBlock.of("subclass(%T::class, %T.serializer())\n", it.asTypeName(), it.asTypeName())
                     }
                 }
             }
 
-        return CodeBlock.of("%T(%L)", KnownType.Hyperdrive.rpcErrorSerializer, buildCodeBlock {
-            beginControlFlow("")
+        return buildCodeBlock {
+            beginControlFlow("%T", KnownType.Hyperdrive.rpcErrorSerializer)
             for (error in errors) {
                 add(error)
             }
             endControlFlow()
-        })
+        }
     }
 
     class SingleCall(

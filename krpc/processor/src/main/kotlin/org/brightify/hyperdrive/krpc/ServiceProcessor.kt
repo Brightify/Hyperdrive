@@ -148,14 +148,14 @@ class ServiceProcessor: SymbolProcessor {
                         .addFunction(describeService)
                         .build()
 
-                    codeGenerator.createNewFile(Dependencies.ALL_FILES, symbol.packageName.asString(), clientName).bufferedWriter().use {
+                    codeGenerator.createNewFile(symbol.packageName.asString(), clientName).bufferedWriter().use {
                         FileSpec.builder(symbol.packageName.asString(), clientName)
                             .addType(client)
                             .build()
                             .writeTo(it)
                     }
 
-                    codeGenerator.createNewFile(Dependencies.ALL_FILES, symbol.packageName.asString(), descriptorName.simpleName).bufferedWriter().use {
+                    codeGenerator.createNewFile(symbol.packageName.asString(), descriptorName.simpleName).bufferedWriter().use {
                         FileSpec.builder(symbol.packageName.asString(), descriptorName.simpleName)
                             .addType(descriptor)
                             .build()

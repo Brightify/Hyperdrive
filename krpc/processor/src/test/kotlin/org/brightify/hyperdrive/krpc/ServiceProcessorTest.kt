@@ -1,11 +1,10 @@
 package org.brightify.hyperdrive.krpc
 
+import com.google.devtools.ksp.KotlinSymbolProcessingComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
-import com.tschuchort.compiletesting.symbolProcessors
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
-import org.jetbrains.kotlin.ksp.KotlinSymbolProcessingComponentRegistrar
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
 import kotlin.test.Test
 
 internal class ServiceProcessorTest {

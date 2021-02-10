@@ -18,7 +18,7 @@ buildscript {
 
 allprojects {
     group = "org.brightify.hyperdrive"
-    version = "0.1.0-SNAPSHOT"
+    version = "0.1.0"
 
     tasks.withType(KotlinCompile::class).all {
         kotlinOptions {
@@ -33,26 +33,6 @@ subprojects {
         google()
     }
 
-    apply(plugin = "maven-publish")
-
-    publishing {
-        repositories {
-            maven("https://maven.pkg.jetbrains.space/brightify/p/hd/hyperdrive-snapshots") {
-                name = "hyperdriveSnapshots"
-                credentials(PasswordCredentials::class)
-            }
-        }
-    }
-}
-
-idea {
-    module {
-        isDownloadJavadoc = true
-        isDownloadSources = true
-    }
-}
-
-subprojects {
     apply(plugin = "maven-publish")
 
     publishing {

@@ -22,7 +22,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
 
-                implementation(project(":krpc-annotations"))
+                api(project(":krpc-annotations"))
                 implementation("io.ktor:ktor-client-websockets:$ktor_version")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")

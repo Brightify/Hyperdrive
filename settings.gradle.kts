@@ -10,7 +10,7 @@ pluginManagement {
         }
     }
     plugins {
-        id("org.brightify.hyperdrive.symbol-processing") version "1.0-SNAPSHOT"
+
     }
     resolutionStrategy {
         eachPlugin {
@@ -55,8 +55,8 @@ val krpcModules = listOf(
         "api",
         "impl"
     ),
-    "processor" to emptyList(),
-    "integration" to emptyList()
+    "processor" to emptyList()
+//    "integration" to emptyList()
 )
 
 val krpcProjects = krpcModules.flatMap {

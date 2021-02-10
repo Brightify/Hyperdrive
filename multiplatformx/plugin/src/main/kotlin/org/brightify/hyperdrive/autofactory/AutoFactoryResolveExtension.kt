@@ -1,4 +1,4 @@
-package org.brightify.hyperdrive
+package org.brightify.hyperdrive.autofactory
 
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

@@ -1,12 +1,13 @@
 plugins {
     kotlin("jvm")
     kotlin("kapt")
+    `maven-publish`
 }
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":krpc-annotations"))
-    implementation(project(":krpc-shared-api"))
+    api(project(":krpc-annotations"))
+    api(project(":krpc-shared-api"))
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
@@ -20,5 +21,13 @@ kapt {
 tasks {
     test {
         useJUnitPlatform()
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
     }
 }

@@ -1,5 +1,6 @@
-package org.brightify.hyperdrive
+package org.brightify.hyperdrive.autofactory
 
+import org.brightify.hyperdrive.Either
 import org.jetbrains.kotlin.backend.common.ClassLoweringPass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder

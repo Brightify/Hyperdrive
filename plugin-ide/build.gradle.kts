@@ -30,4 +30,6 @@ intellij {
     pluginName = "hyperdrive"
     version = "2020.3.2"
     setPlugins("gradle", "org.jetbrains.kotlin:203-1.4.21-release-IJ6682.9", "com.intellij.java")
+
+    updateSinceUntilBuild = false
 }
