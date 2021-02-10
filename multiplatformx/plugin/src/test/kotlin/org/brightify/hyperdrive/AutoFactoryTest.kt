@@ -1,7 +1,10 @@
 package org.brightify.hyperdrive
 
 import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
+import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
+import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,6 +40,15 @@ internal class AutoFactoryTest {
                 MultiplatformXComponentRegistrar()
             )
 
+            commandLineProcessors = listOf(
+                MultiplatformxCommandLineProcessor()
+            )
+
+            pluginOptions = listOf(
+                PluginOption(BuildConfig.KOTLIN_PLUGIN_ID, MultiplatformxCommandLineProcessor.Options.enabled.optionName, "true"),
+                PluginOption(BuildConfig.KOTLIN_PLUGIN_ID, MultiplatformxCommandLineProcessor.Options.autoFactoryEnabled.optionName, "true")
+            )
+
             useIR = true
 
             includeRuntime = true
@@ -46,18 +58,6 @@ internal class AutoFactoryTest {
 
         println(result.generatedFiles)
         assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
-
-//
-//        val secondResult = KotlinCompilation().apply {
-//            sources = listOf(usage)
-//
-//            useIR = true
-//            includeRuntime = true
-//            inheritClassPath = true
-//            messageOutputStream = System.out
-//
-//            this.cla
-//        }
 
         val factoryClass = result.classLoader.loadClass("TestViewModel\$Factory")
         val ctor = factoryClass.getDeclaredConstructor(Int::class.java)

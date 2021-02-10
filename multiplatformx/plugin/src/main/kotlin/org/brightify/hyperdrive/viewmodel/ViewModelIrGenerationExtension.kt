@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.runOnFilePostfix
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
-class ViewModelIrGenerationExtension: IrGenerationExtension {
+open class ViewModelIrGenerationExtension: IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val generator = ViewModelIrGenerator(pluginContext)
         for (file in moduleFragment.files) {

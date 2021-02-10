@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive
 
 import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import kotlin.test.Test
@@ -36,6 +37,15 @@ internal class ViewModelTest {
                 MultiplatformXComponentRegistrar()
             )
 
+            commandLineProcessors = listOf(
+                MultiplatformxCommandLineProcessor()
+            )
+
+            pluginOptions = listOf(
+                PluginOption(BuildConfig.KOTLIN_PLUGIN_ID, MultiplatformxCommandLineProcessor.Options.enabled.optionName, "true"),
+                PluginOption(BuildConfig.KOTLIN_PLUGIN_ID, MultiplatformxCommandLineProcessor.Options.viewModelEnabled.optionName, "true")
+            )
+
             useIR = true
 
             includeRuntime = true
@@ -45,18 +55,6 @@ internal class ViewModelTest {
 
         println(result.generatedFiles)
         assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
-
-//
-//        val secondResult = KotlinCompilation().apply {
-//            sources = listOf(usage)
-//
-//            useIR = true
-//            includeRuntime = true
-//            inheritClassPath = true
-//            messageOutputStream = System.out
-//
-//            this.cla
-//        }
 
         val viewModelClass = result.classLoader.loadClass("TestViewModel")
         val ctor = viewModelClass.getDeclaredConstructor()

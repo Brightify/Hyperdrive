@@ -1,0 +1,26 @@
+<idea-plugin url="https://brightify.jetbrains.space/p/hd">
+    <name>Hyperdrive IDEA</name>
+    <id>org.brightify.hyperdrive.plugin</id>
+
+    <description>
+        <![CDATA[
+            A Kotlin compiler plugin adding various developer-friendly enhancements to Kotlin. Currently only @AutoFactory is supported.
+        ]]>
+    </description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>org.jetbrains.plugins.gradle</depends>
+    <depends>org.jetbrains.kotlin</depends>
+    <depends>com.intellij.java</depends>
+
+    <vendor url="https://www.brightify.org" email="info@brightify.org" />
+
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <syntheticResolveExtension implementation="org.brightify.hyperdrive.AutoFactoryIDEResolveExtension" />
+        <irGenerationExtension implementation="org.brightify.hyperdrive.AutoFactoryIDEIrGenerator" />
+
+        <syntheticResolveExtension implementation="org.brightify.hyperdrive.ViewModelIDEResolveExtension" />
+        <irGenerationExtension implementation="org.brightify.hyperdrive.ViewModelIDEIrGenerator" />
+    </extensions>
+</idea-plugin>

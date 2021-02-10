@@ -37,10 +37,17 @@ subprojects {
 
     publishing {
         repositories {
-            maven("https://maven.pkg.jetbrains.space/brightify/p/hd/hyperdrive-snapshots") {
-                name = "hyperdriveSnapshots"
-                credentials(PasswordCredentials::class)
-            }
+//            val brightifyMavenUrl = if (project.version.endsWith("-SNAPSHOT")) {
+//                "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-snapshots"
+//            } else {
+//                "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-releases"
+//            }
+//            maven(brightifyMavenUrl) {
+//                credentials {
+//                    username = project.brightifyUsername
+//                    password = project.brightifyPassword
+//                }
+//            }
         }
     }
 }

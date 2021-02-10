@@ -4,10 +4,6 @@ pluginManagement {
         google()
         jcenter()
         mavenCentral()
-        maven("https://maven.pkg.jetbrains.space/brightify/p/hd/hyperdrive-snapshots") {
-            name = "hyperdriveSnapshots"
-            credentials(PasswordCredentials::class)
-        }
     }
     plugins {
 
@@ -30,12 +26,19 @@ enableFeaturePreview("GRADLE_METADATA")
 
 rootProject.name = "Hyperdrive"
 
-val mainModules = listOf(
-    "plugin",
-    "plugin-native",
-    "plugin-gradle",
-    "plugin-ide"
+val pluginModules = listOf(
+    "api",
+    "impl",
+    "impl-native",
+    "gradle",
+    "idea"
 )
+
+val pluginProjects = pluginModules.map {
+    "plugin-$it" to "plugin/$it"
+}
+
+val mainModules = listOf<String>()
 
 val mainProjects = mainModules.map {
     it to it
@@ -80,8 +83,14 @@ val multiplatformXModules = listOf(
 
 val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" }
 
+val exampleModules = listOf(
+    "krpc",
+    "multiplatformx"
+)
 
-val projects = mainProjects + krpcProjects + multiplatformXProjects
+val exampleProjects = exampleModules.map { "example-$it" to "examples/$it" }
+
+val projects = mainProjects + pluginProjects + krpcProjects + multiplatformXProjects + exampleProjects
 
 for ((name, path) in projects) {
     include(":$name")

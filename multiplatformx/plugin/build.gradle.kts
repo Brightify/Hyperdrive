@@ -3,12 +3,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    id("com.github.gmazzo.buildconfig") version Versions.buildConfig
-}
-
-buildConfig {
-    packageName(project.group.toString())
-    buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"org.brightify.hyperdrive\"")
 }
 
 tasks.withType(KotlinCompile::class).all {
@@ -27,6 +21,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     compileOnly(kotlin("compiler-embeddable"))
+    api(project(":plugin-api"))
     implementation(project(":multiplatformx-api"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
 

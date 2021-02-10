@@ -1,0 +1,5 @@
+package org.brightify.hyperdrive
+
+import org.brightify.hyperdrive.autofactory.AutoFactoryIrGenerationExtension
+
+open class AutoFactoryIDEIrGenerator: AutoFactoryIrGenerationExtension()

@@ -1,7 +1,6 @@
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    id("org.brightify.hyperdrive.symbol-processing")
     kotlin("plugin.serialization") version "1.4.20"
 }
 
@@ -24,18 +23,10 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
-
-    "ksp"(project(":krpc-processor"))
 }
 
 kotlin {
-    sourceSets.main {
-        kotlin.srcDir(File(buildDir, "generated/ksp/src/main/kotlin"))
-    }
-
-    sourceSets.test {
-        kotlin.srcDir(File(buildDir, "generated/ksp/src/test/kotlin"))
-    }
+    
 }
 
 kapt {

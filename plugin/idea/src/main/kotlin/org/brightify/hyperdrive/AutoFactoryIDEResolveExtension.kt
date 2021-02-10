@@ -1,0 +1,5 @@
+package org.brightify.hyperdrive
+
+import org.brightify.hyperdrive.autofactory.AutoFactoryResolveExtension
+
+open class AutoFactoryIDEResolveExtension: AutoFactoryResolveExtension()

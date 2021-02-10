@@ -14,30 +14,49 @@ import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+
+object MultiplatformXConfigurationKeys {
+    val isEnabled = CompilerConfigurationKey<Boolean>("multiplatformx.enabled")
+
+    object AutoFactory {
+        val isEnabled = CompilerConfigurationKey<Boolean>("multiplatformx.autofactory.enabled")
+    }
+
+    object ViewModel {
+        val isEnabled = CompilerConfigurationKey<Boolean>("multiplatformx.viewmodel.enabled")
+    }
+}
 
 @AutoService(ComponentRegistrar::class)
 class MultiplatformXComponentRegistrar: ComponentRegistrar {
     override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
+        val isEnabled = configuration.getBoolean(MultiplatformXConfigurationKeys.isEnabled)
+        if (!isEnabled) {
+            return
+        }
+
         val messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
         messageCollector.report(CompilerMessageSeverity.WARNING, "Hyperdrive MultiplatformX is experimental!")
 
-        val syntheticResolveExtensions = listOf(
-            AutoFactoryResolveExtension(),
-            ViewModelResolveExtension()
-        )
-
-        val irGenerationExtensions = listOf(
-            AutoFactoryIrGenerationExtension(),
-            ViewModelIrGenerationExtension()
-        )
-
-        syntheticResolveExtensions.forEach {
-            SyntheticResolveExtension.registerExtension(project, it)
+        if (configuration.getBoolean(MultiplatformXConfigurationKeys.AutoFactory.isEnabled)) {
+            registerAutoFactoryExtensions(project, configuration)
         }
 
-        irGenerationExtensions.forEach {
-            IrGenerationExtension.registerExtension(project, it)
+        if (configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isEnabled)) {
+            registerViewModelExtensions(project, configuration)
         }
+    }
+
+    private fun registerAutoFactoryExtensions(project: MockProject, configuration: CompilerConfiguration) {
+        SyntheticResolveExtension.registerExtension(project, AutoFactoryResolveExtension())
+        IrGenerationExtension.registerExtension(project, AutoFactoryIrGenerationExtension())
+    }
+
+    private fun registerViewModelExtensions(project: MockProject, configuration: CompilerConfiguration) {
+        SyntheticResolveExtension.registerExtension(project, ViewModelResolveExtension())
+        IrGenerationExtension.registerExtension(project, ViewModelIrGenerationExtension())
     }
 }
