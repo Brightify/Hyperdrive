@@ -12,7 +12,10 @@ kotlin {
     ios()
     tvos()
     macosX64()
-    js()
+    js {
+        browser()
+        nodejs()
+    }
 
     sourceSets {
         val serialization_version = "1.0.1"

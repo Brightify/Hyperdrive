@@ -1,14 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm")
+    java
     `maven-publish`
-}
-
-tasks.withType(KotlinCompile::class).all {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
 }
 
 repositories {
@@ -19,8 +13,15 @@ repositories {
 }
 
 dependencies {
-    compileOnly(kotlin("compiler"))
     implementation(project(":plugin-impl", configuration = "shadow"))
+}
+
+tasks.withType<org.gradle.jvm.tasks.Jar> {
+    from(configurations.runtimeClasspath.map { config ->
+        config.map {
+            if (it.isDirectory) it else zipTree(it)
+        }
+    })
 }
 
 publishing {

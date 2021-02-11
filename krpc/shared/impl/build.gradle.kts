@@ -10,7 +10,10 @@ kotlin {
     ios()
     tvos()
     macosX64()
-    js()
+    js {
+        browser()
+        nodejs()
+    }
 
     sourceSets {
         val commonMain by getting {

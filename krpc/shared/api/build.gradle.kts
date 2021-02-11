@@ -10,7 +10,10 @@ kotlin {
     ios()
     tvos()
     macosX64()
-    js()
+    js {
+        browser()
+        nodejs()
+    }
 
     val serialization_version = "1.0.1"
     val ktor_version = "1.5.1"

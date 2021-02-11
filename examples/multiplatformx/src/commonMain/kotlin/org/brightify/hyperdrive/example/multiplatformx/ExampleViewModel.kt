@@ -13,10 +13,11 @@ class ExampleViewModel(
     private val b: Int,
 ): BaseViewModel() {
 
-    val x: String? by published(null)
+    val x: String? by published(a)
 
-    init {
-        observeX
-    }
+}
 
+fun a() {
+    val a = ExampleViewModel.Factory("hello").create(10).observeX
+    println(a.value)
 }

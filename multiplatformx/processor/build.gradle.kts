@@ -1,7 +1,6 @@
 plugins {
     kotlin("multiplatform")
     kotlin("kapt")
-    idea
 }
 
 repositories {

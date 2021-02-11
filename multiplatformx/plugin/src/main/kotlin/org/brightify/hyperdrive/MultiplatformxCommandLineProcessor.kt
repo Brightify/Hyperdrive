@@ -22,8 +22,8 @@ class MultiplatformxCommandLineProcessor: CommandLineProcessor {
 
     object Options {
         val enabled = PluginOption("multiplatformx.enabled", "<true|false>", "")
-        val autoFactoryEnabled = PluginOption("multiplatformx.autoFactory.enabled", "<true|false>", "")
-        var viewModelEnabled = PluginOption("multiplatformx.viewModel.enabled", "<true|false>", "")
+        val autoFactoryEnabled = PluginOption("multiplatformx.autofactory.enabled", "<true|false>", "")
+        var viewModelEnabled = PluginOption("multiplatformx.viewmodel.enabled", "<true|false>", "")
     }
 
     override fun processOption(option: AbstractCliOption, value: String, configuration: CompilerConfiguration) {

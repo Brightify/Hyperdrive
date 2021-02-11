@@ -1,35 +1,40 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.plugin.NATIVE_COMPILER_PLUGIN_CLASSPATH_CONFIGURATION_NAME
+import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 
-// TODO: Fix Android. For some reason kotlin thinks there's no target when Android is enabled.
 plugins {
-//    id("com.android.library")
+    id("com.android.library")
     kotlin("multiplatform")
 }
 
-//android {
-//    compileSdkVersion(30)
-//
-//    dexOptions {
-//        javaMaxHeapSize = "2g"
-//    }
-//
-//    defaultConfig {
-//        minSdkVersion(16)
-//    }
-//
-//    sourceSets {
-//        val main by getting
-//        main.manifest.srcFile("src/androidMain/AndroidManifest.xml")
-//    }
-//    compileOptions {
-//        sourceCompatibility = JavaVersion.VERSION_1_8
-//        targetCompatibility = JavaVersion.VERSION_1_8
-//    }
-//}
+dependencies {
+    PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":plugin-impl"))
+    NATIVE_COMPILER_PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":plugin-impl-native"))
+}
+
+android {
+    compileSdkVersion(30)
+
+    dexOptions {
+        javaMaxHeapSize = "2g"
+    }
+
+    defaultConfig {
+        minSdkVersion(16)
+    }
+
+    sourceSets {
+        val main by getting
+        main.manifest.srcFile("src/androidMain/AndroidManifest.xml")
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
 
 kotlin {
-
-//    android()
+    jvm()
+    android()
     ios()
 
     sourceSets {
@@ -37,6 +42,9 @@ kotlin {
             dependencies {
                 implementation(project(":multiplatformx-annotations"))
                 implementation(project(":multiplatformx-api"))
+
+                implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
             }
         }
         val commonTest by getting {
@@ -47,8 +55,8 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
             }
         }
-//        val androidMain by getting
-//        val androidTest by getting
+        val androidMain by getting
+        val androidTest by getting
 
         val iosMain by getting
         val iosTest by getting
@@ -59,16 +67,16 @@ kotlin {
             progressiveMode = true
         }
     }
-}
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "1.8"
-        useIR = true
+    targets.all {
+        compilations.all {
+            kotlinOptions {
+                freeCompilerArgs += listOf(
+                    "-P", "plugin:org.brightify.hyperdrive:multiplatformx.enabled=true",
+                    "-P", "plugin:org.brightify.hyperdrive:multiplatformx.viewmodel.enabled=true",
+                    "-P", "plugin:org.brightify.hyperdrive:multiplatformx.autofactory.enabled=true"
+                )
+            }
+        }
     }
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile> {
-    compilerPluginClasspath = files(project(":plugin-impl-native").buildDir)
-
 }
