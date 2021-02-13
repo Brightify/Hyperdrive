@@ -18,12 +18,16 @@ buildscript {
 
 allprojects {
     group = "org.brightify.hyperdrive"
-    version = "0.1.1"
+    version = "0.1.3"
 
     tasks.withType(KotlinCompile::class).all {
         kotlinOptions {
             jvmTarget = "1.8"
         }
+    }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
+        useJUnitPlatform()
     }
 }
 

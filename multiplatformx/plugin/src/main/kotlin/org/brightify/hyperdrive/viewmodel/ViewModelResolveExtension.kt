@@ -75,25 +75,6 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
         result: MutableSet<ClassDescriptor>
     ) {
         super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
-//
-//        val providedDescriptor = result.singleOrNull() as? LazyClassDescriptor ?: return
-//        if (providedDescriptor.annotations.hasAnnotation(ViewModelNames.Annotation.viewModel)) {
-//            val observeNames = providedDescriptor.declaredCallableMembers
-//                .mapNotNull {
-//                    it as? PropertyDescriptor
-//                }
-//                .filter { property ->
-//                    if (!property.isDelegated) {
-//                        return@filter false
-//                    }
-//                    val delegateCallExpression = (property.findPsi() as? KtProperty)?.delegateExpression ?: return@filter false
-//                    return@filter observableDelegates.any { delegateCallExpression.text.startsWith("$it(") }
-//                }
-//                .map { Name.identifier("observe${it.name.identifier.capitalize()}") }
-//
-//            providedDescriptor.unsubstitutedMemberScope.computeAllNames()!!.addAll(observeNames)
-//            println(observeNames)
-//        }
     }
 
     override fun generateSyntheticClasses(
@@ -117,6 +98,7 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
         super.generateSyntheticProperties(thisDescriptor, name, bindingContext, fromSupertypes, result)
 
         if (!thisDescriptor.annotations.hasAnnotation(ViewModelNames.Annotation.viewModel)) { return }
+        val stateFlow = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.Coroutines.stateFlowClassId) ?: return
 
         val realDescriptor = result.singleOrNull()
         val delegateCallExpression = (realDescriptor?.findPsi() as? KtProperty)?.delegateExpression
@@ -145,7 +127,7 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
                 ).apply {
                     val type = KotlinTypeFactory.simpleNotNullType(
                         Annotations.EMPTY,
-                        thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.Coroutines.stateFlowClassId)!!,
+                        stateFlow,
                         listOf(createProjection(realDescriptor.returnType!!, Variance.INVARIANT, null))
                     )
 
@@ -175,42 +157,6 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
     override fun getSyntheticPropertiesNames(thisDescriptor: ClassDescriptor): List<Name> =
         syntheticProperties[thisDescriptor]?.keys?.toList() ?: emptyList()
 
-
-//        if (thisDescriptor.annotations.hasAnnotation(ViewModelNames.Annotation.viewModel) && thisDescriptor is LazyClassDescriptor) {
-//
-////            val x = try {
-////                thisDescriptor.declaredCallableMembers
-////                    .mapNotNull {
-////                        it as? PropertyDescriptor
-////                    }
-////                    .filter { property ->
-////                        if (!property.isDelegated) {
-////                            return@filter false
-////                        }
-////                        val delegateCallExpression = (property.findPsi() as? KtProperty)?.delegateExpression ?: return@filter false
-////                        return@filter observableDelegates.any { delegateCallExpression.text.startsWith("$it(") }
-////                    }
-////                    .map { Name.identifier("observe${it.name.identifier.capitalize()}") }
-////            } catch (e: IllegalStateException) {
-////                e.printStackTrace()
-////                emptyList<Name>()
-////            }
-//
-////            x
-//emptyList()
-////            thisDescriptor.unsubstitutedMemberScope.getVariableNames()
-////                .map { Name.identifier("observe${it.identifier.capitalize()}") }
-//
-////            val declaredVariableNames = thisDescriptor.unsubstitutedMemberScope.getVariableNames() -
-////                    thisDescriptor.getSuperClassOrAny().unsubstitutedMemberScope.getVariableNames()
-////
-////            declaredVariableNames
-////                .map { Name.identifier("observe${it.identifier.capitalize()}") }
-//
-//        } else {
-//            emptyList()
-//        }
-
     override fun generateSyntheticMethods(
         thisDescriptor: ClassDescriptor,
         name: Name,
@@ -219,47 +165,6 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
         result: MutableCollection<SimpleFunctionDescriptor>
     ) {
         super.generateSyntheticMethods(thisDescriptor, name, bindingContext, fromSupertypes, result)
-//
-//        if (name != AutoFactoryNames.createFun) { return }
-//
-//        val containingClass = thisDescriptor.containingDeclaration as? ClassDescriptor ?: return
-//        val autoFactoryConstructor = containingClass.autoFactoryConstructor ?: return
-//
-//        val createFunDescriptor = SimpleFunctionDescriptorImpl.create(
-//            thisDescriptor,
-//            Annotations.EMPTY,
-//            name,
-//            CallableMemberDescriptor.Kind.SYNTHESIZED,
-//            thisDescriptor.source
-//        )
-//
-//        createFunDescriptor.initialize(
-//            null,
-//            thisDescriptor.thisAsReceiverParameter,
-//            emptyList(),
-//            autoFactoryConstructor.valueParameters
-//                .filter { it.annotations.hasAnnotation(AutoFactoryNames.Annotation.provided) }
-//                .mapIndexed { index, parameter ->
-//                    ValueParameterDescriptorImpl(
-//                        createFunDescriptor,
-//                        null,
-//                        index,
-//                        Annotations.EMPTY,
-//                        parameter.name,
-//                        parameter.type,
-//                        declaresDefaultValue = false,
-//                        isCrossinline = false,
-//                        isNoinline = false,
-//                        varargElementType = null,
-//                        source = createFunDescriptor.source
-//                    )
-//                },
-//            containingClass.defaultType,
-//            Modality.FINAL,
-//            DescriptorVisibilities.PUBLIC
-//        )
-//
-//        result.add(createFunDescriptor)
     }
 
     override fun getSyntheticCompanionObjectNameIfNeeded(thisDescriptor: ClassDescriptor): Name? {

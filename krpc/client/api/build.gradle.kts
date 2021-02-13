@@ -53,8 +53,3 @@ kotlin {
         }
     }
 }
-
-tasks.withType<KotlinJvmTest> {
-    useJUnitPlatform()
-}
-

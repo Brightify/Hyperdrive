@@ -1,5 +1,7 @@
 import org.jetbrains.kotlin.gradle.plugin.NATIVE_COMPILER_PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
+import org.jetbrains.kotlin.gradle.tasks.FatFrameworkTask
+import org.jetbrains.kotlin.gradle.plugin.mpp.Framework.BitcodeEmbeddingMode
 
 plugins {
     id("com.android.library")
@@ -35,7 +37,17 @@ android {
 kotlin {
     jvm()
     android()
-    ios()
+    ios {
+        binaries {
+            framework {
+                baseName = "MultiplatformXKit"
+                embedBitcode = BitcodeEmbeddingMode.BITCODE
+            }
+        }
+    }
+
+    val iphonesimulator = iosX64()
+    val iphoneos = iosArm64()
 
     sourceSets {
         val commonMain by getting {
@@ -78,5 +90,19 @@ kotlin {
                 )
             }
         }
+    }
+
+    val packFramework by tasks.creating(FatFrameworkTask::class) {
+        group = "build"
+
+        val mode = System.getenv("CONFIGURATION") ?: "DEBUG"
+
+        baseName = "EvntlyKit"
+        destinationDir = File(buildDir, "xcode-frameworks")
+        from(
+            iphonesimulator.binaries.getFramework(mode),
+            iphoneos.binaries.getFramework(mode)
+        )
+        inputs.property("mode", mode)
     }
 }

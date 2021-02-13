@@ -18,9 +18,11 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.irConstructorCall
+import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
 open class AutoFactoryIrGenerator(
@@ -33,6 +35,7 @@ open class AutoFactoryIrGenerator(
         val autoFactoryConstructor = irClass.parentAutoFactoryConstructor ?: return
 
         val factoryConstructor = irClass.constructors.single { it.visibility == DescriptorVisibilities.PUBLIC }
+        val factoryPrimaryConstructor = irClass.primaryConstructor!!
         val factoryCreateMethod = irClass.functions.single { it.name == AutoFactoryNames.createFun }
 
         val newParametersAccess: List<Either<IrValueParameter, Pair<IrField, IrValueParameter>>> = autoFactoryConstructor.valueParameters.map { parameter ->
@@ -41,6 +44,7 @@ open class AutoFactoryIrGenerator(
                 Either.Left<IrValueParameter, Pair<IrField, IrValueParameter>>(newParameter)
             } else {
                 val field = irClass.addField {
+                    updateFrom(parameter)
                     name = parameter.name
                     type = parameter.type
                     visibility = DescriptorVisibilities.PRIVATE
@@ -51,7 +55,13 @@ open class AutoFactoryIrGenerator(
         }
 
         factoryConstructor.body = DeclarationIrBuilder(compilerContext, factoryConstructor.symbol).irBlockBody {
-            +irDelegatingConstructorCall(compilerContext.symbols.any.constructors.first().owner)
+            +irDelegatingConstructorCall(
+                if (factoryConstructor == factoryPrimaryConstructor) {
+                    compilerContext.symbols.any.constructors.first().owner
+                } else {
+                    factoryPrimaryConstructor
+                }
+            )
 
             for (newParameterAccess in newParametersAccess) {
                 if (newParameterAccess is Either.Right) {

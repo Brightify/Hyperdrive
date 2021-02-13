@@ -52,14 +52,14 @@ class ViewModelIrGenerator(
             propertyGetter.body = DeclarationIrBuilder(pluginContext, propertyGetter.symbol).irBlockBody {
                 +irReturn(
                     irCall(lazyValue, propertyGetter.returnType).apply {
-                        dispatchReceiver = irCall(observe).apply {
+                        dispatchReceiver = irCall(observe.symbol, lazy.typeWith(propertyGetter.returnType)).apply {
                             putTypeArgument(0, referencedProperty.getter!!.returnType)
                             dispatchReceiver = propertyGetter.dispatchReceiverParameter?.let { irGet(it) }
                             putValueArgument(0,
                                 IrPropertyReferenceImpl(
                                     referencedProperty.startOffset,
                                     referencedProperty.endOffset,
-                                    pluginContext.symbols.kmutableproperty0().typeWith(referencedProperty.getter!!.returnType),
+                                    pluginContext.symbols.kproperty0().typeWith(referencedProperty.getter!!.returnType),
                                     referencedProperty.symbol,
                                     0,
                                     null,
