@@ -4,7 +4,8 @@
 
     <description>
         <![CDATA[
-            A Kotlin compiler plugin adding various developer-friendly enhancements to Kotlin. Currently only @AutoFactory is supported.
+            A Kotlin compiler plugin adding various developer-friendly enhancements to Kotlin.
+            Currently only @AutoFactory and @ViewModel are supported.
         ]]>
     </description>
 

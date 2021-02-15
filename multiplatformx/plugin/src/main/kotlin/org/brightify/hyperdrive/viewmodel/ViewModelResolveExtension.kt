@@ -20,12 +20,14 @@ import org.jetbrains.kotlin.descriptors.impl.PropertyGetterDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOriginImpl
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.synthetics.SyntheticClassOrObjectDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.denotedClassDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassOrAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
@@ -33,6 +35,7 @@ import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
 import org.jetbrains.kotlin.resolve.lazy.declarations.ClassMemberDeclarationProvider
 import org.jetbrains.kotlin.resolve.lazy.declarations.PackageMemberDeclarationProvider
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.computeAllNames
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
@@ -87,7 +90,6 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
         super.generateSyntheticClasses(thisDescriptor, name, ctx, declarationProvider, result)
     }
 
-    private val syntheticProperties: MutableMap<ClassDescriptor, MutableMap<Name, PropertyDescriptor>> = mutableMapOf()
     override fun generateSyntheticProperties(
         thisDescriptor: ClassDescriptor,
         name: Name,
@@ -98,64 +100,82 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
         super.generateSyntheticProperties(thisDescriptor, name, bindingContext, fromSupertypes, result)
 
         if (!thisDescriptor.annotations.hasAnnotation(ViewModelNames.Annotation.viewModel)) { return }
+        if (result.isNotEmpty() || fromSupertypes.isNotEmpty()) {
+            return
+        }
         val stateFlow = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.Coroutines.stateFlowClassId) ?: return
 
-        val realDescriptor = result.singleOrNull()
-        val delegateCallExpression = (realDescriptor?.findPsi() as? KtProperty)?.delegateExpression
-        if (realDescriptor != null && delegateCallExpression != null && observableDelegates.any { delegateCallExpression.text.startsWith("$it(") }) {
-            syntheticProperties.getOrPut(thisDescriptor) { mutableMapOf() }.put(
-                Name.identifier("observe${realDescriptor.name.identifier.capitalize()}"), realDescriptor
-            )
-        } else if (syntheticProperties[thisDescriptor]?.containsKey(name) == true) {
-            val realDescriptor = syntheticProperties[thisDescriptor]?.get(name) ?: return
-            result.add(
-                PropertyDescriptorImpl.create(
-                    thisDescriptor,
-                    Annotations.EMPTY,
-                    Modality.FINAL,
-                    realDescriptor.visibility,
-                    false,
-                    name,
-                    CallableMemberDescriptor.Kind.SYNTHESIZED,
-                    realDescriptor.source,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false
-                ).apply {
-                    val type = KotlinTypeFactory.simpleNotNullType(
-                        Annotations.EMPTY,
-                        stateFlow,
-                        listOf(createProjection(realDescriptor.returnType!!, Variance.INVARIANT, null))
-                    )
-
-                    initialize(
-                        PropertyGetterDescriptorImpl(
-                            this,
-                            Annotations.EMPTY,
-                            Modality.FINAL,
-                            this.visibility,
-                            false,
-                            false,
-                            false,
-                            CallableMemberDescriptor.Kind.SYNTHESIZED,
-                            null,
-                            source
-                        ).apply {
-                            initialize(type)
-                        },
-                        null
-                    )
-                    setType(type, emptyList(), thisDescriptor.thisAsReceiverParameter, null)
+        if (name.identifier.startsWith("observe")) {
+            val refIdentifier = name.identifier.drop("observe".count()).let {
+                if (it.isEmpty()) {
+                    null
+                } else {
+                    it.first().toLowerCase() + it.drop(1)
                 }
-            )
+            } ?: return
+            val refName = Name.identifier(refIdentifier)
+            val realDescriptor =
+                thisDescriptor.unsubstitutedMemberScope.getContributedVariables(refName, NoLookupLocation.FROM_SYNTHETIC_SCOPE)
+                    .singleOrNull() ?: return
+            val delegateCallExpression = (realDescriptor.findPsi() as? KtProperty)?.delegateExpression
+            if (delegateCallExpression != null && observableDelegates.any { delegateCallExpression.text.startsWith("$it(") })
+                result.add(
+                    PropertyDescriptorImpl.create(
+                        thisDescriptor,
+                        Annotations.EMPTY,
+                        Modality.FINAL,
+                        realDescriptor.visibility,
+                        false,
+                        name,
+                        CallableMemberDescriptor.Kind.SYNTHESIZED,
+                        realDescriptor.source,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false
+                    ).apply {
+                        val type = KotlinTypeFactory.simpleNotNullType(
+                            Annotations.EMPTY,
+                            stateFlow,
+                            listOf(createProjection(realDescriptor.returnType!!, Variance.INVARIANT, null))
+                        )
+
+                        initialize(
+                            PropertyGetterDescriptorImpl(
+                                this,
+                                Annotations.EMPTY,
+                                Modality.FINAL,
+                                this.visibility,
+                                false,
+                                false,
+                                false,
+                                CallableMemberDescriptor.Kind.SYNTHESIZED,
+                                null,
+                                source
+                            ).apply {
+                                initialize(type)
+                            },
+                            null
+                        )
+                        setType(type, emptyList(), thisDescriptor.thisAsReceiverParameter, null)
+                    }
+                )
         }
     }
 
-    override fun getSyntheticPropertiesNames(thisDescriptor: ClassDescriptor): List<Name> =
-        syntheticProperties[thisDescriptor]?.keys?.toList() ?: emptyList()
+    override fun getSyntheticPropertiesNames(thisDescriptor: ClassDescriptor): List<Name> {
+        return thisDescriptor.unsubstitutedMemberScope.getClassifierNames()?.filter {
+            val realDescriptor =
+                thisDescriptor.unsubstitutedMemberScope.getContributedVariables(it, NoLookupLocation.FROM_SYNTHETIC_SCOPE)
+                    .singleOrNull() ?: return@filter false
+            val delegateCallExpression = (realDescriptor.findPsi() as? KtProperty)?.delegateExpression
+            delegateCallExpression != null && observableDelegates.any { delegateCallExpression.text.startsWith("$it(") }
+        }?.map {
+            Name.identifier("observe${it.identifier.capitalize()}")
+        } ?: emptyList()
+    }
 
     override fun generateSyntheticMethods(
         thisDescriptor: ClassDescriptor,
