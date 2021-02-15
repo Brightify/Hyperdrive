@@ -14,6 +14,8 @@
     <depends>org.jetbrains.kotlin</depends>
     <depends>com.intellij.java</depends>
 
+    <idea-version since-build="201.8743.12" />
+
     <vendor url="https://www.brightify.org" email="info@brightify.org" />
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
@@ -21,6 +23,6 @@
         <irGenerationExtension implementation="org.brightify.hyperdrive.AutoFactoryIDEIrGenerator" />
 
         <syntheticResolveExtension implementation="org.brightify.hyperdrive.ViewModelIDEResolveExtension" />
-        <irGenerationExtension implementation="org.brightify.hyperdrive.ViewModelIDEIrGenerator" />
+        <irGenerationExtension implementation="org.brightify.hyperdrive.ViewModelIDEIrGenerationExtension" />
     </extensions>
 </idea-plugin>
