@@ -3,6 +3,8 @@ plugins {
 }
 
 kotlin {
+    explicitApi()
+
     jvm()
     ios()
     tvos()

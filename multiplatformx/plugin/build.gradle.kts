@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm")
     kotlin("kapt")
+    `maven-publish`
 }
 
 tasks.withType(KotlinCompile::class).all {
@@ -28,7 +29,6 @@ dependencies {
     compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")
     kapt("com.google.auto.service:auto-service:${Versions.autoService}")
 
-    testImplementation(project(":multiplatformx-annotations"))
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))

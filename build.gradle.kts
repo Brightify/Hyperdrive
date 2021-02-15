@@ -2,11 +2,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `maven-publish`
+    id("org.jetbrains.dokka")
 }
 
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
         google()
     }
 
@@ -17,8 +19,16 @@ buildscript {
 }
 
 allprojects {
+    repositories {
+        mavenCentral()
+        jcenter()
+        google()
+    }
+
     group = "org.brightify.hyperdrive"
-    version = "0.1.3"
+    version = "0.1.4"
+
+    apply(plugin = "org.jetbrains.dokka")
 
     tasks.withType(KotlinCompile::class).all {
         kotlinOptions {
@@ -32,12 +42,6 @@ allprojects {
 }
 
 subprojects {
-    repositories {
-        mavenCentral()
-        jcenter()
-        google()
-    }
-
     apply(plugin = "maven-publish")
 
     publishing {

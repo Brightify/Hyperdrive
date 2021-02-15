@@ -1,75 +1,94 @@
+@file:Suppress("MemberVisibilityCanBePrivate", "unused")
+
 package org.brightify.hyperdrive.multiplatformx
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.observeOn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlin.reflect.KProperty
+import org.brightify.hyperdrive.multiplatformx.util.getValue
+import org.brightify.hyperdrive.multiplatformx.util.setValue
 
-class InterfaceLock(
+/**
+ * Locking for user interface operations.
+ *
+ * Use an instance of this class to ensure user interactions are ignored while a user-initiated operation is already running.
+ *
+ * Each instance of [InterfaceLock] is a member of a [Group] and if no [group] parameter is provided to the constructor a new group is
+ * created by default. Only a single operation can be running across all [InterfaceLock] instances in the same group. Additional operations
+ * are not run until the currently running one completes.
+ *
+ * Since the [runExclusively] is not blocking or suspending, you can monitor the progress using the [state] and [observeState] properties.
+ */
+public class InterfaceLock(
+    // TODO: Research if we should be using a "global" scope, or if we should use a "lifecycle" scope instead.
     private val scope: CoroutineScope,
     private val group: Group = Group(),
 ) {
-    private val lock = Mutex()
     private val mutableState = MutableStateFlow<State>(State.Idle)
-    val observeState: StateFlow<State> = mutableState
-    var state: State by mutableState
+    public val observeState: StateFlow<State> = mutableState
+    public var state: State by mutableState
         private set
-    val isLocked: Boolean
-        get() = state == State.Loading
+    public val isLocked: Boolean
+        get() = state == State.Running
 
     /**
      * While the supplied `work` is running, this lock is considered taken and all other invocations of this method will just return, doing nothing.
      */
-    fun runExclusively(work: suspend () -> Unit) {
+    public fun runExclusively(work: suspend () -> Unit) {
         scope.launch {
             group.runExclusively {
-                mutableState.value = State.Loading
+                mutableState.value = State.Running
                 mutableState.value = try {
                     work()
 
                     State.Idle
-                } catch (t: Throwable) {
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                }
+                // TODO: It might be unsafe to catch any Throwable. Please research.
+                catch (t: Throwable) {
                     State.Failed(t)
                 }
             }
         }
     }
 
-    class Group {
-        private val lock = Mutex()
+    /**
+     * Resets the current state to [Idle][State.Idle] if it's currently [Failed][State.Failed].
+     */
+    public fun resetFailedState(): Boolean {
+        val currentState = mutableState.value
+        return if (currentState is State.Failed) {
+            mutableState.compareAndSet(currentState, State.Idle)
+        } else {
+            false
+        }
+    }
 
-        private val mutableIsLocked = MutableStateFlow(false)
-        val observeIsLocked: StateFlow<Boolean> = mutableIsLocked
-        var isLocked: Boolean by mutableIsLocked
+    public class Group {
+        private val mutableIsOperationRunning = MutableStateFlow(false)
+        public val observeIsOperationRunning: StateFlow<Boolean> = mutableIsOperationRunning
+        public var isOperationRunning: Boolean by mutableIsOperationRunning
             private set
 
-        suspend fun runExclusively(work: suspend () -> Unit) {
-            lock.withLock {
-                if (isLocked) {
-                    return
-                }
-
-                mutableIsLocked.value = true
+        public suspend fun runExclusively(work: suspend () -> Unit) {
+            if (!mutableIsOperationRunning.compareAndSet(expect = false, update = true)) {
+                return
             }
 
-            work()
-
-            lock.withLock {
-                mutableIsLocked.value = false
+            try {
+                work()
+            } finally {
+                mutableIsOperationRunning.value = false
             }
         }
     }
 
-    sealed class State {
-        object Loading: State()
-        class Failed(val throwable: Throwable): State()
-        object Idle: State()
+    public sealed class State {
+        public object Running: State()
+        public class Failed(public val throwable: Throwable): State()
+        public object Idle: State()
     }
 }
-
-@Deprecated("Renamed for better clarity.", ReplaceWith("runExclusively(work)"))
-fun InterfaceLock.first(work: suspend () -> Unit) = runExclusively(work)

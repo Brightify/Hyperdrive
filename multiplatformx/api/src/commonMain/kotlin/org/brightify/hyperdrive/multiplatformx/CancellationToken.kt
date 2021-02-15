@@ -1,7 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
-class CancellationToken(private val onCancel: () -> Unit) {
-    fun cancel() {
+public class CancellationToken(private val onCancel: () -> Unit) {
+    public fun cancel() {
         onCancel()
     }
 }

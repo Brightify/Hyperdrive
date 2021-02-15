@@ -5,4 +5,4 @@ import kotlinx.coroutines.CoroutineScope
 
 internal expect fun dispatcher(): CoroutineDispatcher
 
-val MultiplatformGlobalScope = CoroutineScope(dispatcher())
+public val MultiplatformGlobalScope: CoroutineScope = CoroutineScope(dispatcher())

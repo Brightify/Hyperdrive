@@ -1,4 +1,4 @@
-package org.brightify.hyperdrive.multiplatformx
+package org.brightify.hyperdrive.multiplatformx.util
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

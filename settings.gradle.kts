@@ -6,7 +6,7 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-
+        id("org.jetbrains.dokka") version "1.4.20"
     }
     resolutionStrategy {
         eachPlugin {
@@ -74,11 +74,9 @@ val krpcProjects = krpcModules.flatMap {
 }
 
 val multiplatformXModules = listOf(
-    "annotations",
     "api",
     "core",
-    "plugin",
-    "processor"
+    "plugin"
 )
 
 val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" }

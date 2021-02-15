@@ -19,7 +19,7 @@ kotlin {
 
             dependencies {
                 implementation(kotlin("stdlib"))
-                implementation(project(":multiplatformx-annotations"))
+                implementation(project(":multiplatformx-api"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.0.1")

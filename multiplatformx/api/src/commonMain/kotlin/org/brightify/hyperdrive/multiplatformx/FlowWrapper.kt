@@ -1,9 +1,11 @@
+@file:Suppress("unused")
+
 package org.brightify.hyperdrive.multiplatformx
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-open class NonNullMutableStateFlowWrapper<T: Any>(
+public open class NonNullMutableStateFlowWrapper<T: Any>(
     private val getter: () -> T,
     private val setter: (T) -> Unit,
     private val origin: Flow<T>
@@ -14,65 +16,65 @@ open class NonNullMutableStateFlowWrapper<T: Any>(
             setter(newValue)
         }
 
-    companion object {
-        fun <T: Any> wrap(flow: MutableStateFlow<T>): NonNullMutableStateFlowWrapper<T> {
+    public companion object {
+        public fun <T: Any> wrap(flow: MutableStateFlow<T>): NonNullMutableStateFlowWrapper<T> {
             return NonNullMutableStateFlowWrapper(getter = { flow.value }, setter = { flow.value = it }, origin = flow)
         }
 
-        fun <T: Any> wrapNonNullList(flow: MutableStateFlow<List<T>>): NonNullMutableStateFlowWrapper<NonNullListWrapper<T>> {
+        public fun <T: Any> wrapNonNullList(flow: MutableStateFlow<List<T>>): NonNullMutableStateFlowWrapper<NonNullListWrapper<T>> {
             return NonNullMutableStateFlowWrapper(getter = { NonNullListWrapper(flow.value) }, { flow.value = it.origin }, flow.map(::NonNullListWrapper))
         }
 
-        fun <T: Any> wrapNullableList(flow: MutableStateFlow<List<T?>>): NonNullMutableStateFlowWrapper<NullableListWrapper<T>> {
+        public fun <T: Any> wrapNullableList(flow: MutableStateFlow<List<T?>>): NonNullMutableStateFlowWrapper<NullableListWrapper<T>> {
             return NonNullMutableStateFlowWrapper(getter = { NullableListWrapper(flow.value) }, { flow.value = it.origin }, flow.map(::NullableListWrapper))
         }
     }
 }
 
-open class NonNullStateFlowWrapper<T: Any>(
+public open class NonNullStateFlowWrapper<T: Any>(
     private val getter: () -> T,
     private val origin: Flow<T>
 ): NonNullFlowWrapper<T>(origin) {
-    open val value: T
+    public open val value: T
         get() = getter()
 
-    companion object {
-        fun <T: Any> wrap(flow: StateFlow<T>): NonNullStateFlowWrapper<T> {
+    public companion object {
+        public fun <T: Any> wrap(flow: StateFlow<T>): NonNullStateFlowWrapper<T> {
             return NonNullStateFlowWrapper(getter = { flow.value }, origin = flow)
         }
 
-        fun <T: Any> wrapNonNullList(flow: StateFlow<List<T>>): NonNullStateFlowWrapper<NonNullListWrapper<T>> {
+        public fun <T: Any> wrapNonNullList(flow: StateFlow<List<T>>): NonNullStateFlowWrapper<NonNullListWrapper<T>> {
             return NonNullStateFlowWrapper(getter = { NonNullListWrapper(flow.value) }, flow.map(::NonNullListWrapper))
         }
 
-        fun <T: Any> wrapNullableList(flow: StateFlow<List<T?>>): NonNullStateFlowWrapper<NullableListWrapper<T>> {
+        public fun <T: Any> wrapNullableList(flow: StateFlow<List<T?>>): NonNullStateFlowWrapper<NullableListWrapper<T>> {
             return NonNullStateFlowWrapper(getter = { NullableListWrapper(flow.value) }, flow.map(::NullableListWrapper))
         }
     }
 }
 
-open class NonNullFlowWrapper<T: Any>(
+public open class NonNullFlowWrapper<T: Any>(
     private val origin: Flow<T>
 ): Flow<T> by origin {
-    open fun watch(onNext: (T) -> Unit, onError: (Exception) -> Unit, onCompleted: () -> Unit) =
+    public open fun watch(onNext: (T) -> Unit, onError: (Exception) -> Unit, onCompleted: () -> Unit): FlowWrapperWatchToken =
         FlowWrapperWatchToken(this, onNext, onError, onCompleted)
 
-    companion object {
-        fun <T: Any> wrap(flow: Flow<T>): NonNullFlowWrapper<T> {
+    public companion object {
+        public fun <T: Any> wrap(flow: Flow<T>): NonNullFlowWrapper<T> {
             return NonNullFlowWrapper(origin = flow)
         }
 
-        fun <T: Any> wrapNonNullList(flow: Flow<List<T>>): NonNullFlowWrapper<NonNullListWrapper<T>> {
+        public fun <T: Any> wrapNonNullList(flow: Flow<List<T>>): NonNullFlowWrapper<NonNullListWrapper<T>> {
             return NonNullFlowWrapper(flow.map(::NonNullListWrapper))
         }
 
-        fun <T: Any> wrapNullableList(flow: Flow<List<T?>>): NonNullFlowWrapper<NullableListWrapper<T>> {
+        public fun <T: Any> wrapNullableList(flow: Flow<List<T?>>): NonNullFlowWrapper<NullableListWrapper<T>> {
             return NonNullFlowWrapper(flow.map(::NullableListWrapper))
         }
     }
 }
 
-open class NullableMutableStateFlowWrapper<T: Any>(
+public open class NullableMutableStateFlowWrapper<T: Any>(
     private val getter: () -> T?,
     private val setter: (T?) -> Unit,
     private val origin: Flow<T?>
@@ -83,68 +85,68 @@ open class NullableMutableStateFlowWrapper<T: Any>(
             setter(newValue)
         }
 
-    companion object {
-        fun <T: Any> wrap(flow: MutableStateFlow<T?>): NullableMutableStateFlowWrapper<T> {
+    public companion object {
+        public fun <T: Any> wrap(flow: MutableStateFlow<T?>): NullableMutableStateFlowWrapper<T> {
             return NullableMutableStateFlowWrapper(getter = { flow.value }, setter = { flow.value = it }, origin = flow)
         }
 
-        fun <T: Any> wrapNonNullList(flow: MutableStateFlow<List<T>?>): NullableMutableStateFlowWrapper<NonNullListWrapper<T>> {
+        public fun <T: Any> wrapNonNullList(flow: MutableStateFlow<List<T>?>): NullableMutableStateFlowWrapper<NonNullListWrapper<T>> {
             return NullableMutableStateFlowWrapper(getter = { flow.value?.let(::NonNullListWrapper) }, { flow.value = it?.origin }, flow.map { it?.let(::NonNullListWrapper) })
         }
 
-        fun <T: Any> wrapNullableList(flow: MutableStateFlow<List<T?>?>): NullableMutableStateFlowWrapper<NullableListWrapper<T>> {
+        public fun <T: Any> wrapNullableList(flow: MutableStateFlow<List<T?>?>): NullableMutableStateFlowWrapper<NullableListWrapper<T>> {
             return NullableMutableStateFlowWrapper(getter = { flow.value?.let(::NullableListWrapper) }, { flow.value = it?.origin }, flow.map { it?.let(::NullableListWrapper) })
         }
     }
 }
 
-open class NullableStateFlowWrapper<T: Any>(
+public open class NullableStateFlowWrapper<T: Any>(
     private val getter: () -> T?,
     private val origin: Flow<T?>
 ): NullableFlowWrapper<T>(origin) {
-    open val value: T?
+    public open val value: T?
         get() = getter()
 
-    companion object {
-        fun <T: Any> wrap(flow: StateFlow<T?>): NullableStateFlowWrapper<T> {
+    public companion object {
+        public fun <T: Any> wrap(flow: StateFlow<T?>): NullableStateFlowWrapper<T> {
             return NullableStateFlowWrapper(getter = { flow.value }, origin = flow)
         }
 
-        fun <T: Any> wrapNonNullList(flow: StateFlow<List<T>?>): NullableStateFlowWrapper<NonNullListWrapper<T>> {
+        public fun <T: Any> wrapNonNullList(flow: StateFlow<List<T>?>): NullableStateFlowWrapper<NonNullListWrapper<T>> {
             return NullableStateFlowWrapper(getter = { flow.value?.let(::NonNullListWrapper) }, flow.map { it?.let(::NonNullListWrapper) })
         }
 
-        fun <T: Any> wrapNullableList(flow: StateFlow<List<T?>?>): NullableStateFlowWrapper<NullableListWrapper<T>> {
+        public fun <T: Any> wrapNullableList(flow: StateFlow<List<T?>?>): NullableStateFlowWrapper<NullableListWrapper<T>> {
             return NullableStateFlowWrapper(getter = { flow.value?.let(::NullableListWrapper) }, flow.map { it?.let(::NullableListWrapper) })
         }
     }
 }
 
-open class NullableFlowWrapper<T: Any>(
+public open class NullableFlowWrapper<T: Any>(
     private val origin: Flow<T?>
 ): Flow<T?> by origin {
-    open fun watch(onNext: (T?) -> Unit, onError: (Exception) -> Unit, onCompleted: () -> Unit) =
+    public open fun watch(onNext: (T?) -> Unit, onError: (Exception) -> Unit, onCompleted: () -> Unit): FlowWrapperWatchToken =
         FlowWrapperWatchToken(this, onNext, onError, onCompleted)
 
-    companion object {
-        fun <T: Any> wrap(flow: Flow<T?>): NullableFlowWrapper<T> {
+    public companion object {
+        public fun <T: Any> wrap(flow: Flow<T?>): NullableFlowWrapper<T> {
             return NullableFlowWrapper(origin = flow)
         }
 
-        fun <T: Any> wrapNonNullList(flow: Flow<List<T>?>): NullableFlowWrapper<NonNullListWrapper<T>> {
+        public fun <T: Any> wrapNonNullList(flow: Flow<List<T>?>): NullableFlowWrapper<NonNullListWrapper<T>> {
             return NullableFlowWrapper(flow.map { it?.let(::NonNullListWrapper) })
         }
 
-        fun <T: Any> wrapNullableList(flow: Flow<List<T?>?>): NullableFlowWrapper<NullableListWrapper<T>> {
+        public fun <T: Any> wrapNullableList(flow: Flow<List<T?>?>): NullableFlowWrapper<NullableListWrapper<T>> {
             return NullableFlowWrapper(flow.map { it?.let(::NullableListWrapper) })
         }
     }
 }
 
-class FlowWrapperWatchToken private constructor() {
+public class FlowWrapperWatchToken private constructor() {
 
-    companion object {
-        operator fun <T> invoke(
+    public companion object {
+        public operator fun <T> invoke(
             flow: Flow<T>,
             onNext: (T) -> Unit,
             onError: (Exception) -> Unit,
@@ -185,19 +187,19 @@ class FlowWrapperWatchToken private constructor() {
         deferred = CompletableDeferred()
     }
 
-    fun requestNext() {
+    public fun requestNext() {
         deferred.complete(Unit)
     }
 
-    fun cancel() {
+    public fun cancel() {
         job.cancel()
     }
 }
 
-open class NonNullListWrapper<T: Any>(
-    val origin: List<T>
+public open class NonNullListWrapper<T: Any>(
+    public val origin: List<T>
 )
 
-open class NullableListWrapper<T: Any>(
-    val origin: List<T?>
+public open class NullableListWrapper<T: Any>(
+    public val origin: List<T?>
 )

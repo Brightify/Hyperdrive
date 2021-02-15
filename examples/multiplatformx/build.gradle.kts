@@ -52,7 +52,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":multiplatformx-annotations"))
                 implementation(project(":multiplatformx-api"))
 
                 implementation(kotlin("stdlib-common"))
