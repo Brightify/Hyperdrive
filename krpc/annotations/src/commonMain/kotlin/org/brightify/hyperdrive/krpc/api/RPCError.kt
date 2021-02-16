@@ -34,7 +34,7 @@ abstract class RPCError : Throwable() {
         LengthRequired(411),
         PreconditionFailed(412),
         PayloadTooLarge(413),
-        Request-URITooLong(414),
+        RequestURITooLong(414),
         UnsupportedMediaType(415),
         RequestedRangeNotSatisfiable(416),
         ExpectationFailed(417),
