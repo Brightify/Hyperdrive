@@ -1,10 +1,10 @@
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    kotlin("plugin.serialization") version "1.4.20"
+    kotlin("plugin.serialization") version "1.4.30"
 }
 
-val serialization_version = "1.0.1"
+val serialization_version = "1.1.0-RC"
 dependencies {
     testImplementation(project(":krpc-annotations"))
     testImplementation(project(":krpc-server-api"))

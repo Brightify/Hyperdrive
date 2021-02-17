@@ -51,7 +51,7 @@ class ViewModelIrGenerator(
 
             propertyGetter.body = DeclarationIrBuilder(pluginContext, propertyGetter.symbol).irBlockBody {
                 +irReturn(
-                    irCall(lazyValue.owner.symbol, propertyGetter.returnType).apply {
+                    irCall(lazyValue, propertyGetter.returnType).apply {
                         dispatchReceiver = irCall(observe.symbol, lazy.typeWith(propertyGetter.returnType)).apply {
                             putTypeArgument(0, referencedProperty.getter!!.returnType)
                             dispatchReceiver = propertyGetter.dispatchReceiverParameter?.let { irGet(it) }
