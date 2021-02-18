@@ -19,7 +19,7 @@ package org.brightify.hyperdrive.krpc.api.validation
 annotation class Pattern(
     val regexp: String,
     val message: String = "",
-    val flags: Array<Flag> = [],
+    val flags: Array<Flag> = emptyArray(),
 ) {
 
     /**
