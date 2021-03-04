@@ -9,6 +9,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
+import kotlinx.coroutines.MainScope
 import kotlin.coroutines.cancellation.CancellationException
 
 public fun <T: Any> NonNullFlowWrapper<T>.collectWhileAttached(lifecycle: Lifecycle, collection: (T) -> Unit) {
@@ -22,8 +23,16 @@ public fun <T: Any> NonNullFlowWrapper<T>.collectWhileAttached(lifecycle: Lifecy
 /**
  * Shorthand for `Lifecycle.attach(MultiplatformGlobalScope)`.
  */
+@Deprecated("Use attachToMainScope instead.", replaceWith = ReplaceWith("attachToMainScope", "org.brightify.hyperdrive.multiplatformx.attachToMainScope"))
 public fun Lifecycle.attachToMultiplatformGlobalScope() {
     attach(MultiplatformGlobalScope)
+}
+
+/**
+ * Shorthand for `Lifecycle.attach(MainScope())`
+ */
+public fun Lifecycle.attachToMainScope() {
+    attach(MainScope())
 }
 
 /**
@@ -57,26 +66,17 @@ public class Lifecycle {
             throw IllegalStateException("Trying to attach a lifecycle that's already attached to a different scope!")
         }
 
-        val cancellationTrackingScope = scope + CoroutineExceptionHandler { _, throwable ->
-            if (throwable is CancellationException && isAttached) {
-                detach()
-            }
-            throw throwable
-        }
-
 
         // TODO: Subscribe scope.onCancel to detach
         notifyListeners(ListenerRegistration.Kind.WillAttach)
 
-        state = State.Attached(cancellationTrackingScope)
+        state = State.Attached(scope)
 
         activeJobs.addAll(whileAttachedRunners.map { runner ->
-            cancellationTrackingScope.launch {
-                runner()
-            }
+            scope.launchDetachingOnCancellation(runner)
         })
 
-        children.forEach { it.attach(cancellationTrackingScope) }
+        children.forEach { it.attach(scope) }
 
         notifyListeners(ListenerRegistration.Kind.DidAttach)
     }
@@ -140,9 +140,7 @@ public class Lifecycle {
     public fun runOnceIfAttached(runner: suspend CoroutineScope.() -> Unit): Boolean {
         val scope = attachedScope ?: return false
         activeJobs.add(
-            scope.launch {
-                runner()
-            }
+            scope.launchDetachingOnCancellation(runner)
         )
         return true
     }
@@ -155,9 +153,7 @@ public class Lifecycle {
 
         val scope = attachedScope ?: return
         activeJobs.add(
-            scope.launch {
-                runner()
-            }
+            scope.launchDetachingOnCancellation(runner)
         )
     }
 
@@ -208,6 +204,17 @@ public class Lifecycle {
     private fun addListener(kind: ListenerRegistration.Kind, validity: ListenerValidity, listener: () -> Unit) {
         listeners.getOrPut(kind, { mutableSetOf() })
             .add(ListenerRegistration(listener, validity))
+    }
+
+    private fun CoroutineScope.launchDetachingOnCancellation(block: suspend CoroutineScope.() -> Unit) = launch {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            if (isAttached) {
+                detach()
+            }
+            throw e
+        }
     }
 
     private fun notifyListeners(kind: ListenerRegistration.Kind) {
