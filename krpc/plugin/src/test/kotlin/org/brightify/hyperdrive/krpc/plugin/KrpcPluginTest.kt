@@ -7,11 +7,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineScope
+import kotlinx.coroutines.test.runBlockingTest
+import org.brightify.hyperdrive.krpc.api.RPCProtocol
 import org.brightify.hyperdrive.krpc.api.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.api.impl.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.api.impl.DefaultServiceRegistry
+import org.brightify.hyperdrive.krpc.api.impl.ServiceRegistry
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import kotlin.reflect.KClass
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.createInstance
@@ -20,6 +26,24 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class KrpcPluginTest {
+
+    private val testScope = TestCoroutineScope()
+    private lateinit var registry: ServiceRegistry
+    private lateinit var protocol: RPCProtocol
+
+    @BeforeEach
+    fun setup() {
+        val connection = LoopbackConnection(testScope)
+        registry = DefaultServiceRegistry()
+
+        protocol = AscensionRPCProtocol.Factory(registry, testScope, testScope).create(connection)
+    }
+
+    @AfterEach
+    fun teardown() {
+        testScope.cleanupTestCoroutines()
+    }
+
     @Test
     fun testKrpcPlugin() {
         val serviceSource = SourceFile.kotlin("ProcessorTestService.kt", """
@@ -89,27 +113,18 @@ class KrpcPluginTest {
         println(result.generatedFiles)
         assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
 
-        val i = 10
-
-
         val serviceClass = result.classLoader.loadClass("DefaultProcessorTestService").kotlin
         val serviceInstance = serviceClass.createInstance()
 
         val descriptorClass = result.classLoader.loadClass("ProcessorTestService\$Descriptor").kotlin as KClass<ServiceDescriptor<Any>>
         val descriptorInstance = descriptorClass.objectInstance!!
         
-        val serviceRegistry = DefaultServiceRegistry()
-        serviceRegistry.register(descriptorInstance.describe(serviceInstance))
-
-        val protocolFactory = AscensionRPCProtocol.Factory(serviceRegistry, GlobalScope, GlobalScope)
-
-        val connection = LoopbackConnection(GlobalScope)
-        val protocol = protocolFactory.create(connection)
+        registry.register(descriptorInstance.describe(serviceInstance))
 
         val clientClass = result.classLoader.loadClass("ProcessorTestService\$Client").kotlin
         val clientInstance = clientClass.constructors.first().call(protocol)
 
-        runBlocking {
+        testScope.runBlockingTest {
             val response = clientClass.declaredFunctions.single { it.name == "testedSingleCall" }.callSuspend(clientInstance, 10)
             println(response)
             assertEquals("Hello 10", response)

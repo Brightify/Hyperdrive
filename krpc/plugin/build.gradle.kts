@@ -47,6 +47,7 @@ dependencies {
     testImplementation(kotlin("reflect"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.6")
