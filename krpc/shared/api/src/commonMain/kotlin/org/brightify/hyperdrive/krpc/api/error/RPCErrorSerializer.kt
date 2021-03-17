@@ -12,7 +12,9 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 import org.brightify.hyperdrive.krpc.api.RPCError
+import org.brightify.hyperdrive.krpc.api.UnexpectedRPCEventException
 
 class RPCErrorSerializer(
     register: PolymorphicModuleBuilder<RPCError>.() -> Unit = { },
@@ -21,7 +23,10 @@ class RPCErrorSerializer(
     private val module = SerializersModule {
         polymorphic(RPCError::class) {
             // TODO Register internal errors
-            subclass(NonRPCErrorThrownError::class, NonRPCErrorThrownError.serializer())
+            subclass(NonRPCErrorThrownError::class)
+            subclass(UnknownRPCReferenceException::class)
+            subclass(UnexpectedRPCEventException::class)
+            subclass(RPCNotFoundError::class)
             register()
         }
     }

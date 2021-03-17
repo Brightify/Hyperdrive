@@ -4,14 +4,21 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
 
+interface LocalOutStreamCallDescriptor<PAYLOAD, CLIENT_STREAM>: LocalCallDescriptor<PAYLOAD> {
+    val clientStreamSerializer: KSerializer<CLIENT_STREAM>
+}
+
 data class ColdBistreamCallDescriptor<REQUEST, CLIENT_STREAM, SERVER_STREAM>(
-    val identifier: ServiceCallIdentifier,
+    override val identifier: ServiceCallIdentifier,
     val outgoingSerializer: KSerializer<REQUEST>,
-    val clientStreamSerializer: KSerializer<CLIENT_STREAM>,
+    override val clientStreamSerializer: KSerializer<CLIENT_STREAM>,
     val serverStreamSerializer: KSerializer<SERVER_STREAM>,
-    val errorSerializer: RPCErrorSerializer,
-) {
-    fun calling(method: suspend (REQUEST, Flow<CLIENT_STREAM>) -> Flow<SERVER_STREAM>): CallDescriptor {
+    override val errorSerializer: RPCErrorSerializer,
+): LocalInStreamCallDescriptor<REQUEST>, LocalOutStreamCallDescriptor<REQUEST, CLIENT_STREAM> {
+
+    override val payloadSerializer: KSerializer<REQUEST> = outgoingSerializer
+
+    fun calling(method: suspend (REQUEST, Flow<CLIENT_STREAM>) -> Flow<SERVER_STREAM>): CallDescriptor<REQUEST> {
         return CallDescriptor.ColdBistream(
             identifier,
             outgoingSerializer,

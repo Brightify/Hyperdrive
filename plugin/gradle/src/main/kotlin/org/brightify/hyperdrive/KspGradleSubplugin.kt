@@ -146,7 +146,7 @@ class KspGradleSubplugin @Inject internal constructor(private val registry: Tool
 
     override fun getCompilerPluginId() = KSP_PLUGIN_ID
     override fun getPluginArtifact(): SubpluginArtifact =
-        SubpluginArtifact(groupId = "com.google.devtools.ksp", artifactId = KSP_ARTIFACT_NAME, version = "1.4.20-dev-experimental-20201204")
+        SubpluginArtifact(groupId = "com.google.devtools.ksp", artifactId = KSP_ARTIFACT_NAME, version = "1.4.30-1.0.0-alpha05")
 }
 
 // Copied from kotlin-gradle-plugin, because they are internal.

@@ -15,26 +15,21 @@ kotlin {
         nodejs()
     }
 
-    val serialization_version = "1.0.1"
-    val ktor_version = "1.5.1"
-
     sourceSets {
         val commonMain by getting {
-            kotlin.srcDir(File(buildDir, "generated/ksp/src/main/kotlin"))
-
             dependencies {
                 implementation(kotlin("stdlib-common"))
 
                 api(project(":krpc-annotations"))
-                implementation("io.ktor:ktor-client-websockets:$ktor_version")
+                implementation("io.ktor:ktor-client-websockets:${Versions.ktor}")
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
 
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2-native-mt") {
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
                     version {
-                        strictly("1.4.2-native-mt")
+                        strictly(Versions.coroutines)
                     }
                 }
             }
@@ -46,6 +41,7 @@ kotlin {
             }
         }
 
+        val jvmMain by getting
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))

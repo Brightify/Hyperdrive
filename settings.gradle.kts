@@ -7,6 +7,8 @@ pluginManagement {
     }
     plugins {
         id("org.jetbrains.dokka") version "1.4.20"
+        id("org.brightify.hyperdrive.symbol-processing") version "1.0-SNAPSHOT"
+//        id("kotlinx-atomicfu") version "0.15.1"
     }
     resolutionStrategy {
         eachPlugin {
@@ -17,6 +19,8 @@ pluginManagement {
             when (requested.id.id) {
                 "symbol-processing" ->
                     useModule("com.google.devtools.ksp:symbol-processing:${requested.version}")
+                "kotlinx-atomicfu" ->
+                    useModule("org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.15.1")
             }
         }
     }
@@ -58,8 +62,10 @@ val krpcModules = listOf(
         "api",
         "impl"
     ),
-    "processor" to emptyList()
-//    "integration" to emptyList()
+    "plugin" to emptyList(),
+    "processor" to emptyList(),
+    "integration" to emptyList(),
+    "test" to emptyList()
 )
 
 val loggingModules = listOf(

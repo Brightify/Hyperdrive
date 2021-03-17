@@ -3,13 +3,26 @@ package org.brightify.hyperdrive.krpc.api
 import kotlinx.serialization.KSerializer
 import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
 
+interface LocalCallDescriptor<PAYLOAD> {
+    val identifier: ServiceCallIdentifier
+    val payloadSerializer: KSerializer<PAYLOAD>
+    val errorSerializer: RPCErrorSerializer
+}
+
+interface LocalInStreamCallDescriptor<PAYLOAD>: LocalCallDescriptor<PAYLOAD> {
+
+}
+
 data class ClientCallDescriptor<REQUEST, RESPONSE>(
-    val identifier: ServiceCallIdentifier,
+    override val identifier: ServiceCallIdentifier,
     val outgoingSerializer: KSerializer<REQUEST>,
     val incomingSerializer: KSerializer<RESPONSE>,
-    val errorSerializer: RPCErrorSerializer,
-) {
-    fun calling(method: suspend (REQUEST) -> RESPONSE): CallDescriptor {
+    override val errorSerializer: RPCErrorSerializer,
+): LocalCallDescriptor<REQUEST> {
+
+    override val payloadSerializer: KSerializer<REQUEST> = outgoingSerializer
+
+    fun calling(method: suspend (REQUEST) -> RESPONSE): CallDescriptor<REQUEST> {
         return CallDescriptor.Single(
             identifier,
             outgoingSerializer,

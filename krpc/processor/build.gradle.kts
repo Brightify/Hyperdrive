@@ -13,19 +13,19 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":krpc-annotations"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
-    implementation("com.squareup:kotlinpoet:1.6.0")
+    implementation("com.squareup:kotlinpoet:1.7.2")
 
     implementation("com.google.devtools.ksp:symbol-processing-api:${Versions.symbolProcessing}")
 
-    implementation("com.google.auto.service:auto-service:1.0-rc4")
-    kapt("com.google.auto.service:auto-service:1.0-rc4")
+    implementation("com.google.auto.service:auto-service:1.0-rc6")
+    kapt("com.google.auto.service:auto-service:1.0-rc6")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.4")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.6")
     testImplementation("com.google.devtools.ksp:symbol-processing-api:${Versions.symbolProcessing}")
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing-ksp:1.3.4")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing-ksp:1.3.6")
     testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
 }
 

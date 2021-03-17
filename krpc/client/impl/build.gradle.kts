@@ -20,16 +20,16 @@ kotlin {
     }
 
     val ktor_version = "1.5.1"
-    val serialization_version = "1.0.1"
 
     sourceSets {
         val commonMain by getting {
             dependencies {
                 api(project(":krpc-annotations"))
                 api(project(":krpc-client-api"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
+                api(project(":krpc-shared-impl"))
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
 
                 implementation("io.ktor:ktor-client-websockets:$ktor_version")
             }

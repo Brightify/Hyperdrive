@@ -1,40 +1,42 @@
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
+
 plugins {
-    kotlin("jvm")
-    kotlin("kapt")
-    kotlin("plugin.serialization") version "1.4.30"
-}
-
-val serialization_version = "1.1.0-RC"
-dependencies {
-    testImplementation(project(":krpc-annotations"))
-    testImplementation(project(":krpc-server-api"))
-    testImplementation(project(":krpc-shared-api"))
-    testImplementation(project(":krpc-client-api"))
-
-    testImplementation(project(":krpc-server-impl"))
-    testImplementation(project(":krpc-shared-impl"))
-    testImplementation(project(":krpc-client-impl"))
-
-    testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit5"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.2-native-mt")
-
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
+    kotlin("multiplatform")
+    kotlin("plugin.serialization") version Versions.kotlin
+    id("com.google.devtools.ksp") version Versions.symbolProcessing
 }
 
 kotlin {
-    
-}
+    jvm()
 
-kapt {
-    includeCompileClasspath = true
-}
+    sourceSets {
+        val jvmTest by getting {
+            dependencies {
+//                "ksp"(project(":krpc-plugin"))
 
-tasks {
-    test {
-        useJUnitPlatform()
+                implementation(project(":krpc-annotations"))
+                implementation(project(":krpc-server-api"))
+                implementation(project(":krpc-shared-api"))
+                implementation(project(":krpc-client-api"))
+
+                implementation(project(":krpc-server-impl"))
+                implementation(project(":krpc-shared-impl"))
+                implementation(project(":krpc-client-impl"))
+
+                implementation(kotlin("test"))
+                implementation(kotlin("test-junit5"))
+                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
+
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
+            }
+
+        }
     }
+}
+
+tasks.withType<KotlinJvmTest> {
+    useJUnitPlatform()
 }

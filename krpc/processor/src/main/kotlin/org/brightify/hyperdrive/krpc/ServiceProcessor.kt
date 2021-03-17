@@ -11,11 +11,12 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.buildCodeBlock
 import com.squareup.kotlinpoet.joinToCode
 import kotlinx.coroutines.flow.Flow
-import org.brightify.hyperdrive.krpc.api.Service
+import org.brightify.hyperdrive.krpc.api.EnableKRPC
 import org.brightify.hyperdrive.krpc.util.primaryConstructor
 import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.processing.*
+import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueParameter
@@ -36,8 +37,8 @@ class ServiceProcessor: SymbolProcessor {
         this.logger = logger
     }
 
-    override fun process(resolver: Resolver) {
-        resolver.getSymbolsWithAnnotation(Service::class.qualifiedName!!).forEach { symbol ->
+    override fun process(resolver: Resolver): List<KSAnnotated> {
+        resolver.getSymbolsWithAnnotation(EnableKRPC::class.qualifiedName!!).forEach { symbol ->
             when {
                 symbol is KSClassDeclaration -> {
                     val serviceName = ClassName(symbol.packageName.asString(), symbol.simpleName.asString())
@@ -107,7 +108,7 @@ class ServiceProcessor: SymbolProcessor {
                             }
                             else -> {
                                 logger.error("Unknown input / output parameters!", method)
-                                return
+                                return emptyList()
                             }
                         }
                     }
@@ -148,14 +149,14 @@ class ServiceProcessor: SymbolProcessor {
                         .addFunction(describeService)
                         .build()
 
-                    codeGenerator.createNewFile(symbol.packageName.asString(), clientName).bufferedWriter().use {
+                    codeGenerator.createNewFile(Dependencies.ALL_FILES, symbol.packageName.asString(), clientName).bufferedWriter().use {
                         FileSpec.builder(symbol.packageName.asString(), clientName)
                             .addType(client)
                             .build()
                             .writeTo(it)
                     }
 
-                    codeGenerator.createNewFile(symbol.packageName.asString(), descriptorName.simpleName).bufferedWriter().use {
+                    codeGenerator.createNewFile(Dependencies.ALL_FILES, symbol.packageName.asString(), descriptorName.simpleName).bufferedWriter().use {
                         FileSpec.builder(symbol.packageName.asString(), descriptorName.simpleName)
                             .addType(descriptor)
                             .build()
@@ -165,6 +166,7 @@ class ServiceProcessor: SymbolProcessor {
             }
         }
         logger.info("process")
+        return emptyList()
     }
 
     override fun finish() {

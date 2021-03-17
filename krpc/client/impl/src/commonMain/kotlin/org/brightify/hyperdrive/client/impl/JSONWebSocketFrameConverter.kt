@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.client.impl
 
 import io.ktor.http.cio.websocket.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.plus
 import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
 import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
 import org.brightify.hyperdrive.krpc.api.RPCEvent
@@ -14,12 +15,16 @@ class JSONWebSocketFrameConverter<OUTGOING: RPCEvent, INCOMING: RPCEvent>(
     private val incomingDeserializer: RPCFrameDeserializationStrategy<INCOMING>
 ): WebSocketFrameConverter<Frame.Text, OUTGOING, INCOMING> {
 
+    private val format = Json {
+        serializersModule += RPCEvent.serializersModule
+    }
+
     override fun rpcFrameToWebSocketFrame(frame: OutgoingRPCFrame<OUTGOING>): Frame.Text {
-        return Frame.Text(Json.encodeToString(outgoingSerializer, frame))
+        return Frame.Text(format.encodeToString(outgoingSerializer, frame))
     }
 
     override fun rpcFrameFromWebSocketFrame(frame: Frame.Text): IncomingRPCFrame<INCOMING> {
-        return Json.decodeFromString(incomingDeserializer, frame.readText())
+        return format.decodeFromString(incomingDeserializer, frame.readText())
     }
 
 }

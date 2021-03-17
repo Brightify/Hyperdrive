@@ -1,45 +1,53 @@
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
+
 plugins {
-    kotlin("jvm")
-    kotlin("kapt")
+    kotlin("multiplatform")
     `maven-publish`
 }
 
 val ktor_version = "1.5.1"
 val serialization_version = "1.0.1"
 
-dependencies {
-    implementation(kotlin("stdlib"))
-    api(project(":krpc-server-api"))
-    api(project(":krpc-shared-api"))
-    api(project(":krpc-annotations"))
+kotlin {
+    jvm()
 
-    implementation("io.ktor:ktor-server-core:$ktor_version")
-    implementation("io.ktor:ktor-server-netty:$ktor_version")
-    implementation("io.ktor:ktor-websockets:$ktor_version")
+    sourceSets {
+        val jvmMain by getting {
+            dependencies {
+                api(project(":krpc-server-api"))
+                api(project(":krpc-shared-api"))
+                api(project(":krpc-shared-impl"))
+                api(project(":krpc-annotations"))
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$serialization_version")
+                implementation("io.ktor:ktor-server-core:$ktor_version")
+                implementation("io.ktor:ktor-server-netty:$ktor_version")
+                implementation("io.ktor:ktor-websockets:$ktor_version")
 
-    testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit5"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
-}
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
+            }
+        }
 
-kapt {
-    includeCompileClasspath = true
-}
-
-tasks {
-    test {
-        useJUnitPlatform()
-    }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(kotlin("test-junit5"))
+                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+            }
         }
     }
 }
+
+tasks.withType<KotlinJvmTest> {
+    useJUnitPlatform()
+}
+//
+//
+//publishing {
+//    publications {
+//        create<MavenPublication>("maven") {
+//            from(components["java"])
+//        }
+//    }
+//}

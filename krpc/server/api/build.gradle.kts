@@ -1,33 +1,32 @@
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
+
 plugins {
-    kotlin("jvm")
-    kotlin("kapt")
+    kotlin("multiplatform")
     `maven-publish`
 }
 
-dependencies {
-    implementation(kotlin("stdlib"))
-    api(project(":krpc-annotations"))
-    api(project(":krpc-shared-api"))
+kotlin {
+    jvm()
 
-    testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit5"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
-}
+    sourceSets {
+        val jvmMain by getting {
+            dependencies {
+                api(project(":krpc-annotations"))
+                api(project(":krpc-shared-api"))
+            }
+        }
 
-kapt {
-    includeCompileClasspath = true
-}
-
-tasks {
-    test {
-        useJUnitPlatform()
-    }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(kotlin("test-junit5"))
+                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+            }
         }
     }
+}
+
+
+tasks.withType<KotlinJvmTest> {
+    useJUnitPlatform()
 }
