@@ -62,6 +62,11 @@ val krpcModules = listOf(
 //    "integration" to emptyList()
 )
 
+val loggingModules = listOf(
+    "api"
+)
+val loggingProjects = loggingModules.map { "logging-$it" to "logging/$it" }
+
 val krpcProjects = krpcModules.flatMap {
     val (module, submodules) = it
     if (submodules.isEmpty()) {
@@ -88,7 +93,14 @@ val exampleModules = listOf(
 
 val exampleProjects = exampleModules.map { "example-$it" to "examples/$it" }
 
-val projects = mainProjects + pluginProjects + krpcProjects + multiplatformXProjects + exampleProjects
+val projects = listOf(
+    mainProjects,
+    pluginProjects,
+    krpcProjects,
+    multiplatformXProjects,
+    exampleProjects,
+    loggingProjects
+).flatten()
 
 for ((name, path) in projects) {
     include(":$name")
