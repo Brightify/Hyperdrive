@@ -79,13 +79,7 @@ object SingleCallPendingRPC {
         override suspend fun perform(payload: REQUEST): RESPONSE = run {
             open(payload)
 
-            val x = try {
-                responseDeferred.await()
-            } catch (t: Throwable) {
-                error("wtf")
-            }
-            println("ok?")
-            x
+            responseDeferred.await()
         }
 
         override suspend fun handle(frame: IncomingRPCFrame<DownstreamRPCEvent>) {

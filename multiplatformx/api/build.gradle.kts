@@ -9,9 +9,6 @@ kotlin {
     ios()
     tvos()
     macosX64()
-    watchosArm32()
-    watchosArm64()
-    watchosX86()
     js {
         browser()
         nodejs()
@@ -22,7 +19,11 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
+                    version {
+                        strictly(Versions.coroutines)
+                    }
+                }
             }
         }
         val commonTest by getting {
@@ -46,19 +47,6 @@ kotlin {
 
         val tvosMain by getting {
             dependsOn(nativeMain)
-        }
-
-        val watchosMain by creating {
-            dependsOn(nativeMain)
-        }
-        val watchosArm32Main by getting {
-            dependsOn(watchosMain)
-        }
-        val watchosArm64Main by getting {
-            dependsOn(watchosMain)
-        }
-        val watchosX86Main by getting {
-            dependsOn(watchosMain)
         }
     }
 }

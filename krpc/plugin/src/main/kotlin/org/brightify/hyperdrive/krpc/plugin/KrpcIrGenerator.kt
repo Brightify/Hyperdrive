@@ -180,7 +180,7 @@ class KrpcIrGenerator(
                     +irReturn(
                         irCallConstructor(
                             KnownType.API.serviceDescription.asSingleFqName().primaryConstructor,
-                            emptyList(),
+                            emptyList()
                         ).also { call ->
                             call.putValueArgument(0, irCall(serviceIdentifier.getter!!).also { it.dispatchReceiver = irGet(describe.dispatchReceiverParameter!!) })
                             call.putValueArgument(1, irCall(KnownType.Kotlin.listOf.asFunction { it.owner.typeParameters.count() == 1 && it.owner.valueParameters.singleOrNull()?.isVararg ?: false }).also { listCall ->
@@ -234,7 +234,7 @@ class KrpcIrGenerator(
                                                     listOfNotNull(
                                                         requestWrapperType,
                                                         rpcCall.upstreamFlowType?.element,
-                                                        rpcCall.returnType,
+                                                        rpcCall.returnType
                                                     )
                                                 ),
                                                 caller,
@@ -523,9 +523,9 @@ class KrpcIrGenerator(
             }
         }
         println("================== BEGIN <${irClass.name.asString()}> ==================")
-        println(irClass.dumpKotlinLike())
+        // println(irClass.dumpKotlinLike())
         println("==================")
-        println(irClass.dump())
+        // println(irClass.dump())
         println("================== END <${irClass.name.asString()}> ==================")
     }
 
@@ -582,7 +582,7 @@ class KrpcIrGenerator(
                         clientRequestParameters.map { it.type },
                         KrpcCall_.FlowType(clientStreamingFlow),
                         null,
-                        returnType,
+                        returnType
                     )
 
                     // KrpcCall.ClientStream(function, expectedErrors, clientRequestParameters, clientStreamingFlow, function.returnType)
@@ -596,7 +596,7 @@ class KrpcIrGenerator(
                         clientRequestParameters.map { it.type },
                         null,
                         KrpcCall_.FlowType(returnType),
-                        returnType,
+                        returnType
                     )
 
                     // KrpcCall.ServerStream(function, expectedErrors, clientRequestParameters, returnType.arguments.single().typeOrNull!!)
@@ -610,7 +610,7 @@ class KrpcIrGenerator(
                         clientRequestParameters.map { it.type },
                         null,
                         null,
-                        returnType,
+                        returnType
                     )
 
                     // KrpcCall.SingleCall(function, expectedErrors, clientRequestParameters, function.returnType)
@@ -625,7 +625,7 @@ class KrpcIrGenerator(
                 private set
 
             override fun visitVararg(expression: IrVararg): IrExpression {
-                expectedErrors = expression.elements
+                expectedErrors += expression.elements
                     .mapNotNull {
                         val elementExpression = it as? IrExpression ?: return@mapNotNull null
                         val elementSimpleType = elementExpression.type as? IrSimpleType ?: return@mapNotNull null
@@ -636,8 +636,13 @@ class KrpcIrGenerator(
             }
         }
         val visitor = ErrorAnnotationVisitor()
-        val annotation = function.getAnnotation(KnownType.Annotation.error)
-        annotation?.getValueArgument(0)?.accept(visitor,null)
+        val annotations = listOfNotNull(
+            function.getAnnotation(KnownType.Annotation.error),
+            function.returnType.getAnnotation(KnownType.Annotation.error),
+        ).toMutableList()
+        annotations += function.valueParameters.mapNotNull { it.getAnnotation(KnownType.Annotation.error) }
+        annotations += function.valueParameters.mapNotNull { it.type.getAnnotation(KnownType.Annotation.error) }
+        annotations.forEach { it.getValueArgument(0)?.accept(visitor, null) }
         return visitor.expectedErrors
     }
 

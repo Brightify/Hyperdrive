@@ -82,7 +82,18 @@ abstract class _PendingRPC<EVENT: RPCEvent>(
     }
 
     protected suspend fun launch(block: suspend CoroutineScope.() -> Unit): Job {
-        return getStateManager().launch(block)
+        return getStateManager().launch {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                logger.debug { "Frame launched block cancelled." }
+                throw e
+            } catch (t: Throwable) {
+                logger.error(t) { "Frame launched block thrown an error!" }
+                doReject(reference, t)
+                cancel("Frame launched block thrown an error!", t)
+            }
+        }
     }
 
     protected suspend fun <T> run(block: suspend CoroutineScope.() -> T): T {
@@ -164,19 +175,19 @@ abstract class _PendingRPC<EVENT: RPCEvent>(
     private suspend fun IncomingRPCFrame<EVENT>.rejectAsProtocolViolation(message: String) {
         val error = RPCProtocolViolationError(message)
         logger.error(error) { "Incoming frame $this has been rejected as protocol violation." }
-        doReject(error)
+        doReject(header.callReference, error)
     }
 
     private suspend fun <ERROR: Throwable> IncomingRPCFrame<EVENT>.reject(error: ERROR) {
         logger.error(error) { "Incoming frame $this has been rejected." }
-        doReject(error)
+        doReject(header.callReference, error)
     }
 
     // We use this method to send the error and cancel this call because other methods log the error too.
-    private suspend fun IncomingRPCFrame<EVENT>.doReject(error: Throwable) {
+    private suspend fun doReject(callReference: RPCReference, error: Throwable) {
         connection.send(
             OutgoingRPCFrame(
-                RPCFrame.Header(header.callReference, outgoingErrorEvent),
+                RPCFrame.Header(callReference, outgoingErrorEvent),
                 errorSerializer,
                 error
             )

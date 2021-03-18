@@ -25,9 +25,9 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
 
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2-native-mt") {
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
                     version {
-                        strictly("1.4.2-native-mt")
+                        strictly(Versions.coroutines)
                     }
                 }
             }

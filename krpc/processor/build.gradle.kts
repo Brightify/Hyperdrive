@@ -12,7 +12,11 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":krpc-annotations"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
+        version {
+            strictly(Versions.coroutines)
+        }
+    }
     implementation("com.squareup:kotlinpoet:1.7.2")
 
     implementation("com.google.devtools.ksp:symbol-processing-api:${Versions.symbolProcessing}")

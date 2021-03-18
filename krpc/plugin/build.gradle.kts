@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    id("com.github.gmazzo.buildconfig") version Versions.buildConfig
+    id("com.github.gmazzo.buildconfig")
 }
 
 buildConfig {

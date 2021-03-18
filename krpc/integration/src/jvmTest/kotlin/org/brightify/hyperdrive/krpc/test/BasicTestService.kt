@@ -6,9 +6,14 @@ import kotlinx.serialization.Serializable
 import org.brightify.hyperdrive.krpc.api.EnableKRPC
 import org.brightify.hyperdrive.krpc.api.error.RPCNotFoundError
 import org.brightify.hyperdrive.krpc.api.Error
+import org.brightify.hyperdrive.krpc.api.RPCError
+import org.brightify.hyperdrive.krpc.api.RPCProtocol
 
 @Serializable
-class IllegalArgumentError(override val message: String): RPCNotFoundError("Illegal argument: $message.")
+class IllegalArgumentError(override val debugMessage: String): RPCError() {
+    override val statusCode: StatusCode = StatusCode.NotFound
+}
+
 
 @EnableKRPC
 interface BasicTestService {

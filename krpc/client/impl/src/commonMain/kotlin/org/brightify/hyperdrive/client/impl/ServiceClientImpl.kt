@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.client.impl
 
 import io.ktor.utils.io.core.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -76,6 +77,8 @@ class ServiceClientImpl(
                             protocolUpgradeService.confirmProtocolSelected()
                             activeProtocol.value = protocol
                         }
+
+                        activeProtocol.value?.join()
                     }
                 } catch (e: ClosedReceiveChannelException) {
                     e.printStackTrace()
@@ -121,7 +124,13 @@ class ServiceClientImpl(
     }
 
     override suspend fun shutdown() {
-        activeProtocol.value?.close()
-        runJob.cancelAndJoin()
+        activeProtocol.value?.let {
+            if (it.isActive) {
+                it.close()
+            }
+        }
+        if (runJob.isActive) {
+            runJob.cancelAndJoin()
+        }
     }
 }

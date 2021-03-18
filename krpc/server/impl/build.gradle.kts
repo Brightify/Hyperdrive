@@ -5,9 +5,6 @@ plugins {
     `maven-publish`
 }
 
-val ktor_version = "1.5.1"
-val serialization_version = "1.0.1"
-
 kotlin {
     jvm()
 
@@ -19,9 +16,9 @@ kotlin {
                 api(project(":krpc-shared-impl"))
                 api(project(":krpc-annotations"))
 
-                implementation("io.ktor:ktor-server-core:$ktor_version")
-                implementation("io.ktor:ktor-server-netty:$ktor_version")
-                implementation("io.ktor:ktor-websockets:$ktor_version")
+                implementation("io.ktor:ktor-server-core:${Versions.ktor}")
+                implementation("io.ktor:ktor-server-netty:${Versions.ktor}")
+                implementation("io.ktor:ktor-websockets:${Versions.ktor}")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
@@ -42,12 +39,3 @@ kotlin {
 tasks.withType<KotlinJvmTest> {
     useJUnitPlatform()
 }
-//
-//
-//publishing {
-//    publications {
-//        create<MavenPublication>("maven") {
-//            from(components["java"])
-//        }
-//    }
-//}

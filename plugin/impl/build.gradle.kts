@@ -27,7 +27,7 @@ repositories {
 
 dependencies {
     api(project(":multiplatformx-plugin"))
-//    api(project(":krpc-plugin"))
+    api(project(":krpc-plugin"))
 
     compileOnly(kotlin("compiler-embeddable"))
     compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")

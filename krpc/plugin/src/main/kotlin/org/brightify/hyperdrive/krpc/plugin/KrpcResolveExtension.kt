@@ -185,10 +185,10 @@ class KrpcResolveExtension: SyntheticResolveExtension {
             isKrpcClient -> {
                 cls.secondaryConstructors = listOf(
                     ClassConstructorDescriptorImpl.create(
-                        thisDescriptor,
+                        cls,
                         Annotations.EMPTY,
                         false,
-                        thisDescriptor.source
+                        cls.source
                     ).apply {
                         initialize(
                             listOf(
@@ -407,7 +407,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
                 ).apply {
                     initialize(thisDescriptor.builtIns.stringType)
                 },
-                null,
+                null
             )
             propDescriptor.setType(
                 thisDescriptor.builtIns.stringType, emptyList(), thisDescriptor.thisAsReceiverParameter, null

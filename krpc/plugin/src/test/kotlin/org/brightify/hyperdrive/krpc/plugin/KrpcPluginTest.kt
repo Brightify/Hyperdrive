@@ -54,6 +54,7 @@ class KrpcPluginTest {
             import org.brightify.hyperdrive.krpc.api.error.RPCNotFoundError
             import kotlinx.coroutines.flow.asFlow
             import kotlinx.coroutines.flow.map
+            import org.brightify.hyperdrive.krpc.api.RPCProtocol
             
             @EnableKRPC
             interface ProcessorTestService {
@@ -92,9 +93,12 @@ class KrpcPluginTest {
             }
             
             fun x() {
-                // val a = ProcessorTestService.Client()
-                // val b = ProcessorTestService.Descriptor
-                // val c = ProcessorTestService.Descriptor.Call
+                val a = object: ProcessorTestService.Client(null as RPCProtocol) {
+                
+                }
+                val x = ProcessorTestService.Client(null as RPCProtocol)
+                val b = ProcessorTestService.Descriptor
+                val c = ProcessorTestService.Descriptor.Call
             }
         """.trimIndent())
 

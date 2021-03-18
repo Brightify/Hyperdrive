@@ -24,7 +24,11 @@ dependencies {
     compileOnly(kotlin("compiler-embeddable"))
     api(project(":plugin-api"))
     implementation(project(":multiplatformx-api"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
+        version {
+            strictly(Versions.coroutines)
+        }
+    }
 
     compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")
     kapt("com.google.auto.service:auto-service:${Versions.autoService}")

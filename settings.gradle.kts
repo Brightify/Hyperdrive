@@ -8,7 +8,9 @@ pluginManagement {
     plugins {
         id("org.jetbrains.dokka") version "1.4.20"
         id("org.brightify.hyperdrive.symbol-processing") version "1.0-SNAPSHOT"
-//        id("kotlinx-atomicfu") version "0.15.1"
+        id("com.github.johnrengelman.shadow") version "6.1.0"
+        id("com.github.gmazzo.buildconfig") version "2.0.2"
+        kotlin("plugin.serialization") version "1.4.31"
     }
     resolutionStrategy {
         eachPlugin {
