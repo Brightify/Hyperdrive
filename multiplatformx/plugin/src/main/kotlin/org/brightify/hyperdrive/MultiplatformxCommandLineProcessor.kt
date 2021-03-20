@@ -13,17 +13,17 @@ class MultiplatformxCommandLineProcessor: CommandLineProcessor {
     override val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
 
     private val options = listOf(
-        Options.autoFactoryEnabled,
         Options.enabled,
+        Options.autoFactoryEnabled,
         Options.viewModelEnabled
     )
     private val optionsMap = options.map { it.optionName to it }.toMap()
     override val pluginOptions: Collection<AbstractCliOption> = options.map { it.toCliOption() }
 
     object Options {
-        val enabled = PluginOption("multiplatformx.enabled", "<true|false>", "")
-        val autoFactoryEnabled = PluginOption("multiplatformx.autofactory.enabled", "<true|false>", "")
-        var viewModelEnabled = PluginOption("multiplatformx.viewmodel.enabled", "<true|false>", "")
+        val enabled = PluginOption("enabled", "<true|false>", "")
+        val autoFactoryEnabled = PluginOption("autofactory.enabled", "<true|false>", "")
+        var viewModelEnabled = PluginOption("viewmodel.enabled", "<true|false>", "")
     }
 
     override fun processOption(option: AbstractCliOption, value: String, configuration: CompilerConfiguration) {

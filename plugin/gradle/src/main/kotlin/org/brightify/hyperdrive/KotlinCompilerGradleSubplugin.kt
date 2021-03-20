@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive
 
+import org.brightify.hyperdrive.krpc.plugin.KrpcCommandLineProcessor
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.findByType
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
@@ -29,16 +30,15 @@ class KotlinCompilerGradleSubplugin: KotlinCompilerPluginSupportPlugin {
             }
 
             val krpc = hyperdrive.krpc
-//            val krpcOptions = if (krpc != null) {
-//                listOf(
-//                    option(Options.Krpc.enabled, "true")
-//                )
-//            } else {
-//                listOf(
-//                    option(Options.Krpc.enabled, "false")
-//                )
-//            }
-            val krpcOptions = emptyList<SubpluginOption>()
+           val krpcOptions = if (krpc != null) {
+               listOf(
+                   option(KrpcCommandLineProcessor.Options.enabled, "true")
+               )
+           } else {
+               listOf(
+                   option(KrpcCommandLineProcessor.Options.enabled, "false")
+               )
+           }
 
             multiplatformXOptions + krpcOptions
         }

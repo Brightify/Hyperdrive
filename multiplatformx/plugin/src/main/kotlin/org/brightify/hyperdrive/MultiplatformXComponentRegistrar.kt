@@ -19,14 +19,14 @@ import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 object MultiplatformXConfigurationKeys {
-    val isEnabled = CompilerConfigurationKey<Boolean>("multiplatformx.enabled")
+    val isEnabled = CompilerConfigurationKey<Boolean>("enabled")
 
     object AutoFactory {
-        val isEnabled = CompilerConfigurationKey<Boolean>("multiplatformx.autofactory.enabled")
+        val isEnabled = CompilerConfigurationKey<Boolean>("autofactory.enabled")
     }
 
     object ViewModel {
-        val isEnabled = CompilerConfigurationKey<Boolean>("multiplatformx.viewmodel.enabled")
+        val isEnabled = CompilerConfigurationKey<Boolean>("viewmodel.enabled")
     }
 }
 

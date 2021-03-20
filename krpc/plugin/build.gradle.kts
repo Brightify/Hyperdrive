@@ -8,7 +8,7 @@ plugins {
 
 buildConfig {
     packageName(project.group.toString())
-    buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"org.brightify.hyperdrive\"")
+    buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"org.brightify.hyperdrive.krpc\"")
 }
 
 tasks.withType(KotlinCompile::class).all {
@@ -25,6 +25,7 @@ repositories {
 }
 
 dependencies {
+    api(project(":plugin-api"))
     implementation(kotlin("stdlib"))
     compileOnly(kotlin("compiler-embeddable"))
     implementation(project(":krpc-shared-api"))

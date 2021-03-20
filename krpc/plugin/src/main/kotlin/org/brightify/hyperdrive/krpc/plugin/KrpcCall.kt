@@ -12,6 +12,7 @@ class KrpcCall_(
     val function: IrFunction,
     val transportFunctionName: Name,
     val descriptorName: FqName,
+    // val descriptorParameters: List<IrType>,
     val expectedErrors: List<IrSimpleType>,
     val requestType: List<IrType>,
     val upstreamFlowType: FlowType?,

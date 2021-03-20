@@ -40,7 +40,7 @@ kotlin {
     ios {
         binaries {
             framework {
-                baseName = "MultiplatformXKit"
+                baseName = "KrpcKit"
                 embedBitcode = BitcodeEmbeddingMode.BITCODE
             }
         }
@@ -52,9 +52,10 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":multiplatformx-api"))
+                implementation(project(":krpc-shared-api"))
 
                 implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
                     version {
                         strictly(Versions.coroutines)
@@ -87,9 +88,7 @@ kotlin {
         compilations.all {
             kotlinOptions {
                 freeCompilerArgs += listOf(
-                    "-P", "plugin:org.brightify.hyperdrive.multiplatformx:enabled=true",
-                    "-P", "plugin:org.brightify.hyperdrive.multiplatformx:viewmodel.enabled=true",
-                    "-P", "plugin:org.brightify.hyperdrive.multiplatformx:autofactory.enabled=true"
+                    "-P", "plugin:org.brightify.hyperdrive.krpc:enabled=true"
                 )
             }
         }
@@ -100,7 +99,7 @@ kotlin {
 
         val mode = System.getenv("CONFIGURATION") ?: "DEBUG"
 
-        baseName = "MultiplatformXKit"
+        baseName = "KrpcKit"
         destinationDir = File(buildDir, "xcode-frameworks")
         from(
             iphonesimulator.binaries.getFramework(mode),

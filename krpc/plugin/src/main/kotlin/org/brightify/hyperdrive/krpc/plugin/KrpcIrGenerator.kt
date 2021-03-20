@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
+import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
@@ -49,6 +50,7 @@ import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getSimpleFunction
+import org.jetbrains.kotlin.ir.util.irConstructorCall
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.properties
@@ -77,7 +79,7 @@ class KrpcIrGenerator(
                     visibility = DescriptorVisibilities.PRIVATE
                     isFinal = true
                 }
-                val calls = getCalls(irClass.parentAsClass) //.filter { it.value is KrpcCall.SingleCall }
+                val calls = getCalls(irClass.parentAsClass)
                 val transport = pluginContext.referenceClass(KnownType.API.transport)!!
                 val descriptorClass = irClass.parentAsClass.declarations.mapNotNull { it as? IrClass }.single { it.name == KnownType.Nested.descriptor }
                 val descriptorCallClass = descriptorClass.declarations.mapNotNull { it as? IrClass }.single { it.name == KnownType.Nested.call }
@@ -96,29 +98,35 @@ class KrpcIrGenerator(
 
                         val requestWrapper = pluginContext.referenceClass(KnownType.API.requestWrapper(rpcCall.requestType.count()))!!
                         +irReturn(
-                            irCall(transport.functions.single { it.owner.name == rpcCall.transportFunctionName }).also { call ->
-                                call.dispatchReceiver = irGetField(getDispatchReceiver, transportField)
-
+                            irCall(
+                                transport.functions.single { it.owner.name == rpcCall.transportFunctionName },
+                                rpcCall.downstreamFlowType?.element ?: rpcCall.returnType,
                                 listOfNotNull(
                                     requestWrapper.typeWith(rpcCall.requestType),
                                     rpcCall.upstreamFlowType?.element,
                                     rpcCall.downstreamFlowType?.element ?: rpcCall.returnType
-                                ).forEachIndexed { index, type ->
-                                    call.putTypeArgument(index, type)
-                                }
+                                )
+                            ).also { call ->
+                                call.dispatchReceiver = irGetField(getDispatchReceiver, transportField)
 
-                                call.putValueArgument(0, irCall(callDescription.getter!!).also { it.dispatchReceiver = irGetObject(descriptorCallClass.symbol) })
+                                call.putValueArgument(0, irCall(callDescription.getter!!).also {
+                                    it.dispatchReceiver = irGetObject(descriptorCallClass.symbol)
+                                })
                                 call.putValueArgument(1, if (rpcCall.requestType.isEmpty()) {
                                     irGetObject(pluginContext.irBuiltIns.unitClass)
                                 } else {
-                                    irCallConstructor(
-                                        requestWrapper.constructors.single { it.owner.isPrimary },
-                                        rpcCall.requestType
-                                    ).also { call ->
-                                        for (index in rpcCall.requestType.indices) {
-                                            call.putValueArgument(index, irGet(function.valueParameters[index]))
-                                        }
-                                    }
+                                    val requestWrapperConstructor = requestWrapper.constructors.single { it.owner.isPrimary }
+                                    irConstructorCall(
+                                        irCall(
+                                            requestWrapperConstructor.owner
+                                        ).also { call ->
+                                            for (index in rpcCall.requestType.indices) {
+                                                call.putTypeArgument(index, function.valueParameters[index].type)
+                                                call.putValueArgument(index, irGet(function.valueParameters[index]))
+                                            }
+                                        },
+                                        requestWrapperConstructor
+                                    )
                                 })
                                 if (rpcCall.upstreamFlowType != null) {
                                     // TODO: Unsafe
@@ -126,40 +134,8 @@ class KrpcIrGenerator(
                                 }
                             }
                         )
-
-                        // +irReturn(
-                        //     when (rpcCall) {
-                        //         is KrpcCall.SingleCall -> {
-                        //             val requestWrapper = pluginContext.referenceClass(KnownType.API.requestWrapper(rpcCall.requestType.count()))!!
-                        //             irCall(transport.functions.single { it.owner.name == Name.identifier("singleCall") }).also { call ->
-                        //                 call.dispatchReceiver = irGetField(getDispatchReceiver, transportField)
-                        //
-                        //                 call.putTypeArgument(0, requestWrapper.typeWith(rpcCall.requestType.map { it.type }))
-                        //                 call.putTypeArgument(1, rpcCall.responseType)
-                        //                 call.putValueArgument(0, irCall(callDescription.getter!!).also { it.dispatchReceiver = irGetObject(descriptorCallClass.symbol) })
-                        //                 call.putValueArgument(1, if (rpcCall.requestType.isEmpty()) {
-                        //                         irGetObject(pluginContext.irBuiltIns.unitClass)
-                        //                     } else {
-                        //                         irCallConstructor(
-                        //                             requestWrapper.constructors.single { it.owner.isPrimary },
-                        //                             rpcCall.requestType.map { it.type }
-                        //                         ).also { call ->
-                        //                             for ((index, parameter) in rpcCall.requestType.withIndex()) {
-                        //                                 call.putValueArgument(index, irGet(function.valueParameters[index]))
-                        //                             }
-                        //                         }
-                        //                     }
-                        //                 )
-                        //             }
-                        //         }
-                        //         is KrpcCall.ClientStream -> TODO()
-                        //         is KrpcCall.ServerStream -> TODO()
-                        //         is KrpcCall.BiStream -> TODO()
-                        //     }
-                        // )
                     }
                 }
-                irClass.dump()
             }
             irClass.isKrpcDescriptor -> {
                 val calls = getCalls(irClass.parentAsClass)
@@ -183,8 +159,11 @@ class KrpcIrGenerator(
                             emptyList()
                         ).also { call ->
                             call.putValueArgument(0, irCall(serviceIdentifier.getter!!).also { it.dispatchReceiver = irGet(describe.dispatchReceiverParameter!!) })
-                            call.putValueArgument(1, irCall(KnownType.Kotlin.listOf.asFunction { it.owner.typeParameters.count() == 1 && it.owner.valueParameters.singleOrNull()?.isVararg ?: false }).also { listCall ->
-                                listCall.putTypeArgument(0, KnownType.API.callDescriptor.asClass().typeWith())
+                            call.putValueArgument(1, irCall(
+                                KnownType.Kotlin.listOf.asFunction { it.owner.typeParameters.count() == 1 && it.owner.valueParameters.singleOrNull()?.isVararg ?: false },
+                                KnownType.API.callDescriptor.asClass().starProjectedType
+                            ).also { listCall ->
+                                listCall.putTypeArgument(0, KnownType.API.callDescriptor.asClass().starProjectedType)
                                 listCall.putValueArgument(0, IrVarargImpl(
                                     listCall.startOffset,
                                     listCall.endOffset,
@@ -209,7 +188,9 @@ class KrpcIrGenerator(
                                                 }
                                                 it.body = DeclarationIrBuilder(pluginContext, it.symbol).irBlockBody {
                                                     +irReturn(
-                                                        irCall(serviceClass.functions.single { it.name == name }).also { call ->
+                                                        irCall(
+                                                            serviceClass.functions.single { it.name == name }
+                                                        ).also { call ->
                                                             call.dispatchReceiver = irGet(serviceParameter)
 
                                                             for (index in rpcCall.requestType.indices) {
@@ -230,7 +211,7 @@ class KrpcIrGenerator(
                                             call.putValueArgument(0, IrFunctionExpressionImpl(
                                                 call.startOffset,
                                                 call.endOffset,
-                                                pluginContext.irBuiltIns.suspendFunction(1).typeWith(
+                                                pluginContext.referenceClass(FqName("kotlin.coroutines.SuspendFunction1"))!!.typeWith(
                                                     listOfNotNull(
                                                         requestWrapperType,
                                                         rpcCall.upstreamFlowType?.element,
@@ -241,48 +222,6 @@ class KrpcIrGenerator(
                                                 IrStatementOrigin.LAMBDA
                                             ))
                                         }
-
-                                        // when (rpcCall) {
-                                        //     is KrpcCall.SingleCall -> irCall(KnownType.API.clientCallDescriptor.asClass().getSimpleFunction("calling")!!).also { call ->
-                                        //         val requestWrapperClass = KnownType.API.requestWrapper(rpcCall.requestType.count()).asClass()
-                                        //         val requestWrapperType = requestWrapperClass.typeWith(rpcCall.requestType.map { it.type })
-                                        //         val caller = pluginContext.irFactory.buildFun {
-                                        //             isSuspend = true
-                                        //             this.name = Name.special("<anonymous>")
-                                        //             origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-                                        //             returnType = rpcCall.responseType
-                                        //             visibility = DescriptorVisibilities.LOCAL
-                                        //         }.also {
-                                        //             it.parent = describe
-                                        //             val request = it.addValueParameter("request", requestWrapperType)
-                                        //             it.body = DeclarationIrBuilder(pluginContext, it.symbol).irBlockBody {
-                                        //                 +irReturn(
-                                        //                     irCall(serviceClass.functions.single { it.name == name }).also { call ->
-                                        //                         call.dispatchReceiver = irGet(serviceParameter)
-                                        //
-                                        //                         for (index in rpcCall.requestType.indices) {
-                                        //                             call.putValueArgument(index, irCall(requestWrapperClass.functions.single { it.owner.name == Name.identifier("component${index + 1}") }).also { call ->
-                                        //                                 call.dispatchReceiver = irGet(request)
-                                        //                             })
-                                        //                         }
-                                        //                     }
-                                        //                 )
-                                        //             }
-                                        //         }
-                                        //
-                                        //         call.dispatchReceiver = irCall(descriptorCallClass.property(name).getter!!).also { it.dispatchReceiver = irGetObject(descriptorCallClass.symbol) }
-                                        //         call.putValueArgument(0, IrFunctionExpressionImpl(
-                                        //             call.startOffset,
-                                        //             call.endOffset,
-                                        //             pluginContext.irBuiltIns.suspendFunction(1).typeWith(requestWrapperType, rpcCall.responseType),
-                                        //             caller,
-                                        //             IrStatementOrigin.LAMBDA
-                                        //         ))
-                                        //     }
-                                        //     is KrpcCall.ClientStream -> TODO()
-                                        //     is KrpcCall.ServerStream -> TODO()
-                                        //     is KrpcCall.BiStream -> TODO()
-                                        // }
                                     }
                                 ))
                             })
@@ -306,226 +245,96 @@ class KrpcIrGenerator(
                     val requestWrapperType = KnownType.API.requestWrapper(rpcCall.requestType.count()).asClass().typeWith(rpcCall.requestType)
                     property.getter!!.body = DeclarationIrBuilder(pluginContext, property.getter!!.symbol).irBlockBody {
                         +irReturn(
-                            irCallConstructor(
-                                rpcCall.descriptorName.primaryConstructor,
-                                listOfNotNull(
-                                    requestWrapperType,
-                                    rpcCall.upstreamFlowType?.element,
-                                    rpcCall.downstreamFlowType?.element ?: rpcCall.returnType
-                                )
-                            ).also { call ->
-                                call.putValueArgument(0, irCallConstructor(KnownType.API.serviceCallIdentifier.primaryConstructor, emptyList()).also { call ->
-                                    call.putValueArgument(0, irCall(serviceIdentifier.getter!!).also {
-                                        it.dispatchReceiver = irGetObject(descriptorClass.symbol)
+                            irConstructorCall(
+                                irCall(
+                                    rpcCall.descriptorName.primaryConstructor
+                                ).also { call ->
+                                    call.putValueArgument(0, irCallConstructor(KnownType.API.serviceCallIdentifier.primaryConstructor, emptyList()).also { call ->
+                                        call.putValueArgument(0, irCall(serviceIdentifier.getter!!).also {
+                                            it.dispatchReceiver = irGetObject(descriptorClass.symbol)
+                                        })
+                                        call.putValueArgument(1, irString(property.name.asString()))
                                     })
-                                    call.putValueArgument(1, irString(property.name.asString()))
-                                })
-                                val arguments = listOfNotNull(
-                                    requestWrapperType,
-                                    rpcCall.upstreamFlowType?.element,
-                                    rpcCall.downstreamFlowType?.element ?: rpcCall.returnType
-                                )
 
-                                arguments.forEachIndexed { index, type ->
-                                    call.putValueArgument(index + 1,
-                                        irCall(serializer).also { call ->
-                                            call.putTypeArgument(0, type)
-                                        }
+                                    listOfNotNull(
+                                        requestWrapperType,
+                                        rpcCall.upstreamFlowType?.element,
+                                        rpcCall.downstreamFlowType?.element ?: rpcCall.returnType
+                                    ).forEachIndexed { index, type ->
+                                        call.putTypeArgument(index, type)
+                                    }
+
+                                    val arguments = listOfNotNull(
+                                        requestWrapperType,
+                                        rpcCall.upstreamFlowType?.element,
+                                        rpcCall.downstreamFlowType?.element ?: rpcCall.returnType
                                     )
-                                }
-                                call.putValueArgument(arguments.count() + 1,
-                                    irCallConstructor(KnownType.API.rpcErrorSerializer.primaryConstructor, emptyList()).also { call ->
-                                        if (rpcCall.expectedErrors.isNotEmpty()) {
-                                            val polymorphicModuleBuilder = KnownType.Serialization.polymorphicModuleBuilder.asClass()
-                                            val polymorphicModuleBuilderType = polymorphicModuleBuilder.typeWith(KnownType.API.rpcError.asClass().defaultType)
-                                            val expectedErrorBuilder = pluginContext.irFactory.buildFun {
-                                                this.name = Name.special("<anonymous>")
-                                                origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-                                                returnType = pluginContext.irBuiltIns.unitType
-                                                visibility = DescriptorVisibilities.LOCAL
-                                            }.also {
-                                                it.parent = property.getter!!
-                                                val builder = it.addExtensionReceiver(polymorphicModuleBuilderType)
-                                                it.body = DeclarationIrBuilder(pluginContext, it.symbol).irBlockBody {
-                                                    for (error in rpcCall.expectedErrors) {
-                                                        +irCall(polymorphicModuleBuilder.getSimpleFunction("subclass")!!).also { call ->
-                                                            call.dispatchReceiver = irGet(builder)
-                                                            call.putTypeArgument(0, error)
-                                                            call.putValueArgument(0, IrClassReferenceImpl(call.startOffset, call.endOffset, error, error.classifier, error))
-                                                            call.putValueArgument(1, irCall(serializer).also { call ->
+
+                                    arguments.forEachIndexed { index, type ->
+                                        call.putValueArgument(index + 1,
+                                            irCall(serializer).also { call ->
+                                                call.putTypeArgument(0, type)
+                                            }
+                                        )
+                                    }
+                                    call.putValueArgument(arguments.count() + 1,
+                                        irCallConstructor(KnownType.API.rpcErrorSerializer.primaryConstructor, emptyList()).also { call ->
+                                            if (rpcCall.expectedErrors.isNotEmpty()) {
+                                                val polymorphicModuleBuilder = KnownType.Serialization.polymorphicModuleBuilder.asClass()
+                                                val polymorphicModuleBuilderType = polymorphicModuleBuilder.typeWith(KnownType.API.rpcError.asClass().defaultType)
+                                                val expectedErrorBuilder = pluginContext.irFactory.buildFun {
+                                                    this.name = Name.special("<anonymous>")
+                                                    origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+                                                    returnType = pluginContext.irBuiltIns.unitType
+                                                    visibility = DescriptorVisibilities.LOCAL
+                                                }.also {
+                                                    it.parent = property.getter!!
+                                                    val builder = it.addExtensionReceiver(polymorphicModuleBuilderType)
+                                                    it.body = DeclarationIrBuilder(pluginContext, it.symbol).irBlockBody {
+                                                        for (error in rpcCall.expectedErrors) {
+                                                            +irCall(polymorphicModuleBuilder.getSimpleFunction("subclass")!!).also { call ->
+                                                                call.dispatchReceiver = irGet(builder)
                                                                 call.putTypeArgument(0, error)
-                                                            })
+                                                                call.putValueArgument(0, IrClassReferenceImpl(call.startOffset, call.endOffset, error, error.classifier, error))
+                                                                call.putValueArgument(1, irCall(serializer).also { call ->
+                                                                    call.putTypeArgument(0, error)
+                                                                })
+                                                            }
                                                         }
                                                     }
                                                 }
-                                            }
 
-                                            call.putValueArgument(0, IrFunctionExpressionImpl(
-                                                call.startOffset,
-                                                call.endOffset,
-                                                pluginContext.irBuiltIns.function(1).typeWith(polymorphicModuleBuilderType, pluginContext.irBuiltIns.unitType),
-                                                expectedErrorBuilder,
-                                                IrStatementOrigin.LAMBDA
-                                            ))
+                                                call.putValueArgument(0, IrFunctionExpressionImpl(
+                                                    call.startOffset,
+                                                    call.endOffset,
+                                                    pluginContext.irBuiltIns.function(1).typeWith(polymorphicModuleBuilderType, pluginContext.irBuiltIns.unitType),
+                                                    expectedErrorBuilder,
+                                                    IrStatementOrigin.LAMBDA
+                                                ))
+                                            }
                                         }
-                                    }
-                                )
-                            }
+                                    )
+                                },
+                                rpcCall.descriptorName.primaryConstructor
+                            )
                         )
                     }
-
-                    // property.getter!!.body = when (rpcCall) {
-                    //     is KrpcCall.SingleCall -> {
-                    //         DeclarationIrBuilder(pluginContext, property.getter!!.symbol).irBlockBody {
-                    //             +irReturn(
-                    //                 irCallConstructor(
-                    //                     KnownType.API.clientCallDescriptor.primaryConstructor,
-                    //                     listOf(
-                    //                         requestWrapperType,
-                    //                         rpcCall.responseType
-                    //                     )
-                    //                 ).also { call ->
-                    //                     call.putValueArgument(0, irCallConstructor(KnownType.API.serviceCallIdentifier.primaryConstructor, emptyList()).also { call ->
-                    //                         call.putValueArgument(0, irCall(serviceIdentifier.getter!!).also {
-                    //                             it.dispatchReceiver = irGetObject(descriptorClass.symbol)
-                    //                         })
-                    //                         call.putValueArgument(1, irString(property.name.asString()))
-                    //                     })
-                    //                     call.putValueArgument(1,
-                    //                         irCall(serializer).also { call ->
-                    //                             call.putTypeArgument(0, requestWrapperType)
-                    //                         }
-                    //                     )
-                    //                     call.putValueArgument(2,
-                    //                         irCall(serializer).also { call ->
-                    //                             call.putTypeArgument(0, rpcCall.responseType)
-                    //                         }
-                    //                     )
-                    //                     call.putValueArgument(3,
-                    //                         irCallConstructor(KnownType.API.rpcErrorSerializer.primaryConstructor, emptyList()).also { call ->
-                    //                             if (rpcCall.expectedErrors.isNotEmpty()) {
-                    //                                 val polymorphicModuleBuilder = KnownType.Serialization.polymorphicModuleBuilder.asClass()
-                    //                                 val polymorphicModuleBuilderType = polymorphicModuleBuilder.typeWith(KnownType.API.rpcError.asClass().defaultType)
-                    //                                 val expectedErrorBuilder = pluginContext.irFactory.buildFun {
-                    //                                     this.name = Name.special("<anonymous>")
-                    //                                     origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-                    //                                     returnType = pluginContext.irBuiltIns.unitType
-                    //                                     visibility = DescriptorVisibilities.LOCAL
-                    //                                 }.also {
-                    //                                     it.parent = property.getter!!
-                    //                                     val builder = it.addExtensionReceiver(polymorphicModuleBuilderType)
-                    //                                     it.body = DeclarationIrBuilder(pluginContext, it.symbol).irBlockBody {
-                    //                                         for (error in rpcCall.expectedErrors) {
-                    //                                             +irCall(polymorphicModuleBuilder.getSimpleFunction("subclass")!!).also { call ->
-                    //                                                 call.dispatchReceiver = irGet(builder)
-                    //                                                 call.putTypeArgument(0, error)
-                    //                                                 call.putValueArgument(0, IrClassReferenceImpl(call.startOffset, call.endOffset, error, error.classifier, error))
-                    //                                                 call.putValueArgument(1, irCall(serializer).also { call ->
-                    //                                                     call.putTypeArgument(0, error)
-                    //                                                 })
-                    //                                             }
-                    //                                         }
-                    //                                     }
-                    //                                 }
-                    //
-                    //                                 call.putValueArgument(0, IrFunctionExpressionImpl(
-                    //                                     call.startOffset,
-                    //                                     call.endOffset,
-                    //                                     pluginContext.irBuiltIns.function(1).typeWith(polymorphicModuleBuilderType, pluginContext.irBuiltIns.unitType),
-                    //                                     expectedErrorBuilder,
-                    //                                     IrStatementOrigin.LAMBDA
-                    //                                 ))
-                    //                             }
-                    //                         }
-                    //                     )
-                    //                 }
-                    //             )
-                    //         }
-                    //     }
-                    //     is KrpcCall.ClientStream -> {
-                    //         DeclarationIrBuilder(pluginContext, property.getter!!.symbol).irBlockBody {
-                    //             +irReturn(
-                    //                 irCallConstructor(
-                    //                     KnownType.API.coldUpstreamCallDescriptor.primaryConstructor,
-                    //                     listOf(
-                    //                         requestWrapperType,
-                    //                         rpcCall.upstreamFlow.type,
-                    //                         rpcCall.responseType,
-                    //                     )
-                    //                 ).also { call ->
-                    //                     call.putValueArgument(0, irCallConstructor(KnownType.API.serviceCallIdentifier.primaryConstructor, emptyList()).also { call ->
-                    //                         call.putValueArgument(0, irCall(serviceIdentifier.getter!!).also {
-                    //                             it.dispatchReceiver = irGetObject(descriptorClass.symbol)
-                    //                         })
-                    //                         call.putValueArgument(1, irString(property.name.asString()))
-                    //                     })
-                    //                     call.putValueArgument(1,
-                    //                         irCall(serializer).also { call ->
-                    //                             call.putTypeArgument(0, requestWrapperType)
-                    //                         }
-                    //                     )
-                    //                     call.putValueArgument(2,
-                    //                         irCall(serializer).also { call ->
-                    //                             call.putTypeArgument(0, rpcCall.upstreamFlow.type)
-                    //                         }
-                    //                     )
-                    //                     call.putValueArgument(3,
-                    //                         irCall(serializer).also { call ->
-                    //                             call.putTypeArgument(0, rpcCall.responseType)
-                    //                         }
-                    //                     )
-                    //                     call.putValueArgument(4,
-                    //                         irCallConstructor(KnownType.API.rpcErrorSerializer.primaryConstructor, emptyList()).also { call ->
-                    //                             if (rpcCall.expectedErrors.isNotEmpty()) {
-                    //                                 val polymorphicModuleBuilder = KnownType.Serialization.polymorphicModuleBuilder.asClass()
-                    //                                 val polymorphicModuleBuilderType = polymorphicModuleBuilder.typeWith(KnownType.API.rpcError.asClass().defaultType)
-                    //                                 val expectedErrorBuilder = pluginContext.irFactory.buildFun {
-                    //                                     this.name = Name.special("<anonymous>")
-                    //                                     origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-                    //                                     returnType = pluginContext.irBuiltIns.unitType
-                    //                                     visibility = DescriptorVisibilities.LOCAL
-                    //                                 }.also {
-                    //                                     it.parent = property.getter!!
-                    //                                     val builder = it.addExtensionReceiver(polymorphicModuleBuilderType)
-                    //                                     it.body = DeclarationIrBuilder(pluginContext, it.symbol).irBlockBody {
-                    //                                         for (error in rpcCall.expectedErrors) {
-                    //                                             +irCall(polymorphicModuleBuilder.getSimpleFunction("subclass")!!).also { call ->
-                    //                                                 call.dispatchReceiver = irGet(builder)
-                    //                                                 call.putTypeArgument(0, error)
-                    //                                                 call.putValueArgument(0, IrClassReferenceImpl(call.startOffset, call.endOffset, error, error.classifier, error))
-                    //                                                 call.putValueArgument(1, irCall(serializer).also { call ->
-                    //                                                     call.putTypeArgument(0, error)
-                    //                                                 })
-                    //                                             }
-                    //                                         }
-                    //                                     }
-                    //                                 }
-                    //
-                    //                                 call.putValueArgument(0, IrFunctionExpressionImpl(
-                    //                                     call.startOffset,
-                    //                                     call.endOffset,
-                    //                                     pluginContext.irBuiltIns.function(1).typeWith(polymorphicModuleBuilderType, pluginContext.irBuiltIns.unitType),
-                    //                                     expectedErrorBuilder,
-                    //                                     IrStatementOrigin.LAMBDA
-                    //                                 ))
-                    //                             }
-                    //                         }
-                    //                     )
-                    //                 }
-                    //             )
-                    //         }
-                    //     }
-                    //     is KrpcCall.ServerStream -> TODO()
-                    //     is KrpcCall.BiStream -> TODO()
-                    // }
                 }
 
             }
         }
         println("================== BEGIN <${irClass.name.asString()}> ==================")
-        // println(irClass.dumpKotlinLike())
+        try {
+            println(irClass.dumpKotlinLike())
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
         println("==================")
-        // println(irClass.dump())
+        try {
+            println(irClass.dump())
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
         println("================== END <${irClass.name.asString()}> ==================")
     }
 

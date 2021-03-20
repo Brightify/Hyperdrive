@@ -4,6 +4,12 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     `maven-publish`
+    id("com.github.gmazzo.buildconfig")
+}
+
+buildConfig {
+    packageName(project.group.toString())
+    buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"org.brightify.hyperdrive.multiplatformx\"")
 }
 
 tasks.withType(KotlinCompile::class).all {

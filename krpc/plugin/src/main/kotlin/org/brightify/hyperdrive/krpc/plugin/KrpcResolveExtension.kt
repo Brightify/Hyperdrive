@@ -22,11 +22,13 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.parentClassOrNull
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.synthetics.SyntheticClassOrObjectDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
+import org.jetbrains.kotlin.resolve.descriptorUtil.getKotlinTypeRefiner
 import org.jetbrains.kotlin.resolve.descriptorUtil.isSubclassOf
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
@@ -36,7 +38,10 @@ import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
+import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.asSimpleType
+import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.createProjection
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.types.typeUtil.replaceArgumentsWithStarProjections
@@ -127,7 +132,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
         super.addSyntheticSupertypes(thisDescriptor, supertypes)
 
         if (thisDescriptor.isContainingClassKrpcEnabled) {
-            supertypes.add(thisDescriptor.module.builtIns.anyType)
+            // supertypes.add(thisDescriptor.module.builtIns.anyType)
 
             when {
                 thisDescriptor.isKrpcClient ->
@@ -424,13 +429,67 @@ class KrpcResolveExtension: SyntheticResolveExtension {
 
         val isServerStream = member.returnTypeOrNothing.isSubtypeOf(flow.defaultType.replaceArgumentsWithStarProjections())
         val isClientStream = member.valueParameters.lastOrNull()?.type?.isSubtypeOf(flow.defaultType.replaceArgumentsWithStarProjections()) ?: false
+        val payloadParameters = if (isClientStream) member.valueParameters.dropLast(1) else member.valueParameters
 
-        return findClassAcrossModuleDependencies(ClassId.topLevel(when {
-            isServerStream && isClientStream -> KnownType.API.coldBistreamCallDescriptor
-            isClientStream -> KnownType.API.coldUpstreamCallDescriptor
-            isServerStream -> KnownType.API.coldDownstreamCallDescriptor
-            else -> KnownType.API.clientCallDescriptor
-        }))?.defaultType
+        val requestWrapperProjection = createProjection(
+            KotlinTypeFactory.simpleNotNullType(
+                Annotations.EMPTY,
+                KnownType.API.requestWrapper(payloadParameters.count()).asClassDescriptor(this),
+                payloadParameters.map {
+                    createProjection(it.type, Variance.INVARIANT, null)
+                }
+            ),
+            Variance.INVARIANT,
+            null
+        )
+
+        return when {
+            isServerStream && isClientStream -> {
+                KotlinTypeFactory.simpleNotNullType(
+                    Annotations.EMPTY,
+                    KnownType.API.coldBistreamCallDescriptor.asClassDescriptor(this),
+                    listOf(
+                        requestWrapperProjection,
+                        createProjection(member.valueParameters.last().typeParameters.first().defaultType, Variance.INVARIANT, null),
+                        createProjection(member.returnType!!.arguments.first().type, Variance.INVARIANT, null)
+                    )
+                )
+            }
+            isClientStream -> {
+                KotlinTypeFactory.simpleNotNullType(
+                    Annotations.EMPTY,
+                    KnownType.API.coldUpstreamCallDescriptor.asClassDescriptor(this),
+                    listOf(
+                        requestWrapperProjection,
+                        createProjection(member.valueParameters.last().typeParameters.first().defaultType, Variance.INVARIANT, null),
+                        createProjection(member.returnType!!, Variance.INVARIANT, null)
+                    )
+                )
+            }
+            isServerStream -> {
+                KotlinTypeFactory.simpleNotNullType(
+                    Annotations.EMPTY,
+                    KnownType.API.coldDownstreamCallDescriptor.asClassDescriptor(this),
+                    listOf(
+                        requestWrapperProjection,
+                        createProjection(member.returnType!!.arguments.first().type, Variance.INVARIANT, null)
+                    )
+                )
+            }
+            else -> {
+                KotlinTypeFactory.simpleNotNullType(
+                    Annotations.EMPTY,
+                    KnownType.API.clientCallDescriptor.asClassDescriptor(this),
+                    listOf(
+                        requestWrapperProjection,
+                        createProjection(member.returnType!!, Variance.INVARIANT, null)
+                    )
+                )
+            }
+        }
     }
 
+    private fun FqName.asClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
+        return module.findClassAcrossModuleDependencies(ClassId.topLevel(this))!!
+    }
 }

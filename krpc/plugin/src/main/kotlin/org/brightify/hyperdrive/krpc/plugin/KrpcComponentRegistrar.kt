@@ -9,12 +9,21 @@ import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 
+object KrpcConfigurationKeys {
+    val isEnabled = CompilerConfigurationKey<Boolean>("enabled")
+}
 
 @AutoService(ComponentRegistrar::class)
 class KrpcComponentRegistrar: ComponentRegistrar {
     override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
+        val isEnabled = configuration.getBoolean(KrpcConfigurationKeys.isEnabled)
+        if (!isEnabled) {
+            return
+        }
+
         val messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
         messageCollector.report(CompilerMessageSeverity.WARNING, "Hyperdrive kRPC is experimental!")
 
