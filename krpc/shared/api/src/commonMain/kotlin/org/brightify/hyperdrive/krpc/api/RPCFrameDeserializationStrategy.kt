@@ -3,6 +3,7 @@ package org.brightify.hyperdrive.krpc.api
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.SerialKind
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
@@ -31,7 +32,7 @@ class RPCFrameDeserializationStrategy<EVENT: RPCEvent>(
 
     companion object {
         inline operator fun <reified EVENT: RPCEvent> invoke(): RPCFrameDeserializationStrategy<EVENT> {
-            return RPCFrameDeserializationStrategy(serializer())
+            return RPCFrameDeserializationStrategy(RPCFrame.Header.serializer(PolymorphicSerializer(EVENT::class)))
         }
     }
 }

@@ -16,6 +16,7 @@ class ProtoBufWebSocketFrameConverter<OUTGOING: RPCEvent, INCOMING: RPCEvent>(
 ): WebSocketFrameConverter<Frame.Binary, OUTGOING, INCOMING> {
 
     private val format = ProtoBuf {
+        encodeDefaults = false
         serializersModule += RPCEvent.serializersModule
     }
 

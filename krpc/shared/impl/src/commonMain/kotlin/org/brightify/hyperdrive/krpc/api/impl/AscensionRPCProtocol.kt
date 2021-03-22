@@ -1,53 +1,42 @@
 package org.brightify.hyperdrive.krpc.api.impl
 
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationStrategy
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.serializer
 import org.brightify.hyperdrive.krpc.api.CallDescriptor
 import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
 import org.brightify.hyperdrive.krpc.api.ColdBistreamCallDescriptor
 import org.brightify.hyperdrive.krpc.api.ColdDownstreamCallDescriptor
 import org.brightify.hyperdrive.krpc.api.ColdUpstreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ContextUpdateRPCEvent
 import org.brightify.hyperdrive.krpc.api.DownstreamRPCEvent
 import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.LocalOutStreamCallDescriptor
 import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.api.RPCConnection
 import org.brightify.hyperdrive.krpc.api.RPCError
+import org.brightify.hyperdrive.krpc.api.RPCEvent
 import org.brightify.hyperdrive.krpc.api.RPCFrame
 import org.brightify.hyperdrive.krpc.api.RPCProtocol
 import org.brightify.hyperdrive.krpc.api.RPCReference
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCEvent
 import org.brightify.hyperdrive.krpc.api.UnexpectedRPCEventException
 import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
 import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.api.error.RPCNotFoundError
 import org.brightify.hyperdrive.krpc.api.error.UnknownRPCReferenceException
 
 class AscensionRPCProtocol(
     private val serviceRegistry: ServiceRegistry,
     private val connection: RPCConnection,
-    private val outStreamScope: CoroutineScope,
-    private val responseScope: CoroutineScope,
 ): RPCProtocol {
     override val version = RPCProtocol.Version.Ascension
 
@@ -55,8 +44,6 @@ class AscensionRPCProtocol(
         get() = connection.isActive
 
     private val serverPendingCalls = mutableMapOf<RPCReference, _PendingRPC.Server<*, *>>()
-    private val serverJobs = mutableMapOf<RPCReference, Job>()
-    private val openStreams = mutableMapOf<RPCReference, Stream>()
     private val baseRPCErrorSerializer = RPCErrorSerializer()
 
     private val clientPendingCalls = mutableMapOf<RPCReference, _PendingRPC.Client<*, *, *>>()
@@ -73,14 +60,9 @@ class AscensionRPCProtocol(
                 val frame = connection.receive()
                 @Suppress("UNUSED_VARIABLE")
                 val exhaustive: Unit = when (val event = frame.header.event) {
-                    is ContextUpdateRPCEvent -> {
-                        TODO("Update context")
-                    }
                     is DownstreamRPCEvent -> handleDownstreamEvent(event, frame)
                     is UpstreamRPCEvent -> handleUpstreamEvent(event, frame)
-                    else -> {
-                        closeWithError(frame.header.callReference, UnexpectedRPCEventException(event::class))
-                    }
+                    else -> closeWithError(frame.header.callReference, UnexpectedRPCEventException(event::class))
                 }
             }
         }
@@ -208,7 +190,7 @@ class AscensionRPCProtocol(
                     println("Server - ColdBistream Finished")
                     serverPendingCalls.remove(reference)
                 }
-                null -> TODO("Call identifier doesn't exist")
+                null -> closeWithError(reference, RPCNotFoundError(event.serviceCall))
             }
 
             serverPendingCalls[reference] = newPendingCall
@@ -693,23 +675,13 @@ class AscensionRPCProtocol(
     }
 
     @OptIn(InternalSerializationApi::class)
-    private suspend fun <DATA: Any> send(header: RPCFrame.Header<UpstreamRPCEvent>, data: DATA) {
-        return connection.send(OutgoingRPCFrame(header, data::class.serializer() as SerializationStrategy<Any?>, data))
-    }
-
-    @OptIn(InternalSerializationApi::class)
-    private suspend fun send(header: RPCFrame.Header<UpstreamRPCEvent>) {
-        return connection.send(OutgoingRPCFrame(header, Unit.serializer() as SerializationStrategy<Any?>, Unit))
-    }
-
-    @OptIn(InternalSerializationApi::class)
     private suspend fun sendUnknownReferenceError(callReference: RPCReference) {
         val error = UnknownRPCReferenceException(callReference)
         sendError(callReference, error)
     }
 
     @OptIn(InternalSerializationApi::class)
-    private suspend inline fun <reified ERROR: RPCError> closeWithError(callReference: RPCReference, error: ERROR): Nothing {
+    private suspend inline fun <reified ERROR> closeWithError(callReference: RPCReference, error: ERROR): Nothing where ERROR: RPCError, ERROR: Throwable {
         sendError(callReference, error)
 
         throw error
@@ -717,7 +689,7 @@ class AscensionRPCProtocol(
 
     @OptIn(InternalSerializationApi::class)
     private suspend inline fun <reified ERROR: RPCError> sendError(callReference: RPCReference, error: ERROR) {
-        connection.send(OutgoingRPCFrame(RPCFrame.Header(callReference, UpstreamRPCEvent.Error), ERROR::class.serializer() as SerializationStrategy<Any?>, error))
+        connection.send(OutgoingRPCFrame(RPCFrame.Header(callReference, UpstreamRPCEvent.Error), baseRPCErrorSerializer as SerializationStrategy<Any?>, error))
     }
 
     private class Stream(
@@ -736,7 +708,7 @@ class AscensionRPCProtocol(
         }
 
         suspend fun reject(decoder: Decoder) {
-            val throwable = decoder.decodeSerializableValue(errorSerializer)
+            val throwable = errorSerializer.decodeThrowable(decoder)
             incomingChannel.close(throwable)
         }
 
@@ -747,13 +719,11 @@ class AscensionRPCProtocol(
 
     class Factory(
         private val serviceRegistry: ServiceRegistry,
-        private val outStreamScope: CoroutineScope,
-        private val responseScope: CoroutineScope,
     ): RPCProtocol.Factory {
         override val version = RPCProtocol.Version.Ascension
 
         override fun create(connection: RPCConnection): AscensionRPCProtocol {
-            return AscensionRPCProtocol(serviceRegistry, connection, outStreamScope, responseScope)
+            return AscensionRPCProtocol(serviceRegistry, connection)
         }
     }
 }

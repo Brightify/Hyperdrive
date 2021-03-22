@@ -11,10 +11,6 @@ plugins {
     id("com.github.johnrengelman.shadow")
 }
 
-publishing {
-    publications.clear()
-}
-
 kotlin {
     jvm()
 
@@ -75,7 +71,10 @@ tasks.withType<KotlinCompile<*>> {
     dependsOn(krpcPluginJar)
 
     kotlinOptions {
-        freeCompilerArgs += "-Xplugin=${krpcPluginJar.archiveFile.get().asFile.absolutePath}"
+        freeCompilerArgs += listOf(
+            "-Xplugin=${krpcPluginJar.archiveFile.get().asFile.absolutePath}",
+            "-P", "plugin:org.brightify.hyperdrive.krpc:enabled=true"
+        )
 
         println(freeCompilerArgs)
     }
@@ -93,4 +92,8 @@ tasks.withType<KotlinJvmTest> {
 
 afterEvaluate {
     println(tasks.map { it.name })
+}
+
+tasks.publish {
+    enabled = false
 }

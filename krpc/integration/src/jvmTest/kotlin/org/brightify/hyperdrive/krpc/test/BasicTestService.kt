@@ -3,6 +3,8 @@ package org.brightify.hyperdrive.krpc.test
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import org.brightify.hyperdrive.krpc.api.BaseRPCError
 import org.brightify.hyperdrive.krpc.api.EnableKRPC
 import org.brightify.hyperdrive.krpc.api.error.RPCNotFoundError
 import org.brightify.hyperdrive.krpc.api.Error
@@ -10,10 +12,9 @@ import org.brightify.hyperdrive.krpc.api.RPCError
 import org.brightify.hyperdrive.krpc.api.RPCProtocol
 
 @Serializable
-class IllegalArgumentError(override val debugMessage: String): RPCError() {
-    override val statusCode: StatusCode = StatusCode.NotFound
+class IllegalArgumentError: BaseRPCError {
+    constructor(debugMessage: String): super(RPCError.StatusCode.NotFound, debugMessage)
 }
-
 
 @EnableKRPC
 interface BasicTestService {
@@ -34,4 +35,10 @@ interface BasicTestService {
     suspend fun timer(count: Int): @Error(IllegalArgumentError::class) Flow<Int>
 
     suspend fun multiplyEachByTwo(stream: Flow<Int>): Flow<Int>
+}
+
+fun x() {
+    val x = "hel"
+    x
+    val b = BasicTestService.Client(null as RPCProtocol)
 }

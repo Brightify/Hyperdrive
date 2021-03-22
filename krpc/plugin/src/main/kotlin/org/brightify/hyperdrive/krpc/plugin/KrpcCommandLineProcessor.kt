@@ -10,7 +10,11 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 
 @AutoService(CommandLineProcessor::class)
 class KrpcCommandLineProcessor: CommandLineProcessor {
-    override val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
+    companion object {
+        const val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
+    }
+
+    override val pluginId: String = KrpcCommandLineProcessor.pluginId
 
     private val options = listOf(
         Options.enabled

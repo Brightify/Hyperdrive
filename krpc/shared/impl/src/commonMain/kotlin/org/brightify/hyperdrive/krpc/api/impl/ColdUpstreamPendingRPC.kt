@@ -25,6 +25,7 @@ import org.brightify.hyperdrive.krpc.api.RPCFrame
 import org.brightify.hyperdrive.krpc.api.RPCReference
 import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
 import org.brightify.hyperdrive.krpc.api.error.RPCProtocolViolationError
+import org.brightify.hyperdrive.krpc.api.throwable
 
 object ColdUpstreamPendingRPC {
     private val <REQUEST, CLIENT_STREAM, RESPONSE> CallDescriptor.ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
@@ -70,18 +71,18 @@ object ColdUpstreamPendingRPC {
                     Do exhaustive when (event) {
                         is StreamEvent.Next -> channel.send(event.data)
                         is StreamEvent.Complete -> channel.close()
-                        is StreamEvent.Error -> channel.close(event.error)
+                        is StreamEvent.Error -> channel.close(event.error.throwable())
                     }
                 }
                 is UpstreamRPCEvent.StreamOperation -> {
                     throw RPCProtocolViolationError("Upstream call doesn't support receiving stream operations from the client as there is no downstream to control.")
                 }
                 UpstreamRPCEvent.Warning -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = call.errorSerializer.decodeThrowable(frame.decoder)
                     logger.warning(error) { "Received a warning from the client." }
                 }
                 UpstreamRPCEvent.Error -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = call.errorSerializer.decodeThrowable(frame.decoder)
                     cancel("Error received from the client.", error)
                 }
                 UpstreamRPCEvent.Cancel -> {
@@ -170,11 +171,11 @@ object ColdUpstreamPendingRPC {
                     upstreamJob.cancel()
                 }
                 DownstreamRPCEvent.Warning -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = call.errorSerializer.decodeThrowable(frame.decoder)
                     logger.warning(error) { "Received a warning from the server." }
                 }
                 DownstreamRPCEvent.Error -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = call.errorSerializer.decodeThrowable(frame.decoder)
                     responseDeferred.completeExceptionally(error)
                 }
             }

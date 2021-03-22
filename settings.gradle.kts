@@ -11,6 +11,7 @@ pluginManagement {
         id("com.github.johnrengelman.shadow") version "6.1.0"
         id("com.github.gmazzo.buildconfig") version "2.0.2"
         kotlin("plugin.serialization") version "1.4.31"
+        id("com.chromaticnoise.multiplatform-swiftpackage") version "2.0.3"
     }
     resolutionStrategy {
         eachPlugin {

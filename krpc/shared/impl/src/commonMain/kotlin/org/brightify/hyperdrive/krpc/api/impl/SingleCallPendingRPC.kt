@@ -35,7 +35,7 @@ object SingleCallPendingRPC {
                     )
                 }
                 UpstreamRPCEvent.Error -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = errorSerializer.decodeThrowable(frame.decoder)
                     if (error is UnknownRPCReferenceException) {
                         cancel("Client sent an UnknownRPCReferenceException which probably means we sent it a frame by mistake.", error)
                     } else {
@@ -43,7 +43,7 @@ object SingleCallPendingRPC {
                     }
                 }
                 UpstreamRPCEvent.Warning -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = errorSerializer.decodeThrowable(frame.decoder)
                     logger.warning(error) { "Client sent a warning." }
                 }
                 UpstreamRPCEvent.Cancel -> {
@@ -88,11 +88,11 @@ object SingleCallPendingRPC {
                     responseDeferred.complete(frame.response)
                 }
                 DownstreamRPCEvent.Warning -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
-                    logger.warning { "Received warning from the server. Error: $error" }
+                    val error = errorSerializer.decodeThrowable(frame.decoder)
+                    logger.warning(error) { "Received a warning from the server." }
                 }
                 DownstreamRPCEvent.Error -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = errorSerializer.decodeThrowable(frame.decoder)
                     responseDeferred.completeExceptionally(error)
                 }
                 DownstreamRPCEvent.Data, DownstreamRPCEvent.Opened, is DownstreamRPCEvent.StreamOperation -> {

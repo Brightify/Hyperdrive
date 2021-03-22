@@ -1,19 +1,27 @@
 package org.brightify.hyperdrive.example.krpc
 
-import kotlinx.serialization.serializer
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.fold
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.yield
+import org.brightify.hyperdrive.Logger
+import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.api.EnableKRPC
-import org.brightify.hyperdrive.krpc.api.RPCDataWrapper1
-import org.brightify.hyperdrive.krpc.api.RPCTransport
-import org.brightify.hyperdrive.krpc.api.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.api.ServiceDescription
-import org.brightify.hyperdrive.krpc.api.ServiceDescriptor
-import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.api.impl.AscensionRPCProtocol
+import org.brightify.hyperdrive.krpc.api.impl.DefaultServiceRegistry
+import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 
 @EnableKRPC
 interface ExampleService {
     suspend fun strlen(parameter: String): Int
+
+    suspend fun sum(numbers: Flow<Int>): Int
+
+    suspend fun flowOfRange(start: Int, end: Int): Flow<Int>
+
+    suspend fun streamingStrlen(texts: Flow<String>): Flow<Int>
 
     // class Client private constructor(): ExampleService {
     //     private lateinit var transport: RPCTransport
@@ -56,14 +64,39 @@ interface ExampleService {
     // }
 }
 
-// class DefaultExampleService: ExampleService {
-//     override suspend fun strlen(parameter: String): Int {
-//         return parameter.length
-//     }
-// }
+class DefaultExampleService: ExampleService {
+    override suspend fun strlen(parameter: String): Int {
+        return parameter.length
+    }
 
-// fun test() {
-//     // val client = ExampleService.Client(null as RPCTransport)
-//     // val descriptor = ExampleService.Descriptor
-//     // val call = ExampleService.Descriptor.Call.strlen
-// }
+    override suspend fun sum(numbers: Flow<Int>): Int {
+        return numbers.fold(0) { acc, value -> acc + value }
+    }
+
+    override suspend fun flowOfRange(start: Int, end: Int): Flow<Int> {
+        return flow {
+            for (index in start until end) {
+                emit(index)
+                yield()
+            }
+        }
+    }
+
+    override suspend fun streamingStrlen(texts: Flow<String>): Flow<Int> {
+        return texts.map {
+            it.length
+        }
+    }
+}
+
+fun makeClient(): ExampleService {
+    Logger.setLevel(LoggingLevel.Trace)
+    val connection = LoopbackConnection(MainScope(), 5_000)
+
+    val impl = DefaultExampleService()
+    val registry = DefaultServiceRegistry()
+    registry.register(ExampleService.Descriptor.describe(impl))
+    val protocol = AscensionRPCProtocol.Factory(registry).create(connection)
+
+    return ExampleService.Client(protocol)
+}

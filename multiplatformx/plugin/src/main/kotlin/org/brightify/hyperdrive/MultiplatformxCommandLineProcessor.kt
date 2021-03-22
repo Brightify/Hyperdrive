@@ -10,7 +10,11 @@ import org.jetbrains.kotlin.utils.keysToMap
 
 @AutoService(CommandLineProcessor::class)
 class MultiplatformxCommandLineProcessor: CommandLineProcessor {
-    override val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
+    companion object {
+        const val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
+    }
+
+    override val pluginId: String = MultiplatformxCommandLineProcessor.pluginId
 
     private val options = listOf(
         Options.enabled,

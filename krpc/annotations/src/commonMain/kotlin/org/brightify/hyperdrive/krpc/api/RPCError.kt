@@ -2,15 +2,9 @@ package org.brightify.hyperdrive.krpc.api
 
 import kotlinx.serialization.Serializable
 
-@Serializable
-abstract class RPCError : Throwable() {
-
-    abstract val statusCode: StatusCode
-    abstract val debugMessage: String
-
-    override fun toString(): String {
-        return super.toString() + "#status = $statusCode & message = $debugMessage"
-    }
+interface RPCError {
+    val statusCode: StatusCode
+    val debugMessage: String
 
     @Serializable
     enum class StatusCode(val code: Int) {
@@ -63,5 +57,32 @@ abstract class RPCError : Throwable() {
         NotExtended(510),
         NetworkAuthenticationRequired(511),
         NetworkConnectTimeoutError(599),
+
+        // kRPC Protocol Errors
+        ProtocolViolation(600)
+    }
+}
+
+fun RPCError.throwable(): Throwable {
+    return this as? Throwable ?: error("RPCError has to be implemented by a class extending the Throwable type!")
+}
+
+@Serializable
+abstract class BaseRPCError(
+    override val statusCode: RPCError.StatusCode,
+    override val debugMessage: String
+): Throwable(debugMessage), RPCError {
+    override fun toString(): String {
+        return super.toString() + "#status = $statusCode & message = $debugMessage"
+    }
+}
+
+@Serializable
+abstract class InternalRPCError(
+    override val statusCode: RPCError.StatusCode,
+    override val debugMessage: String
+): Throwable(debugMessage), RPCError {
+    override fun toString(): String {
+        return "Internal kRPC error. Please report this along with a reproducer. Status code: $statusCode. Debug message: $debugMessage. Super: ${super.toString()}"
     }
 }

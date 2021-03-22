@@ -26,7 +26,7 @@ class KtorServerFrontend(
     val outStreamScope: CoroutineScope,
     val responseScope: CoroutineScope,
 ): Server {
-    private val server = KRPCServer(serviceRegistry, outStreamScope, responseScope)
+    private val server = KRPCServer(serviceRegistry)
 
     private val engine: NettyApplicationEngine = embeddedServer(Netty, port = port, host = host) {
         routing {

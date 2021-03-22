@@ -18,10 +18,8 @@ suspend inline fun <reified SPECIFIC_INCOMING: RPCEvent> RPCConnection.receiveSp
 }
 
 @Serializable
-class UnexpectedRPCEventException private constructor(override val debugMessage: String): RPCError() {
-    override val statusCode = StatusCode.BadRequest
+class UnexpectedRPCEventException: InternalRPCError {
+    constructor(expectedEvent: KClass<out RPCEvent>, actualEvent: KClass<out RPCEvent>): super(RPCError.StatusCode.ProtocolViolation,"Unexpected RPC event! Expected <${expectedEvent.simpleName}>, got <${actualEvent.simpleName}>.")
 
-    constructor(expectedEvent: KClass<out RPCEvent>, actualEvent: KClass<out RPCEvent>): this("Unexpected RPC event! Expected <${expectedEvent.simpleName}>, got <${actualEvent.simpleName}>.")
-
-    constructor(actualEvent: KClass<out RPCEvent>, reason: String? = null): this("Unexpected RPC event <${actualEvent.simpleName}>, reason: $reason.")
+    constructor(actualEvent: KClass<out RPCEvent>, reason: String? = null): super(RPCError.StatusCode.ProtocolViolation, "Unexpected RPC event <${actualEvent.simpleName}>, reason: $reason.")
 }

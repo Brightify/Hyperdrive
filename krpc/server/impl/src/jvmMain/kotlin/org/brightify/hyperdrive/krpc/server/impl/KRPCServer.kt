@@ -2,21 +2,22 @@ package org.brightify.hyperdrive.krpc.server.impl
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import org.brightify.hyperdrive.krpc.api.CallDescriptor
 import org.brightify.hyperdrive.krpc.api.RPCConnection
 import org.brightify.hyperdrive.krpc.api.RPCProtocol
+import org.brightify.hyperdrive.krpc.api.ServiceCallIdentifier
+import org.brightify.hyperdrive.krpc.api.ServiceDescription
 import org.brightify.hyperdrive.krpc.api.impl.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.api.impl.DefaultServiceRegistry
 import org.brightify.hyperdrive.krpc.api.impl.ProtocolUpgradeService
 import org.brightify.hyperdrive.krpc.api.impl.ServiceRegistry
+import kotlin.reflect.KClass
 
 class KRPCServer(
     val serviceRegistry: ServiceRegistry,
-//    val sessionManager: SecurityManager,
-    val outStreamScope: CoroutineScope,
-    val responseScope: CoroutineScope,
 ) {
     private val initialProtocolFactory: (ServiceRegistry) -> AscensionRPCProtocol.Factory = {
-        AscensionRPCProtocol.Factory(it, outStreamScope, responseScope)
+        AscensionRPCProtocol.Factory(it)
     }
 
     private val defaultProtocolFactory = initialProtocolFactory(serviceRegistry)

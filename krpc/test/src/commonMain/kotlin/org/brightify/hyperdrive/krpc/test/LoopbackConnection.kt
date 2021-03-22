@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.krpc.test
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -42,6 +43,6 @@ class LoopbackConnection(
     }
 
     override suspend fun close() {
-        scope.cancel()
+        scope.coroutineContext[Job]?.cancel()
     }
 }

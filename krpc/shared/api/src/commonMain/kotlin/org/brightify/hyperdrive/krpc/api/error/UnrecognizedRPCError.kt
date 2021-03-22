@@ -1,24 +1,23 @@
 package org.brightify.hyperdrive.krpc.api.error
 
+import kotlinx.serialization.Serializable
+import org.brightify.hyperdrive.krpc.api.BaseRPCError
+import org.brightify.hyperdrive.krpc.api.InternalRPCError
 import org.brightify.hyperdrive.krpc.api.RPCError
 
+@Serializable
 class UnrecognizedRPCError(
-    override val statusCode: StatusCode,
+    override val statusCode: RPCError.StatusCode,
     override val debugMessage: String,
     val errorType: String,
-): RPCError() {
+): Throwable(), RPCError
 
+@Serializable
+class RPCProtocolViolationError: InternalRPCError {
+    constructor(debugMessage: String): super(RPCError.StatusCode.ProtocolViolation, debugMessage)
 }
 
-class RPCProtocolViolationError(
-    override val debugMessage: String,
-): RPCError() {
-    override val statusCode: StatusCode = StatusCode.BadRequest
-}
-
+@Serializable
 class RPCStreamTimeoutError(
-    override val debugMessage: String,
     val timeoutInMillis: Long,
-): RPCError() {
-    override val statusCode: StatusCode = StatusCode.RequestTimeout
-}
+): BaseRPCError(RPCError.StatusCode.RequestTimeout, "Stream not started in time. Timeout is ${timeoutInMillis}ms")

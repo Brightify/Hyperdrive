@@ -15,15 +15,16 @@ import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.brightify.hyperdrive.krpc.api.RPCError
 import org.brightify.hyperdrive.krpc.api.UnexpectedRPCEventException
+import org.brightify.hyperdrive.krpc.api.throwable
 
 class RPCErrorSerializer(
     register: PolymorphicModuleBuilder<RPCError>.() -> Unit = { },
-): KSerializer<Throwable> {
+): KSerializer<RPCError> {
 
     private val module = SerializersModule {
         polymorphic(RPCError::class) {
             // TODO Register internal errors
-            subclass(NonRPCErrorThrownError::class)
+            subclass(InternalServerError::class)
             subclass(UnknownRPCReferenceException::class)
             subclass(UnexpectedRPCEventException::class)
             subclass(RPCNotFoundError::class)
@@ -33,6 +34,10 @@ class RPCErrorSerializer(
 
     private val statusCodeSerializer = RPCError.StatusCode.serializer()
     private val stringSerializer = String.serializer()
+
+    fun decodeThrowable(decoder: Decoder): Throwable {
+        return decoder.decodeSerializableValue(this).throwable()
+    }
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("RPCError") {
@@ -55,16 +60,14 @@ class RPCErrorSerializer(
         }
     }
 
-    override fun serialize(encoder: Encoder, value: Throwable) {
-        @Suppress("ThrowableNotThrown")
-        val rpcError = value as? RPCError ?: NonRPCErrorThrownError(value)
-        encoder.encodeSerializableValue(statusCodeSerializer, rpcError.statusCode)
-        encoder.encodeString(rpcError.debugMessage)
+    override fun serialize(encoder: Encoder, value: RPCError) {
+        encoder.encodeSerializableValue(statusCodeSerializer, value.statusCode)
+        encoder.encodeString(value.debugMessage)
 
-        val serializationStrategy = module.getPolymorphic(RPCError::class, rpcError)
+        val serializationStrategy = module.getPolymorphic(RPCError::class, value)
         if (serializationStrategy != null) {
             encoder.encodeString(serializationStrategy.descriptor.serialName)
-            encoder.encodeSerializableValue(serializationStrategy, rpcError)
+            encoder.encodeSerializableValue(serializationStrategy, value)
         } else {
             encoder.encodeString("# Unknown: ${value::class.simpleName ?: "N/A"}")
         }

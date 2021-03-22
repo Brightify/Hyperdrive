@@ -1,12 +1,10 @@
 package org.brightify.hyperdrive.krpc.api
 
 import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.SealedClassSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
-import kotlinx.serialization.serializer
-import kotlin.reflect.KClass
 
 interface RPCEvent {
 
@@ -14,31 +12,25 @@ interface RPCEvent {
         @OptIn(InternalSerializationApi::class)
         val serializersModule = SerializersModule {
             polymorphic(RPCEvent::class) {
-                // TODO: Once reflection API supports `sealedSubclasses` on non-JVM platforms, use it instead of listing all the classes.
-                subclass(ContextUpdateRPCEvent::class)
+                subclass(UpstreamRPCEvent::class, UpstreamRPCEvent.serializer())
+                subclass(UpstreamRPCEvent.Open::class, UpstreamRPCEvent.Open.serializer())
+                subclass(UpstreamRPCEvent.Data::class, UpstreamRPCEvent.Data.serializer())
+                subclass(UpstreamRPCEvent.Error::class, UpstreamRPCEvent.Error.serializer())
+                subclass(UpstreamRPCEvent.StreamOperation.Start::class, UpstreamRPCEvent.StreamOperation.Start.serializer())
+                subclass(UpstreamRPCEvent.StreamOperation.Close::class, UpstreamRPCEvent.StreamOperation.Close.serializer())
 
-                subclass(UpstreamRPCEvent::class)
-                subclass(UpstreamRPCEvent.Open::class)
-                subclass(UpstreamRPCEvent.Data::class)
-                subclass(UpstreamRPCEvent.Error::class)
-                subclass(UpstreamRPCEvent.StreamOperation.Start::class)
-                subclass(UpstreamRPCEvent.StreamOperation.Close::class)
-
-                subclass(DownstreamRPCEvent::class)
-                subclass(DownstreamRPCEvent.Opened::class)
-                subclass(DownstreamRPCEvent.Data::class)
-                subclass(DownstreamRPCEvent.Response::class)
-                subclass(DownstreamRPCEvent.StreamOperation.Start::class)
-                subclass(DownstreamRPCEvent.StreamOperation.Close::class)
-                subclass(DownstreamRPCEvent.Warning::class)
-                subclass(DownstreamRPCEvent.Error::class)
+                subclass(DownstreamRPCEvent::class, DownstreamRPCEvent.serializer())
+                subclass(DownstreamRPCEvent.Opened::class, DownstreamRPCEvent.Opened.serializer())
+                subclass(DownstreamRPCEvent.Data::class, DownstreamRPCEvent.Data.serializer())
+                subclass(DownstreamRPCEvent.Response::class, DownstreamRPCEvent.Response.serializer())
+                subclass(DownstreamRPCEvent.StreamOperation.Start::class, DownstreamRPCEvent.StreamOperation.Start.serializer())
+                subclass(DownstreamRPCEvent.StreamOperation.Close::class, DownstreamRPCEvent.StreamOperation.Close.serializer())
+                subclass(DownstreamRPCEvent.Warning::class, DownstreamRPCEvent.Warning.serializer())
+                subclass(DownstreamRPCEvent.Error::class, DownstreamRPCEvent.Error.serializer())
             }
         }
     }
 }
-
-@Serializable
-object ContextUpdateRPCEvent: RPCEvent
 
 @Serializable
 sealed class UpstreamRPCEvent: RPCEvent {

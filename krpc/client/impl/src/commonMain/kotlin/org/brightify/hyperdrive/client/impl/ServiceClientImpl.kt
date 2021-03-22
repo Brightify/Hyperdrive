@@ -20,6 +20,7 @@ import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
 import org.brightify.hyperdrive.krpc.api.ColdBistreamCallDescriptor
 import org.brightify.hyperdrive.krpc.api.ColdDownstreamCallDescriptor
 import org.brightify.hyperdrive.krpc.api.ColdUpstreamCallDescriptor
+import org.brightify.hyperdrive.krpc.api.InternalRPCError
 import org.brightify.hyperdrive.krpc.api.RPCClientConnector
 import org.brightify.hyperdrive.krpc.api.RPCError
 import org.brightify.hyperdrive.krpc.api.RPCProtocol
@@ -27,15 +28,11 @@ import org.brightify.hyperdrive.krpc.api.impl.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.api.impl.ProtocolUpgradeService
 import org.brightify.hyperdrive.krpc.api.impl.ServiceRegistry
 
-
 @Serializable
-class UnsupportedRPCProtocolError private constructor(override val debugMessage: String): RPCError() {
-    override val statusCode = StatusCode.BadRequest
-
-    constructor(supportedProtocols: Set<RPCProtocol.Version>, requestedProtocol: Int): this(
-        "Supported protocols: ${supportedProtocols.joinToString { "${it.name}(${it.literal})" } }, required protocol version: $requestedProtocol"
-    )
-}
+class UnsupportedRPCProtocolError(
+    val supportedProtocols: Set<RPCProtocol.Version>,
+    val requestedProtocol: Int
+): InternalRPCError(RPCError.StatusCode.BadRequest, "Supported protocols: ${supportedProtocols.joinToString { "${it.name}(${it.literal})" } }, required protocol version: $requestedProtocol")
 
 class ServiceClientImpl(
     private val transport: RPCClientConnector,
@@ -47,7 +44,7 @@ class ServiceClientImpl(
 ): ServiceClient {
     private val runJob: Job
 
-    private val initialProtocolFactory = AscensionRPCProtocol.Factory(serviceRegistry, outStreamScope, responseScope)
+    private val initialProtocolFactory = AscensionRPCProtocol.Factory(serviceRegistry)
     private val supportedProtocols = listOf<RPCProtocol.Factory>(initialProtocolFactory)
     private val activeProtocol = MutableStateFlow<RPCProtocol?>(null)
 

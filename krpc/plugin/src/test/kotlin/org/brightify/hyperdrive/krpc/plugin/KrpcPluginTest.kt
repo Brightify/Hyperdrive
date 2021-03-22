@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.krpc.plugin
 
 import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +37,7 @@ class KrpcPluginTest {
         val connection = LoopbackConnection(testScope)
         registry = DefaultServiceRegistry()
 
-        protocol = AscensionRPCProtocol.Factory(registry, testScope, testScope).create(connection)
+        protocol = AscensionRPCProtocol.Factory(registry).create(connection)
     }
 
     @AfterEach
@@ -107,6 +108,16 @@ class KrpcPluginTest {
 
             compilerPlugins = listOf<ComponentRegistrar>(
                 KrpcComponentRegistrar()
+            )
+            commandLineProcessors = listOf(
+                KrpcCommandLineProcessor()
+            )
+            pluginOptions = listOf(
+                PluginOption(
+                    KrpcCommandLineProcessor.pluginId,
+                    KrpcCommandLineProcessor.Options.enabled.optionName,
+                    "true"
+                )
             )
 
             useIR = true

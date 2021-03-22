@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.synthetics.SyntheticClassOrObjectDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
 import org.jetbrains.kotlin.resolve.descriptorUtil.denotedClassDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassOrAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
@@ -139,7 +140,7 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
                         val type = KotlinTypeFactory.simpleNotNullType(
                             Annotations.EMPTY,
                             stateFlow,
-                            listOf(createProjection(realDescriptor.returnType!!, Variance.INVARIANT, null))
+                            listOf(createProjection(realDescriptor.returnTypeOrNothing, Variance.INVARIANT, null))
                         )
 
                         initialize(

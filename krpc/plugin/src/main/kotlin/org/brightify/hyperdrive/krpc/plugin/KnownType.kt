@@ -23,6 +23,7 @@ object KnownType {
     object Kotlin {
         val listOf = FqName("kotlin.collections.listOf")
         val flow = FqName(Flow::class.qualifiedName!!)
+        val list = FqName(List::class.qualifiedName!!)
     }
 
     object Coroutines {
@@ -32,6 +33,7 @@ object KnownType {
     object Serialization {
         val serializer = FqName("kotlinx.serialization.serializer")
         val polymorphicModuleBuilder = FqName("kotlinx.serialization.modules.PolymorphicModuleBuilder")
+        val kserializer = FqName("kotlinx.serialization.KSerializer")
     }
 
     object Annotation {

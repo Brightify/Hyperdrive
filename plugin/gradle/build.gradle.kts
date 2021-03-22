@@ -35,11 +35,6 @@ gradlePlugin {
             id = "org.brightify.hyperdrive"
             implementationClass = "org.brightify.hyperdrive.HyperdriveGradlePlugin"
         }
-
-        create("symbol-processing") {
-            id = "org.brightify.hyperdrive.symbol-processing"
-            implementationClass = "org.brightify.hyperdrive.KspGradleSubplugin"
-        }
     }
 }
 

@@ -16,6 +16,7 @@ class ExampleViewModel(
 
     val x: String? by published(a)
 
+    val y: List<String> by published(emptyList())
 }
 
 //class ExampleViewModel(

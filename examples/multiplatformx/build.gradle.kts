@@ -6,6 +6,18 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.Framework.BitcodeEmbeddingMode
 plugins {
     id("com.android.library")
     kotlin("multiplatform")
+    id("com.chromaticnoise.multiplatform-swiftpackage")
+}
+
+tasks.publish {
+    enabled = false
+}
+
+multiplatformSwiftPackage {
+    swiftToolsVersion("5.3")
+    targetPlatforms {
+        iOS { v("13") }
+    }
 }
 
 dependencies {

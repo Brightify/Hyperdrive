@@ -37,6 +37,7 @@ import org.brightify.hyperdrive.krpc.api.UnexpectedRPCEventException
 import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
 import org.brightify.hyperdrive.krpc.api.error.RPCProtocolViolationError
 import org.brightify.hyperdrive.krpc.api.error.RPCStreamTimeoutError
+import org.brightify.hyperdrive.krpc.api.throwable
 import kotlin.coroutines.cancellation.CancellationException
 
 object ColdDownstreamPendingRPC {
@@ -85,7 +86,7 @@ object ColdDownstreamPendingRPC {
 
                     // If the stream wasn't started by this time, we send the timeout error frame.
                     if (didTimeout) {
-                        throw RPCStreamTimeoutError("The stream was not started in time.", flowStartTimeoutInMillis)
+                        throw RPCStreamTimeoutError(flowStartTimeoutInMillis)
                     }
                 }
                 UpstreamRPCEvent.StreamOperation.Start -> {
@@ -133,11 +134,11 @@ object ColdDownstreamPendingRPC {
                     }
                 }
                 UpstreamRPCEvent.Warning -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = errorSerializer.decodeThrowable(frame.decoder)
                     logger.warning(error) { "Received a warning from the client." }
                 }
                 UpstreamRPCEvent.Error -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = errorSerializer.decodeThrowable(frame.decoder)
                     cancel("Error received from the client.", error)
                 }
                 UpstreamRPCEvent.Cancel -> {
@@ -216,7 +217,7 @@ object ColdDownstreamPendingRPC {
                             }
                             is StreamEvent.Error -> {
                                 closedByUpstream = true
-                                channel.close(event.error)
+                                channel.close(event.error.throwable())
                             }
                         }
                     } else {
@@ -230,11 +231,11 @@ object ColdDownstreamPendingRPC {
                     throw RPCProtocolViolationError("Downstream call doesn't support receiving stream operations from the server as there is no upstream to control.")
                 }
                 DownstreamRPCEvent.Warning -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = errorSerializer.decodeThrowable(frame.decoder)
                     logger.warning(error) { "Received a warning from the server." }
                 }
                 DownstreamRPCEvent.Error -> {
-                    val error = frame.decoder.decodeSerializableValue(call.errorSerializer)
+                    val error = errorSerializer.decodeThrowable(frame.decoder)
                     cancel("Server error", error)
                 }
             }

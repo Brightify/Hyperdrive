@@ -19,8 +19,6 @@ kotlin {
         nodejs()
     }
 
-    val ktor_version = "1.5.1"
-
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -31,7 +29,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
 
-                implementation("io.ktor:ktor-client-websockets:$ktor_version")
+                implementation("io.ktor:ktor-client-websockets:${Versions.ktor}")
             }
         }
         val commonTest by getting {
@@ -44,7 +42,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
 //                implementation("io.ktor:ktor-client-okhttp:$ktor_version")
-                implementation("io.ktor:ktor-client-cio:$ktor_version")
+                implementation("io.ktor:ktor-client-cio:${Versions.ktor}")
             }
         }
 
@@ -59,13 +57,13 @@ kotlin {
 
         val iosMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-cio:$ktor_version")
+                implementation("io.ktor:ktor-client-cio:${Versions.ktor}")
             }
         }
 
         val jsMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-js:$ktor_version")
+                implementation("io.ktor:ktor-client-js:${Versions.ktor}")
             }
         }
     }

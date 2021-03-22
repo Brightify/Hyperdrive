@@ -25,6 +25,7 @@ import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
 import org.brightify.hyperdrive.krpc.api.LocalCallDescriptor
 import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
 import org.brightify.hyperdrive.krpc.api.RPCConnection
+import org.brightify.hyperdrive.krpc.api.RPCError
 import org.brightify.hyperdrive.krpc.api.RPCEvent
 import org.brightify.hyperdrive.krpc.api.RPCFrame
 import org.brightify.hyperdrive.krpc.api.RPCReference
@@ -219,7 +220,7 @@ abstract class _PendingRPC<EVENT: RPCEvent>(
         protected val IncomingRPCFrame<UpstreamRPCEvent>.payload: PAYLOAD
             get() = decoder.decodeSerializableValue(call.payloadSerializer)
 
-        protected val IncomingRPCFrame<UpstreamRPCEvent.Error>.error: Throwable
+        protected val IncomingRPCFrame<UpstreamRPCEvent.Error>.error: RPCError
             get() = decoder.decodeSerializableValue(call.errorSerializer)
     }
 
@@ -234,7 +235,7 @@ abstract class _PendingRPC<EVENT: RPCEvent>(
 
         override val errorSerializer: RPCErrorSerializer = call.errorSerializer
 
-        protected val IncomingRPCFrame<DownstreamRPCEvent.Error>.error: Throwable
+        protected val IncomingRPCFrame<DownstreamRPCEvent.Error>.error: RPCError
             get() = decoder.decodeSerializableValue(call.errorSerializer)
 
         abstract suspend fun perform(payload: PAYLOAD): RESPONSE

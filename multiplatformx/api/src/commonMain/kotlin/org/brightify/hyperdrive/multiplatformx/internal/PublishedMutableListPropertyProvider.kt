@@ -5,26 +5,6 @@ import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-internal class PublishedListPropertyProvider<OWNER, T>(
-    private val owner: BaseViewModel,
-    private val initialValue: List<T>,
-): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<T>>> {
-    override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, List<T>> {
-        val observer = owner.getPropertyObserver<MutableList<T>>(property, MutableListProxy(owner, initialValue.toMutableList()))
-        val wrappedProperty = MutableStateFlowBackedProperty<OWNER, MutableList<T>>(owner, observer)
-        return object: ReadWriteProperty<OWNER, List<T>> {
-            override fun getValue(thisRef: OWNER, property: KProperty<*>): List<T> {
-                return wrappedProperty.getValue(thisRef, property)
-            }
-
-            override fun setValue(thisRef: OWNER, property: KProperty<*>, value: List<T>) {
-                val wrappedList = MutableListProxy(owner, value.toMutableList())
-                wrappedProperty.setValue(thisRef, property, wrappedList)
-            }
-        }
-    }
-}
-
 internal class PublishedMutableListPropertyProvider<OWNER, T>(
     private val owner: BaseViewModel,
     private val initialValue: MutableList<T>,

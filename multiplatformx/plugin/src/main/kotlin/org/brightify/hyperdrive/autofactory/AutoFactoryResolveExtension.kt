@@ -84,8 +84,8 @@ open class AutoFactoryResolveExtension: SyntheticResolveExtension {
         if (name != AutoFactoryNames.factory) { return }
         val autoFactoryConstructor = thisDescriptor.autoFactoryConstructor ?: return
 
-        val thisDeclaration = declarationProvider.correspondingClassOrObject!!
-        val scope = ctx.declarationScopeProvider.getResolutionScopeForDeclaration(declarationProvider.ownerInfo!!.scopeAnchor)
+        val thisDeclaration = declarationProvider.correspondingClassOrObject ?: return
+        val scope = ctx.declarationScopeProvider.getResolutionScopeForDeclaration(declarationProvider.ownerInfo?.scopeAnchor ?:  return)
 
         val injectedValueParameters = autoFactoryConstructor.injectedValueParameters
 

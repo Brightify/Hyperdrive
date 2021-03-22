@@ -136,12 +136,12 @@ class KrpcResolveExtension: SyntheticResolveExtension {
 
             when {
                 thisDescriptor.isKrpcClient ->
-                    supertypes.add(thisDescriptor.containingClass!!.defaultType)
+                    supertypes.add(thisDescriptor.containingClass?.defaultType ?: return)
                 thisDescriptor.isKrpcDescriptor -> {
                     val type = KotlinTypeFactory.simpleNotNullType(
                         Annotations.EMPTY,
-                        thisDescriptor.module.findClassAcrossModuleDependencies(KnownType.API.serviceDescriptor)!!,
-                        listOf(createProjection(thisDescriptor.containingClass!!.defaultType, Variance.INVARIANT, null))
+                        thisDescriptor.module.findClassAcrossModuleDependencies(KnownType.API.serviceDescriptor) ?: return,
+                        listOf(createProjection(thisDescriptor.containingClass?.defaultType ?: return, Variance.INVARIANT, null))
                     )
                     supertypes.add(type)
                 }
@@ -156,7 +156,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
         declarationProvider: ClassMemberDeclarationProvider,
         result: MutableSet<ClassDescriptor>
     ) {
-        val thisDeclaration = declarationProvider.correspondingClassOrObject!!
+        val thisDeclaration = declarationProvider.correspondingClassOrObject ?: return
         val scope = declarationProvider.ownerInfo?.let {
             ctx.declarationScopeProvider.getResolutionScopeForDeclaration(it.scopeAnchor)
         } ?: (thisDescriptor as ClassDescriptorWithResolutionScopes).scopeForClassHeaderResolution
@@ -203,7 +203,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
                                     0,
                                     Annotations.EMPTY,
                                     Name.identifier("transport"),
-                                    thisDescriptor.module.findClassAcrossModuleDependencies(KnownType.API.transportClassId)!!.defaultType,
+                                    thisDescriptor.module.findClassAcrossModuleDependencies(KnownType.API.transportClassId)?.defaultType ?: return,
                                     declaresDefaultValue = false,
                                     isCrossinline = false,
                                     isNoinline = false,
@@ -307,7 +307,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
                             source = funDescriptor.source
                         )
                     ),
-                    thisDescriptor.module.findClassAcrossModuleDependencies(KnownType.API.serviceDescription)!!.defaultType,
+                    thisDescriptor.module.findClassAcrossModuleDependencies(KnownType.API.serviceDescription)?.defaultType ?: return,
                     Modality.FINAL,
                     DescriptorVisibilities.PUBLIC
                 )
@@ -450,7 +450,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
                     KnownType.API.coldBistreamCallDescriptor.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
-                        createProjection(member.valueParameters.last().typeParameters.first().defaultType, Variance.INVARIANT, null),
+                        createProjection(member.valueParameters.last().type.arguments.first().type, Variance.INVARIANT, null),
                         createProjection(member.returnType!!.arguments.first().type, Variance.INVARIANT, null)
                     )
                 )
@@ -461,7 +461,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
                     KnownType.API.coldUpstreamCallDescriptor.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
-                        createProjection(member.valueParameters.last().typeParameters.first().defaultType, Variance.INVARIANT, null),
+                        createProjection(member.valueParameters.last().type.arguments.first().type, Variance.INVARIANT, null),
                         createProjection(member.returnType!!, Variance.INVARIANT, null)
                     )
                 )
@@ -490,6 +490,8 @@ class KrpcResolveExtension: SyntheticResolveExtension {
     }
 
     private fun FqName.asClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
-        return module.findClassAcrossModuleDependencies(ClassId.topLevel(this))!!
+        return requireNotNull(module.findClassAcrossModuleDependencies(ClassId.topLevel(this))) {
+            "Could not find class $this in module $module."
+        }
     }
 }

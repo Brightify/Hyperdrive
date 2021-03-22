@@ -11,6 +11,8 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.brightify.hyperdrive.krpc.api.RPCError
+import org.brightify.hyperdrive.krpc.api.error.InternalServerError
 
 sealed class StreamEvent<DATA> {
     data class Next<DATA>(
@@ -18,13 +20,21 @@ sealed class StreamEvent<DATA> {
     ): StreamEvent<DATA>()
     class Complete<DATA>: StreamEvent<DATA>()
     class Error<DATA>(
-        val error: Throwable
-    ): StreamEvent<DATA>()
+        val error: RPCError
+    ): StreamEvent<DATA>() {
+        companion object {
+            operator fun <DATA> invoke(throwable: Throwable): Error<DATA> {
+                return Error(
+                    throwable as? RPCError ?: InternalServerError(throwable)
+                )
+            }
+        }
+    }
 }
 
 class StreamEventSerializer<DATA>(
     private val dataSerializer: KSerializer<DATA>,
-    private val errorSerializer: KSerializer<Throwable>,
+    private val errorSerializer: KSerializer<RPCError>,
 ): KSerializer<StreamEvent<DATA>> {
     private val eventTypeSerialier = EventType.serializer()
 

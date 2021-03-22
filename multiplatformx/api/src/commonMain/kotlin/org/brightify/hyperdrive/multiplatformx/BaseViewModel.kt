@@ -7,7 +7,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import org.brightify.hyperdrive.multiplatformx.internal.CollectedPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyProvider
-import org.brightify.hyperdrive.multiplatformx.internal.PublishedListPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.PublishedMutableListPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.PublishedPropertyProvider
 import kotlin.properties.PropertyDelegateProvider

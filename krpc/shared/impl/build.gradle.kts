@@ -43,6 +43,16 @@ kotlin {
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
                 implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+
+                implementation("io.kotest:kotest-runner-junit5:${Versions.kotest}") {
+                    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
+                }
+                implementation("io.kotest:kotest-assertions-core:${Versions.kotest}") {
+                    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
+                }
+                implementation("io.kotest:kotest-property:${Versions.kotest}") {
+                    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
+                }
             }
         }
     }
