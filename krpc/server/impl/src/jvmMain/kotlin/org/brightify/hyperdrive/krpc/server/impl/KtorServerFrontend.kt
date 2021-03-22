@@ -23,8 +23,6 @@ class KtorServerFrontend(
     port: Int = 8000,
     val frameConverter: WebSocketFrameConverter<Frame, RPCEvent, RPCEvent>,
     val serviceRegistry: ServiceRegistry,
-    val outStreamScope: CoroutineScope,
-    val responseScope: CoroutineScope,
 ): Server {
     private val server = KRPCServer(serviceRegistry)
 

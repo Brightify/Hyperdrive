@@ -21,11 +21,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":krpc-shared-api"))
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
 
                 implementation(kotlin("stdlib-common"))
             }
@@ -34,6 +30,12 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
+
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
+                    version {
+                        strictly(Versions.coroutines)
+                    }
+                }
             }
         }
 

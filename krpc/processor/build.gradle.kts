@@ -12,11 +12,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":krpc-annotations"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-        version {
-            strictly(Versions.coroutines)
-        }
-    }
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
     implementation("com.squareup:kotlinpoet:1.7.2")
 
     implementation("com.google.devtools.ksp:symbol-processing-api:${Versions.symbolProcessing}")
@@ -27,6 +23,11 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
+        version {
+            strictly(Versions.coroutines)
+        }
+    }
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.6")
     testImplementation("com.google.devtools.ksp:symbol-processing-api:${Versions.symbolProcessing}")
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing-ksp:1.3.6")

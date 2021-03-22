@@ -115,8 +115,6 @@ class GeneratedServiceTest: BehaviorSpec({
                 )
             ),
             serviceRegistry = registry,
-            responseScope = testScope,
-            outStreamScope = testScope,
         )
 
         val clientTransport = WebSocketClient(
@@ -128,7 +126,7 @@ class GeneratedServiceTest: BehaviorSpec({
                 )
             )
         )
-        ServiceClientImpl(clientTransport, DefaultServiceRegistry(), testScope, testScope, testScope)
+        ServiceClientImpl(clientTransport, DefaultServiceRegistry(), testScope)
     }
 
     val protocol = lazy {
@@ -136,7 +134,7 @@ class GeneratedServiceTest: BehaviorSpec({
         registry.register(BasicTestService.Descriptor.describe(serviceImpl))
         val connection = LoopbackConnection(testScope)
 
-        AscensionRPCProtocol.Factory(registry, testScope, testScope).create(connection)
+        AscensionRPCProtocol.Factory(registry).create(connection)
     }
 
     listOf(protocol, client).forEach { lazyTransport ->

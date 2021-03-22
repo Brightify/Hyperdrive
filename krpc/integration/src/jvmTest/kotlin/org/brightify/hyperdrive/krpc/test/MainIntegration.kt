@@ -42,9 +42,7 @@ class MainIntegration {
                     incomingDeserializer = RPCFrameDeserializationStrategy()
                 )
             ),
-            serviceRegistry = DefaultServiceRegistry(),
-            outStreamScope = GlobalScope,
-            responseScope = GlobalScope
+            serviceRegistry = DefaultServiceRegistry()
         )
 
         val clientTransport = WebSocketClient(
@@ -56,7 +54,7 @@ class MainIntegration {
                 )
             )
         )
-        client = ServiceClientImpl(clientTransport, DefaultServiceRegistry(), GlobalScope, GlobalScope, GlobalScope)
+        client = ServiceClientImpl(clientTransport, DefaultServiceRegistry(), GlobalScope)
     }
 
     @AfterEach

@@ -39,8 +39,6 @@ class ServiceClientImpl(
 //    private val contextSerializer: ContextSerializer,
     serviceRegistry: ServiceRegistry,
     communicationScope: CoroutineScope,
-    outStreamScope: CoroutineScope,
-    responseScope: CoroutineScope,
 ): ServiceClient {
     private val runJob: Job
 

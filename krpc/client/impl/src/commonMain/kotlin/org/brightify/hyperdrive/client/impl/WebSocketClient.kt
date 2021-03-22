@@ -18,7 +18,6 @@ import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
 class WebSocketClient(
-    private val connectionScope: CoroutineScope,
     private val host: String = "localhost",
     private val port: Int = 8000,
     private val path: String = "/",

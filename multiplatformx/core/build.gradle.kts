@@ -20,13 +20,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib"))
                 implementation(project(":multiplatformx-api"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
-
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.0.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
             }
         }
 
@@ -35,6 +30,12 @@ kotlin {
             resources.setSrcDirs(listOf("src/test/resources"))
 
             dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
+                    version {
+                        strictly(Versions.coroutines)
+                    }
+                }
+
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
                 implementation("org.junit.jupiter:junit-jupiter:5.6.2")

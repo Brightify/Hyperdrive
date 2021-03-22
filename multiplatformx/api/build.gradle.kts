@@ -19,15 +19,16 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
 
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+            }
+        }
+        val commonTest by getting {
+            dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
                     version {
                         strictly(Versions.coroutines)
                     }
                 }
-            }
-        }
-        val commonTest by getting {
-            dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
             }

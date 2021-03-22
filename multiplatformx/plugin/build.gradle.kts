@@ -30,11 +30,7 @@ dependencies {
     compileOnly(kotlin("compiler-embeddable"))
     api(project(":plugin-api"))
     implementation(project(":multiplatformx-api"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-        version {
-            strictly(Versions.coroutines)
-        }
-    }
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
 
     compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")
     kapt("com.google.auto.service:auto-service:${Versions.autoService}")
@@ -42,6 +38,11 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
+        version {
+            strictly(Versions.coroutines)
+        }
+    }
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.1")
     testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
 }
