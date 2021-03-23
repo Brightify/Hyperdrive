@@ -74,8 +74,6 @@ tasks.withType<KotlinCompile<*>> {
             "-Xplugin=${krpcPluginJar.archiveFile.get().asFile.absolutePath}",
             "-P", "plugin:org.brightify.hyperdrive.krpc:enabled=true"
         )
-
-        println(freeCompilerArgs)
     }
 }
 
@@ -87,10 +85,6 @@ tasks.withType<KotlinJvmCompile> {
 
 tasks.withType<KotlinJvmTest> {
     useJUnitPlatform()
-}
-
-afterEvaluate {
-    println(tasks.map { it.name })
 }
 
 tasks.publish {

@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.serialization.modules.plus
 import kotlinx.serialization.protobuf.ProtoBuf
+import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
 import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
 import org.brightify.hyperdrive.krpc.RPCConnection
@@ -17,6 +18,9 @@ class LoopbackConnection(
     private val scope: CoroutineScope,
     private val sendDelayInMillis: Long = 0,
 ): RPCConnection, CoroutineScope by scope {
+    private companion object {
+        val logger = Logger<LoopbackConnection>()
+    }
 
     private val outgoingSerializer = RPCFrameSerializationStrategy<RPCEvent>()
     private val incomingDeserializer = RPCFrameDeserializationStrategy<RPCEvent>()
@@ -29,11 +33,11 @@ class LoopbackConnection(
     override suspend fun receive(): IncomingRPCFrame<RPCEvent> {
         return channel.receive()
             .let { format.decodeFromByteArray(incomingDeserializer, it) }
-            .also { println("Received $it") }
+            .also { logger.debug { "Received $it" } }
     }
 
     override suspend fun send(frame: OutgoingRPCFrame<RPCEvent>) {
-        println("Sending $frame")
+        logger.debug {"Sending $frame" }
         delay(sendDelayInMillis)
         channel.send(format.encodeToByteArray(outgoingSerializer, frame))
     }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationStrategy
+import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.ServiceRegistry
 import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
@@ -34,6 +35,10 @@ class AscensionRPCProtocol(
     private val serviceRegistry: ServiceRegistry,
     private val connection: RPCConnection,
 ): RPCProtocol {
+    private companion object {
+        val logger = Logger<AscensionRPCProtocol>()
+    }
+
     override val version = RPCProtocol.Version.Ascension
 
     override val isActive: Boolean
@@ -73,21 +78,6 @@ class AscensionRPCProtocol(
     }
 
     private suspend fun handleUpstreamEvent(frame: IncomingRPCFrame<UpstreamRPCEvent>) {
-        suspend fun IncomingRPCFrame<RPCEvent>.respond(
-            event: DownstreamRPCEvent,
-            serializer: KSerializer<out Any?>,
-            data: Any?,
-        ) = connection.send(
-            OutgoingRPCFrame(
-                header = RPCFrame.Header(
-                    this.header.callReference,
-                    event,
-                ),
-                serializationStrategy = serializer as SerializationStrategy<Any?>,
-                data,
-            )
-        )
-
         val event = frame.header.event
         val reference = frame.header.callReference
         val existingPendingCall = serverPendingCalls[reference]
@@ -101,7 +91,7 @@ class AscensionRPCProtocol(
                         reference,
                         call,
                     ) {
-                        println("Server - Single Finished")
+                        logger.debug { "Server - SingleCall Finished" }
                         serverPendingCalls.remove(reference)
                     }
                     is RunnableCallDescription.ColdUpstream<*, *, *> -> ColdUpstreamPendingRPC.Server(
@@ -109,7 +99,7 @@ class AscensionRPCProtocol(
                         reference,
                         call,
                     ) {
-                        println("Server - ColdUpstream Finished")
+                        logger.debug { "Server - ColdUpstream Finished" }
                         serverPendingCalls.remove(reference)
                     }
                     is RunnableCallDescription.ColdDownstream<*, *> -> ColdDownstreamPendingRPC.Server(
@@ -117,7 +107,7 @@ class AscensionRPCProtocol(
                         reference,
                         call,
                     ) {
-                        println("Server - ColdDownstream Finished")
+                        logger.debug { "Server - ColdDownstream Finished" }
                         serverPendingCalls.remove(reference)
                     }
                     is RunnableCallDescription.ColdBistream<*, *, *> -> ColdBistreamPendingRPC.Server(
@@ -125,7 +115,7 @@ class AscensionRPCProtocol(
                         reference,
                         call,
                     ) {
-                        println("Server - ColdBistream Finished")
+                        logger.debug { "Server - ColdBistream Finished" }
                         serverPendingCalls.remove(reference)
                     }
                     null -> closeWithError(reference, RPCNotFoundError(event.serviceCall))
@@ -162,7 +152,7 @@ class AscensionRPCProtocol(
     override suspend fun <REQUEST, RESPONSE> singleCall(serviceCall: SingleCallDescription<REQUEST, RESPONSE>, request: REQUEST): RESPONSE {
         val reference = nextCallReference()
         val pendingCall = SingleCallPendingRPC.Client(connection, serviceCall, reference) {
-            println("Client - Single finished")
+            logger.debug { "Client - Single finished" }
             clientPendingCalls.remove(reference)
         }
         clientPendingCalls[reference] = pendingCall
@@ -173,6 +163,7 @@ class AscensionRPCProtocol(
     override suspend fun <REQUEST, CLIENT_STREAM, RESPONSE> clientStream(serviceCall: ColdUpstreamCallDescription<REQUEST, CLIENT_STREAM, RESPONSE>, request: REQUEST, clientStream: Flow<CLIENT_STREAM>): RESPONSE {
         val reference = nextCallReference()
         val pendingCall = ColdUpstreamPendingRPC.Client(connection, reference, serviceCall, clientStream) {
+            logger.debug { "Client - ClientStream finished" }
             clientPendingCalls.remove(reference)
         }
         clientPendingCalls[reference] = pendingCall
@@ -186,7 +177,7 @@ class AscensionRPCProtocol(
     ): Flow<RESPONSE> {
         val reference = nextCallReference()
         val pendingCall = ColdDownstreamPendingRPC.Client(connection, reference, serviceCall) {
-            println("Client - ServerStream finished")
+            logger.debug { "Client - ServerStream finished" }
             clientPendingCalls.remove(reference)
         }
         clientPendingCalls[reference] = pendingCall
@@ -201,6 +192,7 @@ class AscensionRPCProtocol(
     ): Flow<RESPONSE> = flow {
         val reference = nextCallReference()
         val pendingCall = ColdBistreamPendingRPC.Client(connection, reference, serviceCall, clientStream) {
+            logger.debug { "Client - BiStream finished" }
             clientPendingCalls.remove(reference)
         }
         clientPendingCalls[reference] = pendingCall

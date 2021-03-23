@@ -189,7 +189,6 @@ object ColdDownstreamPendingRPC {
                         channel.consumeAsFlow()
                             .onStart { frame.startServerStream() }
                             .onCompletion {
-                                println("$closedByUpstream, $this, $it")
                                 if (!closedByUpstream) {
                                     frame.closeServerStream()
                                     release()

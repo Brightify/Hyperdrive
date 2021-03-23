@@ -349,19 +349,6 @@ class KrpcIrGenerator(
 
             }
         }
-        println("================== BEGIN <${irClass.name.asString()}> ==================")
-        try {
-            println(irClass.dumpKotlinLike())
-        } catch (t: Throwable) {
-            t.printStackTrace()
-        }
-        println("==================")
-        try {
-            println(irClass.dump())
-        } catch (t: Throwable) {
-            t.printStackTrace()
-        }
-        println("================== END <${irClass.name.asString()}> ==================")
     }
 
     private val FqName.primaryConstructor: IrConstructorSymbol

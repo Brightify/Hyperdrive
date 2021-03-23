@@ -20,6 +20,7 @@ kotlin {
             dependencies {
                 api(project(":krpc-annotations"))
                 api(project(":krpc-shared-api"))
+                implementation(project(":logging-api"))
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
