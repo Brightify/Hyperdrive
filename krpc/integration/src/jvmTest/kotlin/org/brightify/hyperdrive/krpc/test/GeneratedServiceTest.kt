@@ -1,14 +1,9 @@
 package org.brightify.hyperdrive.krpc.test
 
 import io.kotest.assertions.throwables.shouldThrowExactly
-import io.kotest.core.datatest.forAll
-import io.kotest.core.spec.style.AnnotationSpec
 import io.kotest.core.spec.style.BehaviorSpec
-import io.kotest.data.headers
 import io.kotest.data.row
-import io.kotest.data.table
 import io.kotest.matchers.collections.shouldContainExactly
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -16,35 +11,20 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.withIndex
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
-import kotlinx.serialization.Serializable
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.client.impl.ProtoBufWebSocketFrameConverter
-import org.brightify.hyperdrive.client.impl.ServiceClientImpl
+import org.brightify.hyperdrive.krpc.client.impl.ServiceClient
 import org.brightify.hyperdrive.client.impl.SingleFrameConverterWrapper
 import org.brightify.hyperdrive.client.impl.WebSocketClient
 import org.brightify.hyperdrive.krpc.api.RPCFrameDeserializationStrategy
 import org.brightify.hyperdrive.krpc.api.RPCFrameSerializationStrategy
-import org.brightify.hyperdrive.krpc.api.RPCProtocol
-import org.brightify.hyperdrive.krpc.api.RPCTransport
-import org.brightify.hyperdrive.krpc.api.ServiceDescriptor
-import org.brightify.hyperdrive.krpc.api.error.RPCNotFoundError
-import org.brightify.hyperdrive.krpc.api.impl.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.api.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.server.impl.KtorServerFrontend
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import kotlin.reflect.KClass
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
+import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
+import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 import io.kotest.matchers.shouldBe
 import io.kotest.property.checkAll
 import kotlinx.coroutines.flow.emptyFlow
@@ -107,7 +87,7 @@ class GeneratedServiceTest: BehaviorSpec({
     val client = lazy {
         val registry = DefaultServiceRegistry()
         registry.register(BasicTestService.Descriptor.describe(serviceImpl))
-        val serverFrontend = KtorServerFrontend(
+        val serverFrontend = org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend(
             frameConverter = SingleFrameConverterWrapper.binary(
                 ProtoBufWebSocketFrameConverter(
                     outgoingSerializer = RPCFrameSerializationStrategy(),
@@ -126,7 +106,7 @@ class GeneratedServiceTest: BehaviorSpec({
                 )
             )
         )
-        ServiceClientImpl(clientTransport, DefaultServiceRegistry(), testScope)
+        ServiceClient(clientTransport, DefaultServiceRegistry(), testScope)
     }
 
     val protocol = lazy {

@@ -16,7 +16,6 @@ import org.brightify.hyperdrive.krpc.api.RPCEvent
 import org.brightify.hyperdrive.krpc.api.RPCFrameDeserializationStrategy
 import org.brightify.hyperdrive.krpc.api.RPCFrameSerializationStrategy
 
-@OptIn(ExperimentalSerializationApi::class)
 class LoopbackConnection(
     private val scope: CoroutineScope,
     private val sendDelayInMillis: Long = 0,

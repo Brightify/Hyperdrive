@@ -7,11 +7,6 @@ plugins {
     id("com.github.gmazzo.buildconfig") version Versions.buildConfig
 }
 
-buildConfig {
-    packageName(project.group.toString())
-    buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"org.brightify.hyperdrive\"")
-}
-
 tasks.withType(KotlinCompile::class).all {
     kotlinOptions {
         jvmTarget = "1.8"

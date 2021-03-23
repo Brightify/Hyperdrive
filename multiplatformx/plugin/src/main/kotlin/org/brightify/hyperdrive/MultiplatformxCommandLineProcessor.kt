@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.utils.keysToMap
 @AutoService(CommandLineProcessor::class)
 class MultiplatformxCommandLineProcessor: CommandLineProcessor {
     companion object {
-        const val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
+        const val pluginId: String = "org.brightify.hyperdrive.multiplatformx"
     }
 
     override val pluginId: String = MultiplatformxCommandLineProcessor.pluginId

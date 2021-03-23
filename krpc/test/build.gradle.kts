@@ -50,6 +50,12 @@ kotlin {
             }
         }
     }
+
+    sourceSets {
+        all {
+            languageSettings.useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
+        }
+    }
 }
 
 tasks.withType<KotlinJvmTest> {

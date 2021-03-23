@@ -24,4 +24,6 @@ interface RPCTransport {
         request: REQUEST,
         clientStream: Flow<CLIENT_STREAM>
     ): Flow<RESPONSE>
+
+    suspend fun close()
 }

@@ -9,8 +9,8 @@ import kotlinx.coroutines.yield
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.api.EnableKRPC
-import org.brightify.hyperdrive.krpc.api.impl.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.api.impl.DefaultServiceRegistry
+import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
+import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 
 @EnableKRPC

@@ -9,13 +9,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import kotlinx.serialization.serializer
 import org.brightify.hyperdrive.client.impl.ProtoBufWebSocketFrameConverter
-import org.brightify.hyperdrive.client.impl.ServiceClientImpl
+import org.brightify.hyperdrive.krpc.client.impl.ServiceClient
 import org.brightify.hyperdrive.client.impl.SingleFrameConverterWrapper
 import org.brightify.hyperdrive.client.impl.WebSocketClient
 import org.brightify.hyperdrive.krpc.api.*
 import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
-import org.brightify.hyperdrive.krpc.api.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.server.impl.KtorServerFrontend
+import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
+import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
@@ -23,8 +23,8 @@ import kotlin.test.assertEquals
 
 class MainIntegration {
 
-    private lateinit var serverFrontend: KtorServerFrontend
-    private lateinit var client: ServiceClientImpl
+    private lateinit var serverFrontend: org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
+    private lateinit var client: ServiceClient
 
     @BeforeEach
     fun setup() {
@@ -35,7 +35,7 @@ class MainIntegration {
 //            }
 //        }
 
-        serverFrontend = KtorServerFrontend(
+        serverFrontend = org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend(
             frameConverter = SingleFrameConverterWrapper.binary(
                 ProtoBufWebSocketFrameConverter(
                     outgoingSerializer = RPCFrameSerializationStrategy(),
@@ -54,7 +54,7 @@ class MainIntegration {
                 )
             )
         )
-        client = ServiceClientImpl(clientTransport, DefaultServiceRegistry(), GlobalScope)
+        client = ServiceClient(clientTransport, DefaultServiceRegistry(), GlobalScope)
     }
 
     @AfterEach

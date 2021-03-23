@@ -18,10 +18,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-common"))
-
                 api(project(":krpc-annotations"))
-                implementation("io.ktor:ktor-client-websockets:${Versions.ktor}")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
@@ -50,6 +47,12 @@ kotlin {
 
                 implementation("org.junit.jupiter:junit-jupiter:5.6.2")
             }
+        }
+    }
+
+    sourceSets {
+        all {
+            languageSettings.useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
         }
     }
 }

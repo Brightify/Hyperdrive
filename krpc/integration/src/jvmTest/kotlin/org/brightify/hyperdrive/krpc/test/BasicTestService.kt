@@ -1,15 +1,12 @@
 package org.brightify.hyperdrive.krpc.test
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import org.brightify.hyperdrive.krpc.api.BaseRPCError
 import org.brightify.hyperdrive.krpc.api.EnableKRPC
-import org.brightify.hyperdrive.krpc.api.error.RPCNotFoundError
 import org.brightify.hyperdrive.krpc.api.Error
 import org.brightify.hyperdrive.krpc.api.RPCError
-import org.brightify.hyperdrive.krpc.api.RPCProtocol
+import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
 
 @Serializable
 class IllegalArgumentError: BaseRPCError {

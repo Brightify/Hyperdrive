@@ -1,7 +1,6 @@
 package org.brightify.hyperdrive.krpc.api
 
 import kotlinx.serialization.InternalSerializationApi
-import kotlinx.serialization.SealedClassSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic

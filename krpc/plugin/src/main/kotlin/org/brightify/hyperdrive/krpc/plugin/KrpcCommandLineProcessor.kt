@@ -1,7 +1,6 @@
 package org.brightify.hyperdrive.krpc.plugin
 
 import com.google.auto.service.AutoService
-import org.brightify.hyperdrive.BuildConfig
 import org.brightify.hyperdrive.PluginOption
 import org.jetbrains.kotlin.cli.common.toBooleanLenient
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
@@ -11,7 +10,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 @AutoService(CommandLineProcessor::class)
 class KrpcCommandLineProcessor: CommandLineProcessor {
     companion object {
-        const val pluginId: String = BuildConfig.KOTLIN_PLUGIN_ID
+        const val pluginId: String = "org.brightify.hyperdrive.krpc"
     }
 
     override val pluginId: String = KrpcCommandLineProcessor.pluginId

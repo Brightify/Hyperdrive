@@ -33,3 +33,7 @@ intellij {
 
     updateSinceUntilBuild = false
 }
+
+tasks.buildSearchableOptions {
+    enabled = false
+}

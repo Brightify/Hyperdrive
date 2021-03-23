@@ -55,18 +55,20 @@ val krpcModules = listOf(
     "annotations" to emptyList(),
     "shared" to listOf(
         "api",
-        "impl"
+        "impl",
+        "impl-ktor"
     ),
     "client" to listOf(
         "api",
-        "impl"
+        "impl",
+        "impl-ktor"
     ),
     "server" to listOf(
         "api",
-        "impl"
+        "impl",
+        "impl-ktor"
     ),
     "plugin" to emptyList(),
-    "processor" to emptyList(),
     "integration" to emptyList(),
     "test" to emptyList()
 )

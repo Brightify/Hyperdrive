@@ -3,7 +3,7 @@ package org.brightify.hyperdrive.krpc.api.impl
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
-import org.brightify.hyperdrive.krpc.api.RPCProtocol
+import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
 import org.brightify.hyperdrive.krpc.api.RPCTransport
 import org.brightify.hyperdrive.krpc.api.ServiceCallIdentifier
 import org.brightify.hyperdrive.krpc.api.ServiceDescription

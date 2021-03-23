@@ -3,11 +3,6 @@ package org.brightify.hyperdrive.krpc.api
 import kotlinx.serialization.Serializable
 import kotlin.reflect.KClass
 
-interface RPCClientConnector {
-    suspend fun withConnection(block: suspend RPCConnection.() -> Unit)
-
-}
-
 suspend inline fun <reified SPECIFIC_INCOMING: RPCEvent> RPCConnection.receiveSpecific(): IncomingRPCFrame<SPECIFIC_INCOMING> {
     val receivedFrame = receive()
     if (receivedFrame.header.event is SPECIFIC_INCOMING) {

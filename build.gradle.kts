@@ -33,6 +33,9 @@ allprojects {
     tasks.withType(KotlinCompile::class).all {
         kotlinOptions {
             jvmTarget = "1.8"
+            freeCompilerArgs += listOf(
+                "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi"
+            )
         }
     }
 

@@ -18,8 +18,6 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            kotlin.srcDir(File(buildDir, "generated/ksp/src/main/kotlin"))
-
             dependencies {
                 api(project(":krpc-annotations"))
                 api(project(":krpc-shared-api"))
@@ -54,6 +52,12 @@ kotlin {
                     exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
                 }
             }
+        }
+    }
+
+    sourceSets {
+        all {
+            languageSettings.useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
         }
     }
 }

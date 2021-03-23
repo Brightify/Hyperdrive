@@ -4,33 +4,19 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.first
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.serialization.builtins.serializer
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
 import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
 import org.brightify.hyperdrive.krpc.api.ColdBistreamCallDescriptor
 import org.brightify.hyperdrive.krpc.api.ColdDownstreamCallDescriptor
@@ -41,16 +27,9 @@ import org.brightify.hyperdrive.krpc.api.ServiceCallIdentifier
 import org.brightify.hyperdrive.krpc.api.ServiceDescription
 import org.brightify.hyperdrive.krpc.api.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
-import org.brightify.hyperdrive.krpc.api.impl.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.api.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.api.impl.ServiceRegistry
+import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
+import org.brightify.hyperdrive.krpc.ServiceRegistry
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import kotlin.reflect.KClass
 
 class AscensionProtocolTest: BehaviorSpec({
 

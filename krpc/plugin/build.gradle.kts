@@ -3,12 +3,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    id("com.github.gmazzo.buildconfig")
-}
-
-buildConfig {
-    packageName(project.group.toString())
-    buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"org.brightify.hyperdrive.krpc\"")
 }
 
 tasks.withType(KotlinCompile::class).all {
