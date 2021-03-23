@@ -15,14 +15,14 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdBistreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdDownstreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdUpstreamCallDescriptor
+import org.brightify.hyperdrive.krpc.description.SingleCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.api.InternalRPCError
 import org.brightify.hyperdrive.krpc.api.RPCError
-import org.brightify.hyperdrive.krpc.api.RPCTransport
-import org.brightify.hyperdrive.krpc.api.impl.ProtocolUpgradeService
+import org.brightify.hyperdrive.krpc.RPCTransport
+import org.brightify.hyperdrive.krpc.protocol.ProtocolUpgradeService
 import org.brightify.hyperdrive.krpc.client.RPCClientConnector
 import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
@@ -96,23 +96,23 @@ class ServiceClient(
         return activeProtocol.filterNotNull().filter { it.isActive }.first().let { block(it) }
     }
 
-    override suspend fun <REQUEST, RESPONSE> singleCall(serviceCall: ClientCallDescriptor<REQUEST, RESPONSE>, request: REQUEST): RESPONSE = withActiveProtocol {
+    override suspend fun <REQUEST, RESPONSE> singleCall(serviceCall: SingleCallDescription<REQUEST, RESPONSE>, request: REQUEST): RESPONSE = withActiveProtocol {
         singleCall(serviceCall, request)
     }
 
-    override suspend fun <REQUEST, CLIENT_STREAM, RESPONSE> clientStream(serviceCall: ColdUpstreamCallDescriptor<REQUEST, CLIENT_STREAM, RESPONSE>, request: REQUEST, clientStream: Flow<CLIENT_STREAM>): RESPONSE = withActiveProtocol {
+    override suspend fun <REQUEST, CLIENT_STREAM, RESPONSE> clientStream(serviceCall: ColdUpstreamCallDescription<REQUEST, CLIENT_STREAM, RESPONSE>, request: REQUEST, clientStream: Flow<CLIENT_STREAM>): RESPONSE = withActiveProtocol {
         clientStream(serviceCall, request, clientStream)
     }
 
     override suspend fun <REQUEST, RESPONSE> serverStream(
-        serviceCall: ColdDownstreamCallDescriptor<REQUEST, RESPONSE>,
+        serviceCall: ColdDownstreamCallDescription<REQUEST, RESPONSE>,
         request: REQUEST
     ): Flow<RESPONSE> = withActiveProtocol {
         serverStream(serviceCall, request)
     }
 
     override suspend fun <REQUEST, CLIENT_STREAM, RESPONSE> biStream(
-        serviceCall: ColdBistreamCallDescriptor<REQUEST, CLIENT_STREAM, RESPONSE>,
+        serviceCall: ColdBistreamCallDescription<REQUEST, CLIENT_STREAM, RESPONSE>,
         request: REQUEST,
         clientStream: Flow<CLIENT_STREAM>
     ): Flow<RESPONSE> = withActiveProtocol {

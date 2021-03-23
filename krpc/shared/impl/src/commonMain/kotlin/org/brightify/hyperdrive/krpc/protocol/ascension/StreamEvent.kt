@@ -11,8 +11,8 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.brightify.hyperdrive.krpc.api.RPCError
-import org.brightify.hyperdrive.krpc.api.error.InternalServerError
-import org.brightify.hyperdrive.krpc.api.impl.Do
+import org.brightify.hyperdrive.krpc.error.InternalServerError
+import org.brightify.hyperdrive.utils.Do
 
 sealed class StreamEvent<DATA> {
     data class Next<DATA>(
@@ -68,7 +68,7 @@ class StreamEventSerializer<DATA>(
 
         encoder.encodeSerializableValue(eventTypeSerialier, eventType)
 
-        Do exhaustive when (value) {
+        org.brightify.hyperdrive.utils.Do exhaustive when (value) {
             is StreamEvent.Next -> encoder.encodeSerializableValue(dataSerializer, value.data)
             is StreamEvent.Complete -> { }
             is StreamEvent.Error -> encoder.encodeSerializableValue(errorSerializer, value.error)

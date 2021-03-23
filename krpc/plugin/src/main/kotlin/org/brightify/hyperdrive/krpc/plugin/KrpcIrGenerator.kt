@@ -3,8 +3,6 @@ package org.brightify.hyperdrive.krpc.plugin
 import org.jetbrains.kotlin.backend.common.ClassLoweringPass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.backend.common.serialization.knownBuiltins
-import org.jetbrains.kotlin.backend.jvm.codegen.IrInlineDefaultCodegen
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
@@ -19,11 +17,9 @@ import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -34,7 +30,6 @@ import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.interpreter.toIrConst
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
@@ -42,10 +37,8 @@ import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
 import org.jetbrains.kotlin.ir.types.starProjectedType
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.SYNTHETIC_OFFSET
 import org.jetbrains.kotlin.ir.util.constructors
@@ -169,19 +162,19 @@ class KrpcIrGenerator(
                                 call.putValueArgument(0, irCall(serviceIdentifier.getter!!).also { it.dispatchReceiver = irGet(describe.dispatchReceiverParameter!!) })
                                 call.putValueArgument(1, irCall(
                                     KnownType.Kotlin.listOf.asFunction { it.owner.typeParameters.count() == 1 && it.owner.valueParameters.singleOrNull()?.isVararg ?: false },
-                                    KnownType.Kotlin.list.asClass().typeWith(KnownType.API.callDescriptor.asClass().starProjectedType)
+                                    KnownType.Kotlin.list.asClass().typeWith(KnownType.API.runnableCallDescription.asClass().starProjectedType)
                                 ).also { listCall ->
-                                    listCall.putTypeArgument(0, KnownType.API.callDescriptor.asClass().starProjectedType)
+                                    listCall.putTypeArgument(0, KnownType.API.runnableCallDescription.asClass().starProjectedType)
                                     listCall.putValueArgument(0, IrVarargImpl(
                                         listCall.startOffset,
                                         listCall.endOffset,
-                                        pluginContext.irBuiltIns.arrayClass.typeWith(KnownType.API.callDescriptor.asClass().starProjectedType),
-                                        KnownType.API.callDescriptor.asClass().starProjectedType,
+                                        pluginContext.irBuiltIns.arrayClass.typeWith(KnownType.API.runnableCallDescription.asClass().starProjectedType),
+                                        KnownType.API.runnableCallDescription.asClass().starProjectedType,
                                         calls.map { (name, rpcCall) ->
 
                                             irCall(
                                                 rpcCall.descriptorName.asClass().getSimpleFunction("calling")!!,
-                                                KnownType.API.callDescriptor.asClass().starProjectedType
+                                                KnownType.API.runnableCallDescription.asClass().starProjectedType
                                             ).also { call ->
                                                 val requestWrapperClass = KnownType.API.requestWrapper(rpcCall.requestType.count()).asClass()
                                                 val requestWrapperType = requestWrapperClass.typeWith(rpcCall.requestType)
@@ -405,7 +398,7 @@ class KrpcIrGenerator(
                     KrpcCall_(
                         function,
                         Name.identifier("biStream"),
-                        KnownType.API.coldBistreamCallDescriptor,
+                        KnownType.API.coldBistreamCallDescription,
                         expectedErrors,
                         clientRequestParameters.map { it.type },
                         KrpcCall_.FlowType(clientStreamingFlow),
@@ -419,7 +412,7 @@ class KrpcIrGenerator(
                     KrpcCall_(
                         function,
                         Name.identifier("clientStream"),
-                        KnownType.API.coldUpstreamCallDescriptor,
+                        KnownType.API.coldUpstreamCallDescription,
                         expectedErrors,
                         clientRequestParameters.map { it.type },
                         KrpcCall_.FlowType(clientStreamingFlow),
@@ -433,7 +426,7 @@ class KrpcIrGenerator(
                     KrpcCall_(
                         function,
                         Name.identifier("serverStream"),
-                        KnownType.API.coldDownstreamCallDescriptor,
+                        KnownType.API.coldDownstreamCallDescription,
                         expectedErrors,
                         clientRequestParameters.map { it.type },
                         null,
@@ -447,7 +440,7 @@ class KrpcIrGenerator(
                     KrpcCall_(
                         function,
                         Name.identifier("singleCall"),
-                        KnownType.API.clientCallDescriptor,
+                        KnownType.API.singleCallDescription,
                         expectedErrors,
                         clientRequestParameters.map { it.type },
                         null,

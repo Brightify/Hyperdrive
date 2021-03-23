@@ -8,14 +8,20 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import kotlinx.serialization.serializer
-import org.brightify.hyperdrive.client.impl.ProtoBufWebSocketFrameConverter
 import org.brightify.hyperdrive.krpc.client.impl.ServiceClient
-import org.brightify.hyperdrive.client.impl.SingleFrameConverterWrapper
-import org.brightify.hyperdrive.client.impl.WebSocketClient
 import org.brightify.hyperdrive.krpc.api.*
-import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.client.impl.ktor.ProtoBufWebSocketFrameConverter
+import org.brightify.hyperdrive.krpc.client.impl.ktor.SingleFrameConverterWrapper
+import org.brightify.hyperdrive.krpc.client.impl.ktor.WebSocketClient
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.SingleCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
+import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
+import org.brightify.hyperdrive.krpc.description.ServiceDescription
+import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameDeserializationStrategy
+import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameSerializationStrategy
 import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
@@ -46,7 +52,6 @@ class MainIntegration {
         )
 
         val clientTransport = WebSocketClient(
-            connectionScope = GlobalScope,
             frameConverter = SingleFrameConverterWrapper.binary(
                 ProtoBufWebSocketFrameConverter(
                     outgoingSerializer = RPCFrameSerializationStrategy(),
@@ -60,19 +65,19 @@ class MainIntegration {
     @AfterEach
     fun teardown() {
         serverFrontend.shutdown()
-        runBlocking { client.shutdown() }
+        runBlocking { client.close() }
     }
 
     @Test
     fun `perform single call`() = runBlocking {
         serverFrontend.register(ServiceDescription("MainIntegrationTest", listOf(
-            CallDescriptor.Single(ServiceCallIdentifier("MainIntegrationTest", "perform single call"), serializer<Int>(), serializer<Int>(), RPCErrorSerializer()) {
+            RunnableCallDescription.Single(ServiceCallIdentifier("MainIntegrationTest", "perform single call"), serializer<Int>(), serializer<Int>(), RPCErrorSerializer()) {
                 (it) / 2
             }
         )))
 
         try {
-            val response = client.singleCall<Int, Int>(ClientCallDescriptor(ServiceCallIdentifier("MainIntegrationTest", "perform single call"), serializer(), serializer(), RPCErrorSerializer()), 5)
+            val response = client.singleCall<Int, Int>(SingleCallDescription(ServiceCallIdentifier("MainIntegrationTest", "perform single call"), serializer(), serializer(), RPCErrorSerializer()), 5)
             assertEquals(2, response)
         } catch (t: Throwable) {
             t.printStackTrace()
@@ -83,7 +88,7 @@ class MainIntegration {
     @Test
     fun `perform upstream call`() = runBlocking {
         serverFrontend.register(ServiceDescription("MainIntegrationTest", listOf(
-            CallDescriptor.ColdUpstream(ServiceCallIdentifier("MainIntegrationTest", "perform outstream call"), serializer<Unit>(), serializer<Int>(), serializer<Int>(), RPCErrorSerializer()) { _, stream ->
+            RunnableCallDescription.ColdUpstream(ServiceCallIdentifier("MainIntegrationTest", "perform outstream call"), serializer<Unit>(), serializer<Int>(), serializer<Int>(), RPCErrorSerializer()) { _, stream ->
                 stream.take(5).reduce { a, b ->
                     println("a: $a, b: $b")
                     a + b
@@ -93,7 +98,7 @@ class MainIntegration {
 
         try {
             val response = client.clientStream<Unit, Int, Int>(
-                ColdUpstreamCallDescriptor(ServiceCallIdentifier("MainIntegrationTest", "perform outstream call"), serializer(), serializer(), serializer(), RPCErrorSerializer()),
+                ColdUpstreamCallDescription(ServiceCallIdentifier("MainIntegrationTest", "perform outstream call"), serializer(), serializer(), serializer(), RPCErrorSerializer()),
                 Unit,
                 flow {
                     var i = 1

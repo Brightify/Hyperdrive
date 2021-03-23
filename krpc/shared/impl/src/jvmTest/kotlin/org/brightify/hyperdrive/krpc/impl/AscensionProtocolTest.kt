@@ -17,16 +17,16 @@ import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.serialization.builtins.serializer
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
-import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdBistreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdDownstreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdUpstreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCTransport
-import org.brightify.hyperdrive.krpc.api.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.api.ServiceDescription
-import org.brightify.hyperdrive.krpc.api.ServiceDescriptor
-import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.description.SingleCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
+import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.RPCTransport
+import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
+import org.brightify.hyperdrive.krpc.description.ServiceDescription
+import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
+import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.ServiceRegistry
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
@@ -229,14 +229,14 @@ class AscensionProtocolTest: BehaviorSpec({
             }
 
             object Call {
-                val singleCall = ClientCallDescriptor(
+                val singleCall = SingleCallDescription(
                     ServiceCallIdentifier(serviceIdentifier, "singleCall"),
                     Unit.serializer(),
                     String.serializer(),
                     RPCErrorSerializer(),
                 )
 
-                val clientStream = ColdUpstreamCallDescriptor(
+                val clientStream = ColdUpstreamCallDescription(
                     ServiceCallIdentifier(serviceIdentifier, "clientStream"),
                     Unit.serializer(),
                     Int.serializer(),
@@ -244,14 +244,14 @@ class AscensionProtocolTest: BehaviorSpec({
                     RPCErrorSerializer(),
                 )
 
-                val serverStream = ColdDownstreamCallDescriptor(
+                val serverStream = ColdDownstreamCallDescription(
                     ServiceCallIdentifier(serviceIdentifier, "serverStream"),
                     Int.serializer(),
                     String.serializer(),
                     RPCErrorSerializer(),
                 )
 
-                val bidiStream = ColdBistreamCallDescriptor(
+                val bidiStream = ColdBistreamCallDescription(
                     ServiceCallIdentifier(serviceIdentifier, "bidiStream"),
                     Unit.serializer(),
                     Int.serializer(),

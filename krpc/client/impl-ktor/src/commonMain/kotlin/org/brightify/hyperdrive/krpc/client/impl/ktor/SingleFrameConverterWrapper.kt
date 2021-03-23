@@ -1,9 +1,9 @@
 package org.brightify.hyperdrive.krpc.client.impl.ktor
 
 import io.ktor.http.cio.websocket.*
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCEvent
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.RPCEvent
 import org.brightify.hyperdrive.krpc.api.WebSocketFrameConverter
 
 class SingleFrameConverterWrapper private constructor(

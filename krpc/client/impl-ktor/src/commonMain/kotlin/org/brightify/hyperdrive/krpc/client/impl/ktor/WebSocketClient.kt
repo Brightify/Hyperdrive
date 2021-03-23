@@ -8,10 +8,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCEvent
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.frame.RPCEvent
 import org.brightify.hyperdrive.krpc.client.RPCClientConnector
 import kotlin.time.ExperimentalTime
 

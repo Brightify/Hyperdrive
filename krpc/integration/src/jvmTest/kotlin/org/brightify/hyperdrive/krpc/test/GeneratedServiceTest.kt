@@ -16,20 +16,20 @@ import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.test.TestCoroutineScope
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
-import org.brightify.hyperdrive.client.impl.ProtoBufWebSocketFrameConverter
 import org.brightify.hyperdrive.krpc.client.impl.ServiceClient
-import org.brightify.hyperdrive.client.impl.SingleFrameConverterWrapper
-import org.brightify.hyperdrive.client.impl.WebSocketClient
-import org.brightify.hyperdrive.krpc.api.RPCFrameDeserializationStrategy
-import org.brightify.hyperdrive.krpc.api.RPCFrameSerializationStrategy
+import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameDeserializationStrategy
+import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameSerializationStrategy
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 import io.kotest.matchers.shouldBe
 import io.kotest.property.checkAll
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.toList
+import org.brightify.hyperdrive.krpc.client.impl.ktor.ProtoBufWebSocketFrameConverter
+import org.brightify.hyperdrive.krpc.client.impl.ktor.SingleFrameConverterWrapper
+import org.brightify.hyperdrive.krpc.client.impl.ktor.WebSocketClient
 
 class GeneratedServiceTest: BehaviorSpec({
     val serviceImpl = object: BasicTestService {
@@ -53,12 +53,12 @@ class GeneratedServiceTest: BehaviorSpec({
             return stream.fold(initialValue) { accumulator, value -> accumulator + value }
         }
 
-        override suspend fun clientStreamError(stream: Flow<Unit>): IllegalArgumentError {
+        override suspend fun clientStreamError(stream: Flow<Unit>) {
             try {
                 stream.collect()
                 error("Expected exception not thrown!")
             } catch (e: IllegalArgumentError) {
-                return e
+                throw e
             }
         }
 
@@ -98,7 +98,6 @@ class GeneratedServiceTest: BehaviorSpec({
         )
 
         val clientTransport = WebSocketClient(
-            connectionScope = testScope,
             frameConverter = SingleFrameConverterWrapper.binary(
                 ProtoBufWebSocketFrameConverter(
                     outgoingSerializer = RPCFrameSerializationStrategy(),
@@ -177,6 +176,14 @@ class GeneratedServiceTest: BehaviorSpec({
                             row(1, listOf(0)),
                         ).forEach { (input, expectedResult) ->
                             service.timer(input).toList() shouldContainExactly expectedResult
+                        }
+                    }
+                }
+
+                When("Running bistream call") {
+                    Then("Each element is multiplied by two") {
+                        checkAll<List<Int>> { input ->
+                            service.multiplyEachByTwo(input.asFlow()).toList() shouldContainExactly input.map { it * 2}
                         }
                     }
                 }

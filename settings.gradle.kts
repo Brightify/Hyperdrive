@@ -45,7 +45,9 @@ val pluginProjects = pluginModules.map {
     "plugin-$it" to "plugin/$it"
 }
 
-val mainModules = listOf<String>()
+val mainModules = listOf(
+    "kotlin-utils"
+)
 
 val mainProjects = mainModules.map {
     it to it

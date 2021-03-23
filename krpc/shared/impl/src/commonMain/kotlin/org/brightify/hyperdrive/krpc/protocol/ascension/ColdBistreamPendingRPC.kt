@@ -17,40 +17,40 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.serializer
 import org.brightify.hyperdrive.Logger
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdBistreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.DownstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCReference
-import org.brightify.hyperdrive.krpc.api.UnexpectedRPCEventException
-import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.error.RPCProtocolViolationError
-import org.brightify.hyperdrive.krpc.api.error.RPCStreamTimeoutError
-import org.brightify.hyperdrive.krpc.api.impl.Do
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
+import org.brightify.hyperdrive.krpc.frame.DownstreamRPCEvent
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.util.RPCReference
+import org.brightify.hyperdrive.krpc.frame.UpstreamRPCEvent
+import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
+import org.brightify.hyperdrive.krpc.error.RPCStreamTimeoutError
+import org.brightify.hyperdrive.utils.Do
 import org.brightify.hyperdrive.krpc.api.throwable
+import org.brightify.hyperdrive.krpc.error.UnexpectedRPCEventException
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.RPCFrame
 
 object ColdBistreamPendingRPC {
-    private val <REQUEST, CLIENT_STREAM, SERVER_STREAM> CallDescriptor.ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
+    private val <REQUEST, CLIENT_STREAM, SERVER_STREAM> RunnableCallDescription.ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
         get() = StreamEventSerializer(clientStreamSerializer, errorSerializer)
 
-    private val <REQUEST, CLIENT_STREAM, SERVER_STREAM> ColdBistreamCallDescriptor<REQUEST, CLIENT_STREAM, SERVER_STREAM>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
+    private val <REQUEST, CLIENT_STREAM, SERVER_STREAM> ColdBistreamCallDescription<REQUEST, CLIENT_STREAM, SERVER_STREAM>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
         get() = StreamEventSerializer(clientStreamSerializer, errorSerializer)
 
-    private val <REQUEST, CLIENT_STREAM, SERVER_STREAM> CallDescriptor.ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>.serverStreamEventSerializer: KSerializer<out StreamEvent<out SERVER_STREAM>>
+    private val <REQUEST, CLIENT_STREAM, SERVER_STREAM> RunnableCallDescription.ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>.serverStreamEventSerializer: KSerializer<out StreamEvent<out SERVER_STREAM>>
         get() = StreamEventSerializer(responseSerializer, errorSerializer)
 
-    private val <REQUEST, CLIENT_STREAM, SERVER_STREAM> ColdBistreamCallDescriptor<REQUEST, CLIENT_STREAM, SERVER_STREAM>.serverStreamEventSerializer: KSerializer<out StreamEvent<out SERVER_STREAM>>
+    private val <REQUEST, CLIENT_STREAM, SERVER_STREAM> ColdBistreamCallDescription<REQUEST, CLIENT_STREAM, SERVER_STREAM>.serverStreamEventSerializer: KSerializer<out StreamEvent<out SERVER_STREAM>>
         get() = StreamEventSerializer(serverStreamSerializer, errorSerializer)
 
     class Server<REQUEST, CLIENT_STREAM, SERVER_STREAM>(
         connection: RPCConnection,
         reference: RPCReference,
-        call: CallDescriptor.ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>,
+        call: RunnableCallDescription.ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>,
         onFinished: () -> Unit,
-    ): PendingRPC.Server<REQUEST, CallDescriptor.ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>>(connection, reference, call, onFinished) {
+    ): PendingRPC.Server<REQUEST, RunnableCallDescription.ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>>(connection, reference, call, onFinished) {
         private companion object {
             val logger = Logger<ColdBistreamPendingRPC.Server<*, *, *>>()
             // 60 seconds
@@ -69,7 +69,7 @@ object ColdBistreamPendingRPC {
         private val channel = Channel<CLIENT_STREAM>()
 
         override suspend fun handle(frame: IncomingRPCFrame<UpstreamRPCEvent>) {
-            Do exhaustive when (frame.header.event) {
+            org.brightify.hyperdrive.utils.Do exhaustive when (frame.header.event) {
                 is UpstreamRPCEvent.Open -> launch {
                     val data = frame.decoder.decodeSerializableValue(call.requestSerializer)
 
@@ -147,7 +147,7 @@ object ColdBistreamPendingRPC {
                 UpstreamRPCEvent.Data -> {
                     val event = frame.decoder.decodeSerializableValue(call.clientStreamEventSerializer)
 
-                    Do exhaustive when (event) {
+                    org.brightify.hyperdrive.utils.Do exhaustive when (event) {
                         is StreamEvent.Next -> channel.send(event.data)
                         is StreamEvent.Complete -> channel.close()
                         is StreamEvent.Error -> channel.close(event.error.throwable())
@@ -203,10 +203,10 @@ object ColdBistreamPendingRPC {
     class Client<REQUEST, CLIENT_STREAM, SERVER_STREAM>(
         connection: RPCConnection,
         reference: RPCReference,
-        call: ColdBistreamCallDescriptor<REQUEST, CLIENT_STREAM, SERVER_STREAM>,
+        call: ColdBistreamCallDescription<REQUEST, CLIENT_STREAM, SERVER_STREAM>,
         private val clientStream: Flow<CLIENT_STREAM>,
         onFinished: () -> Unit,
-    ): PendingRPC.Client<REQUEST, Flow<SERVER_STREAM>, ColdBistreamCallDescriptor<REQUEST, CLIENT_STREAM, SERVER_STREAM>>(connection, reference, call, onFinished) {
+    ): PendingRPC.Client<REQUEST, Flow<SERVER_STREAM>, ColdBistreamCallDescription<REQUEST, CLIENT_STREAM, SERVER_STREAM>>(connection, reference, call, onFinished) {
         private companion object {
             val logger = Logger<ColdBistreamPendingRPC.Client<*, *, *>>()
         }
@@ -223,7 +223,7 @@ object ColdBistreamPendingRPC {
         }
 
         override suspend fun handle(frame: IncomingRPCFrame<DownstreamRPCEvent>) {
-            Do exhaustive when (frame.header.event) {
+            org.brightify.hyperdrive.utils.Do exhaustive when (frame.header.event) {
                 DownstreamRPCEvent.Opened -> {
                     retain()
                     val channel = Channel<SERVER_STREAM>()
@@ -243,7 +243,7 @@ object ColdBistreamPendingRPC {
                     if (channelDeferred.isCompleted) {
                         val event = frame.decoder.decodeSerializableValue(call.serverStreamEventSerializer)
                         val channel = channelDeferred.getCompleted()
-                        Do exhaustive when (event) {
+                        org.brightify.hyperdrive.utils.Do exhaustive when (event) {
                             is StreamEvent.Next -> channel.send(event.data)
                             is StreamEvent.Complete -> {
                                 closedByUpstream = true

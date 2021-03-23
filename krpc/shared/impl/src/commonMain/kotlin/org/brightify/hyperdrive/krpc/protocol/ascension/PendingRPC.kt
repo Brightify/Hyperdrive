@@ -12,20 +12,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.brightify.hyperdrive.Logger
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.DownstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.LocalCallDescriptor
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCConnection
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.frame.DownstreamRPCEvent
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.description.CallDescription
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.api.RPCError
-import org.brightify.hyperdrive.krpc.api.RPCEvent
-import org.brightify.hyperdrive.krpc.api.RPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCReference
-import org.brightify.hyperdrive.krpc.api.UnexpectedRPCEventException
-import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
-import org.brightify.hyperdrive.krpc.api.error.RPCProtocolViolationError
+import org.brightify.hyperdrive.krpc.frame.RPCEvent
+import org.brightify.hyperdrive.krpc.frame.RPCFrame
+import org.brightify.hyperdrive.krpc.util.RPCReference
+import org.brightify.hyperdrive.krpc.frame.UpstreamRPCEvent
+import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
+import org.brightify.hyperdrive.krpc.error.UnexpectedRPCEventException
 import kotlin.coroutines.coroutineContext
 
 // TODO: Add timeout between "Created" and "Ready" to close inactive connections.
@@ -199,7 +199,7 @@ abstract class PendingRPC<EVENT: RPCEvent>(
         )
     }
 
-    abstract class Server<PAYLOAD, CALL: CallDescriptor<PAYLOAD>>(
+    abstract class Server<PAYLOAD, CALL: RunnableCallDescription<PAYLOAD>>(
         connection: RPCConnection,
         reference: RPCReference,
         protected val call: CALL,
@@ -217,7 +217,7 @@ abstract class PendingRPC<EVENT: RPCEvent>(
             get() = decoder.decodeSerializableValue(call.errorSerializer)
     }
 
-    abstract class Client<PAYLOAD, RESPONSE, CALL: LocalCallDescriptor<PAYLOAD>>(
+    abstract class Client<PAYLOAD, RESPONSE, CALL: CallDescription<PAYLOAD>>(
         connection: RPCConnection,
         reference: RPCReference,
         protected val call: CALL,

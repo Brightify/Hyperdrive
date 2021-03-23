@@ -1,14 +1,14 @@
 package org.brightify.hyperdrive.krpc.impl
 
 import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.api.ServiceDescription
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
+import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import kotlin.reflect.KClass
 
 class DefaultServiceRegistry: ServiceRegistry {
     private val services: MutableMap<String, ServiceDescription> = mutableMapOf()
-    private val serviceCalls: MutableMap<String, Map<String, CallDescriptor<*>>> = mutableMapOf()
+    private val serviceCalls: MutableMap<String, Map<String, RunnableCallDescription<*>>> = mutableMapOf()
 
     override fun register(description: ServiceDescription) {
         services[description.identifier] = description
@@ -18,7 +18,7 @@ class DefaultServiceRegistry: ServiceRegistry {
         }.toMap()
     }
 
-    override fun <T: CallDescriptor<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T? {
+    override fun <T: RunnableCallDescription<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T? {
         val knownCall = serviceCalls[id.serviceId]?.get(id.callId) ?: return null
         return if (type.isInstance(knownCall)) {
             knownCall as T

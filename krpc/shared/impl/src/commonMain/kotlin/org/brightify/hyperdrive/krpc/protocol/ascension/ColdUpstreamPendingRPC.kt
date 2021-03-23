@@ -13,32 +13,32 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.builtins.serializer
 import org.brightify.hyperdrive.Logger
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdUpstreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.DownstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCReference
-import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.error.RPCProtocolViolationError
-import org.brightify.hyperdrive.krpc.api.impl.Do
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
+import org.brightify.hyperdrive.krpc.frame.DownstreamRPCEvent
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.api.throwable
+import org.brightify.hyperdrive.krpc.frame.RPCFrame
+import org.brightify.hyperdrive.krpc.util.RPCReference
+import org.brightify.hyperdrive.krpc.frame.UpstreamRPCEvent
+import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
+import org.brightify.hyperdrive.utils.Do
 
 object ColdUpstreamPendingRPC {
-    private val <REQUEST, CLIENT_STREAM, RESPONSE> CallDescriptor.ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
+    private val <REQUEST, CLIENT_STREAM, RESPONSE> RunnableCallDescription.ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
         get() = StreamEventSerializer(clientStreamSerializer, errorSerializer)
 
-    private val <REQUEST, CLIENT_STREAM, RESPONSE> ColdUpstreamCallDescriptor<REQUEST, CLIENT_STREAM, RESPONSE>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
+    private val <REQUEST, CLIENT_STREAM, RESPONSE> ColdUpstreamCallDescription<REQUEST, CLIENT_STREAM, RESPONSE>.clientStreamEventSerializer: KSerializer<out StreamEvent<out CLIENT_STREAM>>
         get() = StreamEventSerializer(clientStreamSerializer, errorSerializer)
 
     class Server<REQUEST, CLIENT_STREAM, RESPONSE>(
         connection: RPCConnection,
         reference: RPCReference,
-        call: CallDescriptor.ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>,
+        call: RunnableCallDescription.ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>,
         onFinished: () -> Unit,
-    ): PendingRPC.Server<REQUEST, CallDescriptor.ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>>(connection, reference, call, onFinished) {
+    ): PendingRPC.Server<REQUEST, RunnableCallDescription.ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>>(connection, reference, call, onFinished) {
         private companion object {
             val logger = Logger<ColdUpstreamPendingRPC.Server<*, *, *>>()
         }
@@ -118,10 +118,10 @@ object ColdUpstreamPendingRPC {
     class Client<REQUEST, CLIENT_STREAM, RESPONSE>(
         connection: RPCConnection,
         reference: RPCReference,
-        call: ColdUpstreamCallDescriptor<REQUEST, CLIENT_STREAM, RESPONSE>,
+        call: ColdUpstreamCallDescription<REQUEST, CLIENT_STREAM, RESPONSE>,
         private val clientStream: Flow<CLIENT_STREAM>,
         onFinished: () -> Unit,
-    ): PendingRPC.Client<REQUEST, RESPONSE, ColdUpstreamCallDescriptor<REQUEST, CLIENT_STREAM, RESPONSE>>(
+    ): PendingRPC.Client<REQUEST, RESPONSE, ColdUpstreamCallDescription<REQUEST, CLIENT_STREAM, RESPONSE>>(
         connection,
         reference,
         call,
@@ -141,7 +141,7 @@ object ColdUpstreamPendingRPC {
         }
 
         override suspend fun handle(frame: IncomingRPCFrame<DownstreamRPCEvent>) {
-            Do exhaustive when (frame.header.event) {
+            org.brightify.hyperdrive.utils.Do exhaustive when (frame.header.event) {
                 DownstreamRPCEvent.Opened -> {
                     throw RPCProtocolViolationError("Upstream Client doesn't accept `Opened` frame.")
                 }

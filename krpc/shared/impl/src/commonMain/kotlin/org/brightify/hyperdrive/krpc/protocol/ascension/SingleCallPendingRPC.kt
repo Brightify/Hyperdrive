@@ -3,26 +3,26 @@ package org.brightify.hyperdrive.krpc.protocol.ascension
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.SerializationStrategy
 import org.brightify.hyperdrive.Logger
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
-import org.brightify.hyperdrive.krpc.api.DownstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCReference
-import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.error.RPCProtocolViolationError
-import org.brightify.hyperdrive.krpc.api.error.UnknownRPCReferenceException
-import org.brightify.hyperdrive.krpc.api.impl.Do
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.SingleCallDescription
+import org.brightify.hyperdrive.krpc.frame.DownstreamRPCEvent
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.frame.RPCFrame
+import org.brightify.hyperdrive.krpc.util.RPCReference
+import org.brightify.hyperdrive.krpc.frame.UpstreamRPCEvent
+import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
+import org.brightify.hyperdrive.krpc.error.UnknownRPCReferenceException
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.utils.Do
 
 object SingleCallPendingRPC {
     class Server<REQUEST, RESPONSE>(
         connection: RPCConnection,
         reference: RPCReference,
-        call: CallDescriptor.Single<REQUEST, RESPONSE>,
+        call: RunnableCallDescription.Single<REQUEST, RESPONSE>,
         onFinished: () -> Unit,
-    ): PendingRPC.Server<REQUEST, CallDescriptor.Single<REQUEST, RESPONSE>>(connection, reference, call, onFinished) {
+    ): PendingRPC.Server<REQUEST, RunnableCallDescription.Single<REQUEST, RESPONSE>>(connection, reference, call, onFinished) {
         private companion object {
             val logger = Logger<SingleCallPendingRPC.Server<*, *>>()
         }
@@ -67,10 +67,10 @@ object SingleCallPendingRPC {
 
     class Client<REQUEST, RESPONSE>(
         connection: RPCConnection,
-        call: ClientCallDescriptor<REQUEST, RESPONSE>,
+        call: SingleCallDescription<REQUEST, RESPONSE>,
         reference: RPCReference,
         onFinished: () -> Unit,
-    ): PendingRPC.Client<REQUEST, RESPONSE, ClientCallDescriptor<REQUEST, RESPONSE>>(connection, reference, call, onFinished) {
+    ): PendingRPC.Client<REQUEST, RESPONSE, SingleCallDescription<REQUEST, RESPONSE>>(connection, reference, call, onFinished) {
         private companion object {
             val logger = Logger<SingleCallPendingRPC.Client<*, *>>()
         }

@@ -1,11 +1,11 @@
 package org.brightify.hyperdrive.krpc.server.impl
 
 import kotlinx.coroutines.CompletableDeferred
-import org.brightify.hyperdrive.krpc.api.RPCConnection
+import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.api.impl.ProtocolUpgradeService
+import org.brightify.hyperdrive.krpc.protocol.ProtocolUpgradeService
 import org.brightify.hyperdrive.krpc.ServiceRegistry
 
 class KRPCServer(

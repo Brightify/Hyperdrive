@@ -27,7 +27,7 @@ interface BasicTestService {
 
     suspend fun sumWithInitial(initialValue: Int, stream: Flow<Int>): Int
 
-    suspend fun clientStreamError(stream: @Error(IllegalArgumentError::class) Flow<Unit>): IllegalArgumentError
+    suspend fun clientStreamError(stream: @Error(IllegalArgumentError::class) Flow<Unit>)
 
     suspend fun timer(count: Int): @Error(IllegalArgumentError::class) Flow<Int>
 

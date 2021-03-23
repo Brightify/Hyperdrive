@@ -19,8 +19,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(project(":krpc-annotations"))
-                api(project(":krpc-shared-api"))
+                api(project(":krpc-shared-impl"))
                 implementation(project(":logging-api"))
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")

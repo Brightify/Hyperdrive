@@ -1,12 +1,12 @@
 package org.brightify.hyperdrive.krpc
 
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.api.ServiceDescription
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
+import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import kotlin.reflect.KClass
 
 interface ServiceRegistry {
     fun register(description: ServiceDescription)
 
-    fun <T: CallDescriptor<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T?
+    fun <T: RunnableCallDescription<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T?
 }

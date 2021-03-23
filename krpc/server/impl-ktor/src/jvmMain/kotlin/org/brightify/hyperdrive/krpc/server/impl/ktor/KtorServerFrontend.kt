@@ -8,11 +8,11 @@ import io.ktor.server.netty.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCEvent
-import org.brightify.hyperdrive.krpc.api.ServiceDescription
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.frame.RPCEvent
+import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import org.brightify.hyperdrive.krpc.api.WebSocketFrameConverter
 import org.brightify.hyperdrive.krpc.server.api.Server
 import org.brightify.hyperdrive.krpc.server.impl.KRPCServer

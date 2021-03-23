@@ -23,9 +23,8 @@ kotlin {
                 implementation(project(":krpc-shared-api"))
                 implementation(project(":krpc-client-api"))
 
-                implementation(project(":krpc-server-impl"))
-                implementation(project(":krpc-shared-impl"))
-                implementation(project(":krpc-client-impl"))
+                implementation(project(":krpc-server-impl-ktor"))
+                implementation(project(":krpc-client-impl-ktor"))
                 implementation(project(":krpc-test"))
                 implementation(project(":logging-api"))
 

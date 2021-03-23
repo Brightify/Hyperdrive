@@ -22,9 +22,9 @@ dependencies {
     api(project(":plugin-api"))
     implementation(kotlin("stdlib"))
     compileOnly(kotlin("compiler-embeddable"))
-    implementation(project(":krpc-shared-api"))
-    implementation(project(":krpc-client-api"))
-    implementation(project(":krpc-annotations"))
+    implementationWorkaround(project(":krpc-shared-api"))
+    implementationWorkaround(project(":krpc-client-api"))
+    implementationWorkaround(project(":krpc-annotations"))
 
     compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")
     kapt("com.google.auto.service:auto-service:${Versions.autoService}")
@@ -47,6 +47,14 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.6")
     testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
+}
+
+fun DependencyHandlerScope.implementationWorkaround(dependency: ProjectDependency) {
+    implementation(dependency)
+    val project = dependency.dependencyProject
+    compileOnly(
+        files(File(project.buildDir, "libs/${project.name}-jvm-${project.version}.jar"))
+    )
 }
 
 fun DependencyHandlerScope.testImplementationWorkaround(dependency: ProjectDependency) {

@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
-import org.jetbrains.kotlin.descriptors.impl.FieldDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.PropertyGetterDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
@@ -28,8 +27,6 @@ import org.jetbrains.kotlin.psi.synthetics.SyntheticClassOrObjectDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
-import org.jetbrains.kotlin.resolve.descriptorUtil.getKotlinTypeRefiner
-import org.jetbrains.kotlin.resolve.descriptorUtil.isSubclassOf
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
@@ -38,10 +35,7 @@ import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.Variance
-import org.jetbrains.kotlin.types.asSimpleType
-import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.createProjection
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.types.typeUtil.replaceArgumentsWithStarProjections
@@ -425,7 +419,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
     override fun getSyntheticCompanionObjectNameIfNeeded(thisDescriptor: ClassDescriptor): Name? = null
 
     private fun ModuleDescriptor.callDescriptorPropertyType(member: CallableMemberDescriptor): SimpleType? {
-        val flow = findClassAcrossModuleDependencies(ClassId.topLevel(KnownType.Kotlin.flow)) ?: return null
+        val flow = findClassAcrossModuleDependencies(ClassId.topLevel(KnownType.Coroutines.flow)) ?: return null
 
         val isServerStream = member.returnTypeOrNothing.isSubtypeOf(flow.defaultType.replaceArgumentsWithStarProjections())
         val isClientStream = member.valueParameters.lastOrNull()?.type?.isSubtypeOf(flow.defaultType.replaceArgumentsWithStarProjections()) ?: false
@@ -447,7 +441,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
             isServerStream && isClientStream -> {
                 KotlinTypeFactory.simpleNotNullType(
                     Annotations.EMPTY,
-                    KnownType.API.coldBistreamCallDescriptor.asClassDescriptor(this),
+                    KnownType.API.coldBistreamCallDescription.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
                         createProjection(member.valueParameters.last().type.arguments.first().type, Variance.INVARIANT, null),
@@ -458,7 +452,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
             isClientStream -> {
                 KotlinTypeFactory.simpleNotNullType(
                     Annotations.EMPTY,
-                    KnownType.API.coldUpstreamCallDescriptor.asClassDescriptor(this),
+                    KnownType.API.coldUpstreamCallDescription.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
                         createProjection(member.valueParameters.last().type.arguments.first().type, Variance.INVARIANT, null),
@@ -469,7 +463,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
             isServerStream -> {
                 KotlinTypeFactory.simpleNotNullType(
                     Annotations.EMPTY,
-                    KnownType.API.coldDownstreamCallDescriptor.asClassDescriptor(this),
+                    KnownType.API.coldDownstreamCallDescription.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
                         createProjection(member.returnType!!.arguments.first().type, Variance.INVARIANT, null)
@@ -479,7 +473,7 @@ class KrpcResolveExtension: SyntheticResolveExtension {
             else -> {
                 KotlinTypeFactory.simpleNotNullType(
                     Annotations.EMPTY,
-                    KnownType.API.clientCallDescriptor.asClassDescriptor(this),
+                    KnownType.API.singleCallDescription.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
                         createProjection(member.returnType!!, Variance.INVARIANT, null)

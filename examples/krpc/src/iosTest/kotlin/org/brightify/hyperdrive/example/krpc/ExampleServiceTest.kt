@@ -1,8 +1,7 @@
 package org.brightify.hyperdrive.example.krpc
 
 import kotlinx.coroutines.runBlocking
-import org.brightify.hyperdrive.krpc.api.RPCEvent
-import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
+import org.brightify.hyperdrive.krpc.frame.RPCEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

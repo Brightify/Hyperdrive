@@ -10,25 +10,25 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationStrategy
 import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.api.CallDescriptor
-import org.brightify.hyperdrive.krpc.api.ClientCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdBistreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdDownstreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.ColdUpstreamCallDescriptor
-import org.brightify.hyperdrive.krpc.api.DownstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCConnection
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.SingleCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
+import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
+import org.brightify.hyperdrive.krpc.frame.DownstreamRPCEvent
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.api.RPCError
-import org.brightify.hyperdrive.krpc.api.RPCEvent
-import org.brightify.hyperdrive.krpc.api.RPCFrame
+import org.brightify.hyperdrive.krpc.frame.RPCEvent
 import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
-import org.brightify.hyperdrive.krpc.api.RPCReference
-import org.brightify.hyperdrive.krpc.api.UnexpectedRPCEventException
-import org.brightify.hyperdrive.krpc.api.UpstreamRPCEvent
-import org.brightify.hyperdrive.krpc.api.error.RPCErrorSerializer
-import org.brightify.hyperdrive.krpc.api.error.RPCNotFoundError
-import org.brightify.hyperdrive.krpc.api.error.UnknownRPCReferenceException
+import org.brightify.hyperdrive.krpc.util.RPCReference
+import org.brightify.hyperdrive.krpc.frame.UpstreamRPCEvent
+import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.error.RPCNotFoundError
+import org.brightify.hyperdrive.krpc.error.UnexpectedRPCEventException
+import org.brightify.hyperdrive.krpc.error.UnknownRPCReferenceException
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.RPCFrame
 
 class AscensionRPCProtocol(
     private val serviceRegistry: ServiceRegistry,
@@ -94,9 +94,9 @@ class AscensionRPCProtocol(
         val pendingCall = when {
             existingPendingCall != null -> existingPendingCall
             event is UpstreamRPCEvent.Open -> {
-                val call = serviceRegistry.getCallById(event.serviceCall, CallDescriptor::class)
+                val call = serviceRegistry.getCallById(event.serviceCall, RunnableCallDescription::class)
                 val newPendingCall = when (call) {
-                    is CallDescriptor.Single<*, *> -> SingleCallPendingRPC.Server(
+                    is RunnableCallDescription.Single<*, *> -> SingleCallPendingRPC.Server(
                         connection,
                         reference,
                         call,
@@ -104,7 +104,7 @@ class AscensionRPCProtocol(
                         println("Server - Single Finished")
                         serverPendingCalls.remove(reference)
                     }
-                    is CallDescriptor.ColdUpstream<*, *, *> -> ColdUpstreamPendingRPC.Server(
+                    is RunnableCallDescription.ColdUpstream<*, *, *> -> ColdUpstreamPendingRPC.Server(
                         connection,
                         reference,
                         call,
@@ -112,7 +112,7 @@ class AscensionRPCProtocol(
                         println("Server - ColdUpstream Finished")
                         serverPendingCalls.remove(reference)
                     }
-                    is CallDescriptor.ColdDownstream<*, *> -> ColdDownstreamPendingRPC.Server(
+                    is RunnableCallDescription.ColdDownstream<*, *> -> ColdDownstreamPendingRPC.Server(
                         connection,
                         reference,
                         call,
@@ -120,7 +120,7 @@ class AscensionRPCProtocol(
                         println("Server - ColdDownstream Finished")
                         serverPendingCalls.remove(reference)
                     }
-                    is CallDescriptor.ColdBistream<*, *, *> -> ColdBistreamPendingRPC.Server(
+                    is RunnableCallDescription.ColdBistream<*, *, *> -> ColdBistreamPendingRPC.Server(
                         connection,
                         reference,
                         call,
@@ -159,7 +159,7 @@ class AscensionRPCProtocol(
         connection.close()
     }
 
-    override suspend fun <REQUEST, RESPONSE> singleCall(serviceCall: ClientCallDescriptor<REQUEST, RESPONSE>, request: REQUEST): RESPONSE {
+    override suspend fun <REQUEST, RESPONSE> singleCall(serviceCall: SingleCallDescription<REQUEST, RESPONSE>, request: REQUEST): RESPONSE {
         val reference = nextCallReference()
         val pendingCall = SingleCallPendingRPC.Client(connection, serviceCall, reference) {
             println("Client - Single finished")
@@ -170,7 +170,7 @@ class AscensionRPCProtocol(
         return pendingCall.perform(request)
     }
 
-    override suspend fun <REQUEST, CLIENT_STREAM, RESPONSE> clientStream(serviceCall: ColdUpstreamCallDescriptor<REQUEST, CLIENT_STREAM, RESPONSE>, request: REQUEST, clientStream: Flow<CLIENT_STREAM>): RESPONSE {
+    override suspend fun <REQUEST, CLIENT_STREAM, RESPONSE> clientStream(serviceCall: ColdUpstreamCallDescription<REQUEST, CLIENT_STREAM, RESPONSE>, request: REQUEST, clientStream: Flow<CLIENT_STREAM>): RESPONSE {
         val reference = nextCallReference()
         val pendingCall = ColdUpstreamPendingRPC.Client(connection, reference, serviceCall, clientStream) {
             clientPendingCalls.remove(reference)
@@ -181,7 +181,7 @@ class AscensionRPCProtocol(
     }
 
     override suspend fun <REQUEST, RESPONSE> serverStream(
-        serviceCall: ColdDownstreamCallDescriptor<REQUEST, RESPONSE>,
+        serviceCall: ColdDownstreamCallDescription<REQUEST, RESPONSE>,
         request: REQUEST
     ): Flow<RESPONSE> {
         val reference = nextCallReference()
@@ -195,7 +195,7 @@ class AscensionRPCProtocol(
     }
 
     override suspend fun <REQUEST, CLIENT_STREAM, RESPONSE> biStream(
-        serviceCall: ColdBistreamCallDescriptor<REQUEST, CLIENT_STREAM, RESPONSE>,
+        serviceCall: ColdBistreamCallDescription<REQUEST, CLIENT_STREAM, RESPONSE>,
         request: REQUEST,
         clientStream: Flow<CLIENT_STREAM>
     ): Flow<RESPONSE> = flow {

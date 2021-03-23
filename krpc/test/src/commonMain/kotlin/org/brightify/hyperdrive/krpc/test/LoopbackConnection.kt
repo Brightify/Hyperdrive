@@ -2,19 +2,16 @@ package org.brightify.hyperdrive.krpc.test
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.modules.plus
 import kotlinx.serialization.protobuf.ProtoBuf
-import org.brightify.hyperdrive.krpc.api.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.api.OutgoingRPCFrame
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCEvent
-import org.brightify.hyperdrive.krpc.api.RPCFrameDeserializationStrategy
-import org.brightify.hyperdrive.krpc.api.RPCFrameSerializationStrategy
+import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.frame.RPCEvent
+import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameDeserializationStrategy
+import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameSerializationStrategy
 
 class LoopbackConnection(
     private val scope: CoroutineScope,

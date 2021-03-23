@@ -1,8 +1,8 @@
 package org.brightify.hyperdrive.krpc.protocol
 
 import kotlinx.serialization.Serializable
-import org.brightify.hyperdrive.krpc.api.RPCConnection
-import org.brightify.hyperdrive.krpc.api.RPCTransport
+import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.RPCTransport
 
 interface RPCProtocol: RPCTransport {
     val version: Version
