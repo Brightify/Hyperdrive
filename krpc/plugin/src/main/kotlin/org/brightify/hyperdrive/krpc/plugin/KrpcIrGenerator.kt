@@ -59,13 +59,14 @@ import kotlin.contracts.contract
 
 class KrpcIrGenerator(
     private val pluginContext: IrPluginContext,
-    private val messageCollector: MessageCollector
+    private val messageCollector: MessageCollector,
+    private val printIR: Boolean,
+    private val printKotlinLike: Boolean,
 ): IrElementTransformerVoid(), ClassLoweringPass {
 
     private val flowType by lazy { pluginContext.referenceClass(KnownType.Coroutines.flow)!! }
 
     override fun lower(irClass: IrClass) {
-        messageCollector.report(CompilerMessageSeverity.ERROR, irClass.dump())
         when {
             irClass.isKrpcClient -> {
                 val constructor = irClass.constructors.single { it.visibility == DescriptorVisibilities.PUBLIC }
@@ -317,7 +318,7 @@ class KrpcIrGenerator(
                                                                 +irCall(polymorphicModuleBuilder.getSimpleFunction("subclass")!!).also { call ->
                                                                     call.dispatchReceiver = irGet(builder)
                                                                     call.putTypeArgument(0, error)
-                                                                    call.putValueArgument(0, IrClassReferenceImpl(startOffset, endOffset, context.irBuiltIns.kClassClass.starProjectedType, context.irBuiltIns.kClassClass, error))
+                                                                    call.putValueArgument(0, IrClassReferenceImpl(startOffset, endOffset, context.irBuiltIns.kClassClass.starProjectedType, error.classifier, error))
                                                                     val kserializer = KnownType.Serialization.kserializer.asClass().typeWith(error)
                                                                     call.putValueArgument(1, irCall(serializer, kserializer).also { call ->
                                                                         call.putTypeArgument(0, error)
@@ -348,6 +349,28 @@ class KrpcIrGenerator(
                 }
 
             }
+        }
+
+        if (printIR || printKotlinLike) {
+            println("================== BEGIN <${irClass.name.asString()}> ==================")
+            if (printKotlinLike) {
+                try {
+                    println(irClass.dumpKotlinLike())
+                } catch (t: Throwable) {
+                    t.printStackTrace()
+                }
+            }
+            if (printIR && printKotlinLike) {
+                println("==================")
+            }
+            if (printIR) {
+                try {
+                    println(irClass.dump())
+                } catch (t: Throwable) {
+                    t.printStackTrace()
+                }
+            }
+            println("================== END <${irClass.name.asString()}> ==================")
         }
     }
 

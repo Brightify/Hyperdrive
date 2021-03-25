@@ -14,6 +14,8 @@ import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 
 object KrpcConfigurationKeys {
     val isEnabled = CompilerConfigurationKey<Boolean>("enabled")
+    val printIR = CompilerConfigurationKey<Boolean>("printIR")
+    val printKotlinLike = CompilerConfigurationKey<Boolean>("printKotlinLike")
 }
 
 @AutoService(ComponentRegistrar::class)
@@ -29,7 +31,10 @@ class KrpcComponentRegistrar: ComponentRegistrar {
 
         IrGenerationExtension.registerExtension(
             project,
-            KrpcIrGenerationExtension()
+            KrpcIrGenerationExtension(
+                printIR = configuration.getBoolean(KrpcConfigurationKeys.printIR),
+                printKotlinLike = configuration.getBoolean(KrpcConfigurationKeys.printKotlinLike)
+            )
         )
 
         SyntheticResolveExtension.registerExtension(

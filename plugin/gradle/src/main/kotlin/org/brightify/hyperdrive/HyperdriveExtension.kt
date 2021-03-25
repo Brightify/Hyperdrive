@@ -48,5 +48,7 @@ open class HyperdriveExtension {
     }
 
     class KrpcSettings {
+        var printIR: Boolean = false
+        var printKotlinLike: Boolean = false
     }
 }

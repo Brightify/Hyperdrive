@@ -16,13 +16,17 @@ class KrpcCommandLineProcessor: CommandLineProcessor {
     override val pluginId: String = KrpcCommandLineProcessor.pluginId
 
     private val options = listOf(
-        Options.enabled
+        Options.enabled,
+        Options.printIR,
+        Options.printKotlinLike,
     )
     private val optionsMap = options.map { it.optionName to it }.toMap()
     override val pluginOptions: Collection<AbstractCliOption> = options.map { it.toCliOption() }
 
     object Options {
         val enabled = PluginOption("enabled", "<true|false>", "")
+        val printIR = PluginOption("printIR", "<true|false>", "")
+        val printKotlinLike = PluginOption("printKotlinLike", "<true|false>", "")
     }
 
     override fun processOption(option: AbstractCliOption, value: String, configuration: CompilerConfiguration) {
@@ -30,6 +34,8 @@ class KrpcCommandLineProcessor: CommandLineProcessor {
 
         when (optionsMap[option.optionName]) {
             Options.enabled -> configuration.putIfNotNull(KrpcConfigurationKeys.isEnabled, value.toBooleanLenient())
+            Options.printIR -> configuration.putIfNotNull(KrpcConfigurationKeys.printIR, value.toBooleanLenient())
+            Options.printKotlinLike -> configuration.putIfNotNull(KrpcConfigurationKeys.printKotlinLike, value.toBooleanLenient())
         }
     }
 }

@@ -21,7 +21,9 @@ class KrpcGradleSubplugin: KotlinCompilerPluginSupportPlugin {
             val krpc = hyperdrive.krpc
             if (krpc != null) {
                 listOf(
-                    KrpcCommandLineProcessor.Options.enabled.subpluginOption("true")
+                    KrpcCommandLineProcessor.Options.enabled.subpluginOption("true"),
+                    KrpcCommandLineProcessor.Options.printIR.subpluginOption(krpc.printIR.toString()),
+                    KrpcCommandLineProcessor.Options.printKotlinLike.subpluginOption(krpc.printKotlinLike.toString())
                 )
             } else {
                 listOf(
