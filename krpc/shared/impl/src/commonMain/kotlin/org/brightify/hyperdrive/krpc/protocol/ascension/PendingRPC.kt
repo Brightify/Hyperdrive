@@ -85,7 +85,7 @@ abstract class PendingRPC<EVENT: RPCEvent>(
             } catch (t: Throwable) {
                 logger.error(t) { "Frame launched block thrown an error!" }
                 doReject(reference, t)
-                cancel("Frame launched block thrown an error!", t)
+                this@PendingRPC.cancel("Frame launched block thrown an error!", t)
             }
         }
     }
@@ -159,7 +159,7 @@ abstract class PendingRPC<EVENT: RPCEvent>(
         }
 
         suspend fun cancel(reason: String, cause: Throwable? = null): Unit = lock.withLock {
-            logger.warning { "Call $this is being cancelled! Reason: $reason. Cause: $cause." }
+            logger.warning(cause) { "Call $this is being cancelled! Reason: $reason." }
             retainCount = 0
             scope.cancel(reason, cause)
             onFinished()
