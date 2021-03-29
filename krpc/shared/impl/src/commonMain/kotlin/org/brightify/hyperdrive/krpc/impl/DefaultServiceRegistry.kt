@@ -1,12 +1,12 @@
 package org.brightify.hyperdrive.krpc.impl
 
-import org.brightify.hyperdrive.krpc.ServiceRegistry
+import org.brightify.hyperdrive.krpc.MutableServiceRegistry
 import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
 import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
 import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import kotlin.reflect.KClass
 
-class DefaultServiceRegistry: ServiceRegistry {
+class DefaultServiceRegistry: MutableServiceRegistry {
     private val services: MutableMap<String, ServiceDescription> = mutableMapOf()
     private val serviceCalls: MutableMap<String, Map<String, RunnableCallDescription<*>>> = mutableMapOf()
 

@@ -1,10 +1,25 @@
 package org.brightify.hyperdrive.krpc.session
 
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.job
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
-interface Session {
+suspend inline fun <T> withSession(block: suspend Session.() -> T): T {
+    return coroutineContext.rpcSession.block()
+}
+
+val CoroutineContext.rpcSession: Session
+    get() = get(Session) ?: error("Current context doesn't contain Session in it: $this")
+
+interface Session: CoroutineContext.Element {
+    public companion object Key: CoroutineContext.Key<Session>
+
     suspend fun contextTransaction(block: Context.Mutator.() -> Unit)
 
     object Id: Context.Key<Long> {
@@ -13,39 +28,73 @@ interface Session {
     }
 
     class Context(
-        val data: MutableMap<Key<*>, Any>,
+        val data: MutableMap<Key<*>, Item<*>>,
     ) {
-        internal fun <VALUE: Any> get(key: Key<VALUE>): VALUE? = data[key] as? VALUE
+        operator fun <VALUE: Any> get(key: Key<VALUE>): Item<VALUE>? = data[key] as? Item<VALUE>
 
-        internal fun <VALUE: Any> put(value: VALUE, key: Key<VALUE>) {
-            data[key] = value
+        fun <VALUE: Any> put(item: Item<VALUE>, key: Key<VALUE>) {
+            data[key] = item
         }
+
+        fun <VALUE: Any> remove(key: Key<VALUE>): Item<VALUE>? = data.remove(key) as? Item<VALUE>
 
         interface Key<VALUE: Any> {
             val qualifiedName: String
             val serializer: KSerializer<VALUE>
         }
 
+        class Item<T: Any>(
+            val key: Key<T>,
+            val revision: Int,
+            val value: T,
+        ) {
+            override fun equals(other: Any?): Boolean {
+                return if (other is Item<*>) {
+                    other.key.qualifiedName == key.qualifiedName
+                } else {
+                    false
+                }
+            }
+
+            override fun hashCode(): Int {
+                return key.qualifiedName.hashCode()
+            }
+        }
+
         public class Mutator(
             private val oldContext: Context,
+            // Required to be passed in so the caller can get the values, but not the user who has an instance of Mutator.
+            private val modifications: MutableMap<Key<Any>, Action>,
         ) {
-            internal val modifications = mutableMapOf<Key<*>, Action>()
 
-            internal sealed class Action {
-                class Set(val oldValue: Any?, val newValue: Any): Action()
-                class Remove(val oldValue: Any?): Action()
+            sealed class Action {
+                class Required(val oldItem: Item<*>?): Action()
+                class Set(val oldItem: Item<*>?, val newItem: Item<*>): Action()
+                class Remove(val oldItem: Item<*>): Action()
             }
 
             public fun <VALUE: Any> get(key: Key<VALUE>): VALUE? {
-                return oldContext.get(key)
+                val oldItem = oldContext[key]
+                if (!modifications.containsKey(key as Key<Any>)) {
+                    modifications[key] = Action.Required(oldItem)
+                }
+                return oldItem?.value
             }
 
             public fun <VALUE: Any> set(newValue: VALUE, key: Key<VALUE>) {
-                modifications[key] = Action.Set(oldContext.get(key), newValue)
+                val oldItem = oldContext[key]
+                val newRevision = oldItem?.let { it.revision + 1 } ?: Int.MIN_VALUE
+
+                modifications[key as Key<Any>] = Action.Set(oldItem, Item(key, newRevision, newValue))
             }
 
             public fun <VALUE: Any> remove(key: Key<VALUE>) {
-                modifications[key] = Action.Remove(oldContext.get(key))
+                val oldItem = oldContext[key]
+                if (oldItem != null) {
+                    modifications[key as Key<Any>] = Action.Remove(oldItem)
+                } else if (modifications[key as Key<Any>] !is Action.Required) {
+                    modifications.remove(key as Key<Any>)
+                }
             }
         }
     }

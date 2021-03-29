@@ -4,32 +4,31 @@ import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.data.row
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
+import io.kotest.property.checkAll
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.test.TestCoroutineScope
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
-import org.brightify.hyperdrive.krpc.client.impl.ServiceClient
-import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameDeserializationStrategy
-import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameSerializationStrategy
-import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
-import io.kotest.matchers.shouldBe
-import io.kotest.property.checkAll
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.fold
-import kotlinx.coroutines.flow.toList
-import org.brightify.hyperdrive.krpc.client.impl.ktor.ProtoBufWebSocketFrameConverter
-import org.brightify.hyperdrive.krpc.client.impl.ktor.SingleFrameConverterWrapper
+import org.brightify.hyperdrive.krpc.client.impl.KRPCClient
 import org.brightify.hyperdrive.krpc.client.impl.ktor.WebSocketClient
+import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
+import org.brightify.hyperdrive.krpc.impl.JsonCombinedSerializer
+import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
+import org.brightify.hyperdrive.krpc.server.impl.KRPCServer
+import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 
 class GeneratedServiceTest: BehaviorSpec({
     val serviceImpl = object: BasicTestService {
@@ -77,7 +76,7 @@ class GeneratedServiceTest: BehaviorSpec({
     val testScope = TestCoroutineScope()
 
     beforeSpec {
-        Logger.setLevel(LoggingLevel.Trace)
+        Logger.setLevel(LoggingLevel.Info)
     }
 
     afterContainer {
@@ -85,38 +84,30 @@ class GeneratedServiceTest: BehaviorSpec({
     }
 
     val client = lazy {
-        val registry = DefaultServiceRegistry()
-        registry.register(BasicTestService.Descriptor.describe(serviceImpl))
-        val serverFrontend = org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend(
-            frameConverter = SingleFrameConverterWrapper.binary(
-                ProtoBufWebSocketFrameConverter(
-                    outgoingSerializer = RPCFrameSerializationStrategy(),
-                    incomingDeserializer = RPCFrameDeserializationStrategy()
-                )
-            ),
-            serviceRegistry = registry,
+        val serializers = SerializerRegistry(
+            JsonCombinedSerializer.Factory()
         )
 
-        val clientTransport = WebSocketClient(
-            frameConverter = SingleFrameConverterWrapper.binary(
-                ProtoBufWebSocketFrameConverter(
-                    outgoingSerializer = RPCFrameSerializationStrategy(),
-                    incomingDeserializer = RPCFrameDeserializationStrategy()
-                )
-            )
-        )
-        ServiceClient(clientTransport, DefaultServiceRegistry(), testScope)
-    }
-
-    val protocol = lazy {
         val registry = DefaultServiceRegistry()
         registry.register(BasicTestService.Descriptor.describe(serviceImpl))
-        val connection = LoopbackConnection(testScope)
+        KRPCServer(
+            KtorServerFrontend(),
+            testScope,
+            serializers.transportFrameSerializerFactory,
+            serializers.payloadSerializerFactory,
+            registry
+        ).start()
 
-        AscensionRPCProtocol.Factory(registry).create(connection)
+        KRPCClient(
+            WebSocketClient(),
+            testScope,
+            serializers.transportFrameSerializerFactory,
+            serializers.payloadSerializerFactory,
+            registry
+        ).also { it.start() }
     }
 
-    listOf(protocol, client).forEach { lazyTransport ->
+    listOf(client).forEach { lazyTransport ->
         val transport = lazyTransport.value
         Given("An RPCTransport ${transport::class.simpleName}") {
             val service = BasicTestService.Client(transport) as BasicTestService
@@ -183,7 +174,7 @@ class GeneratedServiceTest: BehaviorSpec({
                 When("Running bistream call") {
                     Then("Each element is multiplied by two") {
                         checkAll<List<Int>> { input ->
-                            service.multiplyEachByTwo(input.asFlow()).toList() shouldContainExactly input.map { it * 2}
+                            service.multiplyEachByTwo(input.asFlow()).toList() shouldContainExactly input.map { it * 2 }
                         }
                     }
                 }

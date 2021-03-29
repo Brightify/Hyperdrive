@@ -42,7 +42,8 @@ private object ContextUpdateSerializerDescriptor {
 }
 
 interface ContextKeyRegistry {
-    fun getKeyByQualifiedName(keyQualifiedName: String): Session.Context.Key<*>
+
+    fun getKeyByQualifiedName(keyQualifiedName: String): Session.Context.Key<*>?
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -88,7 +89,7 @@ class IncomingContextUpdateSerializer(
     private fun readElement(decoder: CompositeDecoder, index: Int, builder: MutableMap<Session.Context.Key<*>, IncomingContextUpdate.Modification>, checkIndex: Boolean = true) {
         val keyQualifiedName: String = decoder.decodeSerializableElement(ContextUpdateSerializerDescriptor.mapDescriptor, index,
             ContextUpdateSerializerDescriptor.keySerializer)
-        val key = contextKeyRegistry.getKeyByQualifiedName(keyQualifiedName)
+        val key = contextKeyRegistry.getKeyByQualifiedName(keyQualifiedName)!!
         val vIndex = if (checkIndex) {
             decoder.decodeElementIndex(ContextUpdateSerializerDescriptor.mapDescriptor).also {
                 require(it == index + 1) { "Value must follow key in a map, index for key: $index, returned index for value: $it" }

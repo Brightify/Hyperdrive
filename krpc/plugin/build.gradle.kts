@@ -22,6 +22,7 @@ dependencies {
     api(project(":plugin-api"))
     implementation(kotlin("stdlib"))
     compileOnly(kotlin("compiler-embeddable"))
+    implementation(kotlin("serialization"))
     implementationWorkaround(project(":krpc-shared-api"))
     implementationWorkaround(project(":krpc-client-api"))
     implementationWorkaround(project(":krpc-annotations"))

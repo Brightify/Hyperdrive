@@ -25,6 +25,8 @@ kotlin {
                 implementation(project(":kotlin-utils"))
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
             }
         }
         val commonTest by getting {

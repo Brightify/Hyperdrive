@@ -21,6 +21,7 @@ kotlin {
             dependencies {
                 api(project(":krpc-shared-impl"))
                 implementation(project(":logging-api"))
+                implementation(project(":kotlin-utils"))
 
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
                 implementation("io.ktor:ktor-client-websockets:${Versions.ktor}")

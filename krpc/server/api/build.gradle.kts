@@ -9,7 +9,7 @@ kotlin {
     jvm()
 
     sourceSets {
-        val jvmMain by getting {
+        val commonMain by getting {
             dependencies {
                 api(project(":krpc-annotations"))
                 api(project(":krpc-shared-api"))

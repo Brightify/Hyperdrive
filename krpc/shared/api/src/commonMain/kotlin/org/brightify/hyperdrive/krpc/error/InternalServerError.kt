@@ -9,3 +9,7 @@ import org.brightify.hyperdrive.krpc.api.RPCError
 class InternalServerError: BaseRPCError {
     constructor(throwable: Throwable): super(RPCError.StatusCode.InternalServerError, "Unregistered Error Thrown: ${throwable.message} - $throwable")
 }
+
+fun Throwable.RPCError(): RPCError {
+    return this as? RPCError ?: InternalServerError(this)
+}

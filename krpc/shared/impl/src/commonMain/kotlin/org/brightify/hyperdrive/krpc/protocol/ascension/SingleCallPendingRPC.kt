@@ -1,108 +1,123 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationStrategy
 import org.brightify.hyperdrive.Logger
+import org.brightify.hyperdrive.krpc.SerializationFormat
+import org.brightify.hyperdrive.krpc.SerializedPayload
+import org.brightify.hyperdrive.krpc.api.RPCError
+import org.brightify.hyperdrive.krpc.api.throwable
 import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
-import org.brightify.hyperdrive.krpc.frame.DownstreamRPCEvent
-import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.RPCConnection
-import org.brightify.hyperdrive.krpc.frame.RPCFrame
+import org.brightify.hyperdrive.krpc.error.InternalServerError
+import org.brightify.hyperdrive.krpc.error.RPCError
+import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
+import org.brightify.hyperdrive.krpc.protocol.RPC
 import org.brightify.hyperdrive.krpc.util.RPCReference
-import org.brightify.hyperdrive.krpc.frame.UpstreamRPCEvent
-import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
-import org.brightify.hyperdrive.krpc.error.UnknownRPCReferenceException
-import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
 import org.brightify.hyperdrive.utils.Do
 
 object SingleCallPendingRPC {
-    class Server<REQUEST, RESPONSE>(
-        connection: RPCConnection,
+    class Callee(
+        protocol: AscensionRPCProtocol,
+        scope: CoroutineScope,
         reference: RPCReference,
-        call: RunnableCallDescription.Single<REQUEST, RESPONSE>,
-        onFinished: () -> Unit,
-    ): PendingRPC.Server<REQUEST, RunnableCallDescription.Single<REQUEST, RESPONSE>>(connection, reference, call, onFinished) {
+        private val implementation: RPC.SingleCall.Callee.Implementation
+    ): PendingRPC.Callee<AscensionRPCFrame.SingleCall.Upstream, AscensionRPCFrame.SingleCall.Downstream>(protocol, scope, reference, logger), RPC.SingleCall.Callee {
         private companion object {
-            val logger = Logger<SingleCallPendingRPC.Server<*, *>>()
+            val logger = Logger<SingleCallPendingRPC.Callee>()
         }
 
-        override suspend fun handle(frame: IncomingRPCFrame<UpstreamRPCEvent>) {
-            Do exhaustive when (frame.header.event) {
-                is UpstreamRPCEvent.Open -> launch {
-                    val data = frame.decoder.decodeSerializableValue(call.requestSerializer)
-                    frame.respond(
-                        call.perform(data)
-                    )
-                }
-                UpstreamRPCEvent.Error -> {
-                    val error = errorSerializer.decodeThrowable(frame.decoder)
-                    if (error is UnknownRPCReferenceException) {
-                        cancel("Client sent an UnknownRPCReferenceException which probably means we sent it a frame by mistake.", error)
-                    } else {
-                        throw RPCProtocolViolationError("SingleCall doesn't accept Error frame.")
-                    }
-                }
-                UpstreamRPCEvent.Warning -> {
-                    val error = errorSerializer.decodeThrowable(frame.decoder)
-                    logger.warning(error) { "Client sent a warning." }
-                }
-                UpstreamRPCEvent.Cancel -> {
-                    cancel("Client asked to cancel the call.")
-                }
-                is UpstreamRPCEvent.StreamOperation, UpstreamRPCEvent.Data -> {
-                    throw RPCProtocolViolationError("")
+        override suspend fun handle(frame: AscensionRPCFrame.SingleCall.Upstream) {
+            Do exhaustive when (frame) {
+                is AscensionRPCFrame.SingleCall.Upstream.Open -> {
+                    val response = implementation.perform(frame.payload)
+                    send(AscensionRPCFrame.SingleCall.Downstream.Response(response, reference))
                 }
             }
         }
-
-        private suspend fun IncomingRPCFrame<UpstreamRPCEvent>.respond(payload: RESPONSE) {
-            connection.send(OutgoingRPCFrame(
-                RPCFrame.Header(header.callReference, DownstreamRPCEvent.Response),
-                call.responseSerializer as SerializationStrategy<Any?>,
-                payload as Any?,
-            ))
-        }
     }
 
-    class Client<REQUEST, RESPONSE>(
-        connection: RPCConnection,
-        call: SingleCallDescription<REQUEST, RESPONSE>,
+    class Caller(
+        protocol: AscensionRPCProtocol,
+        scope: CoroutineScope,
+        private val serviceCallIdentifier: ServiceCallIdentifier,
         reference: RPCReference,
-        onFinished: () -> Unit,
-    ): PendingRPC.Client<REQUEST, RESPONSE, SingleCallDescription<REQUEST, RESPONSE>>(connection, reference, call, onFinished) {
+    ): PendingRPC.Caller<AscensionRPCFrame.SingleCall.Downstream, AscensionRPCFrame.SingleCall.Upstream>(protocol, scope, reference, logger), RPC.SingleCall.Caller {
         private companion object {
-            val logger = Logger<SingleCallPendingRPC.Client<*, *>>()
+            val logger = Logger<SingleCallPendingRPC.Caller>()
         }
 
-        private val responseDeferred = CompletableDeferred<RESPONSE>()
+        private val responseDeferred = CompletableDeferred<SerializedPayload>()
 
-        override suspend fun perform(payload: REQUEST): RESPONSE = run {
-            open(payload)
+        override suspend fun perform(payload: SerializedPayload): SerializedPayload = withContext(this.coroutineContext) {
+            send(AscensionRPCFrame.SingleCall.Upstream.Open(payload, serviceCallIdentifier, reference))
 
             responseDeferred.await()
         }
 
-        override suspend fun handle(frame: IncomingRPCFrame<DownstreamRPCEvent>) {
-            Do exhaustive when (frame.header.event) {
-                DownstreamRPCEvent.Response -> {
-                    responseDeferred.complete(frame.response)
-                }
-                DownstreamRPCEvent.Warning -> {
-                    val error = errorSerializer.decodeThrowable(frame.decoder)
-                    logger.warning(error) { "Received a warning from the server." }
-                }
-                DownstreamRPCEvent.Error -> {
-                    val error = errorSerializer.decodeThrowable(frame.decoder)
-                    responseDeferred.completeExceptionally(error)
-                }
-                DownstreamRPCEvent.Data, DownstreamRPCEvent.Opened, is DownstreamRPCEvent.StreamOperation -> {
-                    throw RPCProtocolViolationError("SingleCall only accepts Response frame.")
-                }
+        override suspend fun handle(frame: AscensionRPCFrame.SingleCall.Downstream) {
+            // TODO: Do exhaustive doesn't compile for some reason here. Investigate.
+            /*Do exhaustive*/ when (frame) {
+                is AscensionRPCFrame.SingleCall.Downstream.Response -> responseDeferred.complete(frame.payload)
             }
         }
+    }
+}
 
-        private val IncomingRPCFrame<DownstreamRPCEvent>.response: RESPONSE
-            get() = decoder.decodeSerializableValue(call.incomingSerializer)
+interface PayloadSerializer {
+    fun <T> serialize(strategy: SerializationStrategy<T>, payload: T): SerializedPayload
+
+    fun <T> deserialize(strategy: DeserializationStrategy<T>, payload: SerializedPayload): T
+
+    interface Factory {
+        fun create(format: SerializationFormat): PayloadSerializer
+    }
+}
+
+object SingleCallRunner {
+    class Callee<REQUEST, RESPONSE>(
+        val serializer: PayloadSerializer,
+        val call: RunnableCallDescription.Single<REQUEST, RESPONSE>,
+    ): RPC.SingleCall.Callee.Implementation {
+        private val responseSerializer = ResponseSerializer(
+            call.responseSerializer,
+            call.errorSerializer,
+        )
+
+        override suspend fun perform(payload: SerializedPayload): SerializedPayload {
+            val request = serializer.deserialize(call.requestSerializer, payload)
+
+            return try {
+                val response = call.perform(request)
+                serializer.serialize(responseSerializer, Response.Success(response))
+            } catch (t: Throwable) {
+                serializer.serialize(responseSerializer, Response.Error(t))
+            }
+        }
+    }
+
+    class Caller<REQUEST, RESPONSE>(
+        val serializer: PayloadSerializer,
+        val rpc: RPC.SingleCall.Caller,
+        val call: SingleCallDescription<REQUEST, RESPONSE>,
+    ) {
+        private val responseSerializer = ResponseSerializer(
+            call.incomingSerializer,
+            call.errorSerializer,
+        )
+
+        suspend fun run(payload: REQUEST): RESPONSE {
+            val serializedPayload = serializer.serialize(call.outgoingSerializer, payload)
+            val serializedResponse = rpc.perform(serializedPayload)
+            return when (val response = serializer.deserialize(responseSerializer, serializedResponse)) {
+                is Response.Success -> response.response
+                is Response.Error -> throw response.error.throwable()
+            }
+        }
     }
 }

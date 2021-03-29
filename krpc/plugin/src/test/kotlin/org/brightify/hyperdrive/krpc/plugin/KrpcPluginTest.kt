@@ -3,18 +3,22 @@ package org.brightify.hyperdrive.krpc.plugin
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
-import org.brightify.hyperdrive.krpc.api.RPCProtocol
-import org.brightify.hyperdrive.krpc.api.ServiceDescriptor
-import org.brightify.hyperdrive.krpc.api.impl.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.api.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.api.impl.ServiceRegistry
+import org.brightify.hyperdrive.krpc.MutableServiceRegistry
+import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.SerializationFormat
+import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
+import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
+import org.brightify.hyperdrive.krpc.impl.JsonCombinedSerializer
+import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
+import org.brightify.hyperdrive.krpc.protocol.KRPCNode
+import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
+import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.junit.jupiter.api.AfterEach
@@ -29,15 +33,31 @@ import kotlin.test.assertEquals
 class KrpcPluginTest {
 
     private val testScope = TestCoroutineScope()
-    private lateinit var registry: ServiceRegistry
-    private lateinit var protocol: RPCProtocol
+    private lateinit var registry: MutableServiceRegistry
+    private lateinit var node: KRPCNode
 
     @BeforeEach
     fun setup() {
         val connection = LoopbackConnection(testScope)
         registry = DefaultServiceRegistry()
 
-        protocol = AscensionRPCProtocol.Factory(registry).create(connection)
+        val serializerRegistry = SerializerRegistry(
+            JsonCombinedSerializer.Factory()
+        )
+        node = KRPCNode(
+            registry,
+            object: RPCHandshakePerformer {
+                override suspend fun performHandshake(connection: RPCConnection): RPCHandshakePerformer.HandshakeResult {
+                    return RPCHandshakePerformer.HandshakeResult.Success(
+                        serializerRegistry.transportFrameSerializerFactory.create(SerializationFormat.Text.Json),
+                        AscensionRPCProtocol.Factory(),
+                    )
+                }
+            },
+            serializerRegistry.payloadSerializerFactory,
+            listOf(),
+            connection,
+        )
     }
 
     @AfterEach
@@ -48,14 +68,34 @@ class KrpcPluginTest {
     @Test
     fun testKrpcPlugin() {
         val serviceSource = SourceFile.kotlin("ProcessorTestService.kt", """
+            @file:UseSerializers(UuidSerializer::class)
+
             import kotlinx.coroutines.flow.Flow
             import kotlinx.coroutines.flow.fold
             import org.brightify.hyperdrive.krpc.api.EnableKRPC
             import org.brightify.hyperdrive.krpc.api.Error
-            import org.brightify.hyperdrive.krpc.api.error.RPCNotFoundError
+            import org.brightify.hyperdrive.krpc.error.RPCNotFoundError
             import kotlinx.coroutines.flow.asFlow
             import kotlinx.coroutines.flow.map
-            import org.brightify.hyperdrive.krpc.api.RPCProtocol
+            import org.brightify.hyperdrive.krpc.RPCTransport
+            import kotlinx.serialization.UseSerializers
+            import kotlinx.serialization.KSerializer
+            import kotlinx.serialization.descriptors.SerialDescriptor
+            import kotlinx.serialization.encoding.Decoder
+            import kotlinx.serialization.encoding.Encoder
+            import kotlinx.serialization.builtins.serializer
+            
+            class Uuid(val value: String)
+            
+            class UuidSerializer: KSerializer<Uuid> {
+                override val descriptor: SerialDescriptor = String.serializer().descriptor
+                override fun serialize(encoder: Encoder, value: Uuid) {
+                    encoder.encodeString(value.value)
+                }
+                override fun deserialize(decoder: Decoder): Uuid {
+                    return Uuid(decoder.decodeString())
+                }
+            }
             
             @EnableKRPC
             interface ProcessorTestService {
@@ -69,6 +109,8 @@ class KrpcPluginTest {
                 suspend fun serverStream(request: Int): Flow<String>
                 
                 suspend fun bidiStream(flow: Flow<Int>): Flow<String>
+                
+                suspend fun singleCallWithAdditionalSerializer(normalParameter: Int, additionalParameter: Uuid)     
             }
             
             class DefaultProcessorTestService: ProcessorTestService {
@@ -91,13 +133,13 @@ class KrpcPluginTest {
                 override suspend fun bidiStream(flow: Flow<Int>): Flow<String> {
                     return flow.map { println("AB: ${"$"}it"); it.toString() }
                 }
+                
+                override suspend fun singleCallWithAdditionalSerializer(normalParameter: Int, additionalParameter: Uuid) {
+                }
             }
             
             fun x() {
-                val a = object: ProcessorTestService.Client(null as RPCProtocol) {
-                
-                }
-                val x = ProcessorTestService.Client(null as RPCProtocol)
+                val x = ProcessorTestService.Client(null as RPCTransport)
                 val b = ProcessorTestService.Descriptor
                 val c = ProcessorTestService.Descriptor.Call
             }
@@ -116,6 +158,16 @@ class KrpcPluginTest {
                 PluginOption(
                     KrpcCommandLineProcessor.pluginId,
                     KrpcCommandLineProcessor.Options.enabled.optionName,
+                    "true"
+                ),
+                PluginOption(
+                    KrpcCommandLineProcessor.pluginId,
+                    KrpcCommandLineProcessor.Options.printIR.optionName,
+                    "true"
+                ),
+                PluginOption(
+                    KrpcCommandLineProcessor.pluginId,
+                    KrpcCommandLineProcessor.Options.printKotlinLike.optionName,
                     "true"
                 )
             )
@@ -137,9 +189,10 @@ class KrpcPluginTest {
         registry.register(descriptorInstance.describe(serviceInstance))
 
         val clientClass = result.classLoader.loadClass("ProcessorTestService\$Client").kotlin
-        val clientInstance = clientClass.constructors.first().call(protocol)
 
         testScope.runBlockingTest {
+            launch { node.run() }
+            val clientInstance = clientClass.constructors.first().call(node.transport())
             val response = clientClass.declaredFunctions.single { it.name == "testedSingleCall" }.callSuspend(clientInstance, 10)
             println(response)
             assertEquals("Hello 10", response)
@@ -165,6 +218,8 @@ class KrpcPluginTest {
             }.joinToString(", ")
             println(response5)
             assertEquals("1, 2, 3, 4, 5", response5)
+
+            node.close()
         }
     }
 }

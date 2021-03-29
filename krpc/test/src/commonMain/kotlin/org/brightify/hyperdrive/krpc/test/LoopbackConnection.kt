@@ -2,47 +2,41 @@ package org.brightify.hyperdrive.krpc.test
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.serialization.modules.plus
-import kotlinx.serialization.protobuf.ProtoBuf
+import kotlinx.coroutines.job
+import kotlinx.coroutines.plus
 import org.brightify.hyperdrive.Logger
-import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
 import org.brightify.hyperdrive.krpc.RPCConnection
-import org.brightify.hyperdrive.krpc.frame.RPCEvent
-import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameDeserializationStrategy
-import org.brightify.hyperdrive.krpc.frame.serialization.RPCFrameSerializationStrategy
+import org.brightify.hyperdrive.krpc.SerializedFrame
 
 class LoopbackConnection(
     private val scope: CoroutineScope,
     private val sendDelayInMillis: Long = 0,
-): RPCConnection, CoroutineScope by scope {
+    private val receiveDelayInMillis: Long = 0,
+): RPCConnection, CoroutineScope by scope.plus(Job(scope.coroutineContext[Job])) {
     private companion object {
         val logger = Logger<LoopbackConnection>()
     }
 
-    private val outgoingSerializer = RPCFrameSerializationStrategy<RPCEvent>()
-    private val incomingDeserializer = RPCFrameDeserializationStrategy<RPCEvent>()
-    private val channel = Channel<ByteArray>(capacity = Channel.UNLIMITED)
+    private val channel = Channel<SerializedFrame>(capacity = Channel.UNLIMITED)
 
-    private val format = ProtoBuf {
-        serializersModule += RPCEvent.serializersModule
-    }
-
-    override suspend fun receive(): IncomingRPCFrame<RPCEvent> {
+    override suspend fun receive(): SerializedFrame {
         return channel.receive()
-            .let { format.decodeFromByteArray(incomingDeserializer, it) }
-            .also { logger.debug { "Received $it" } }
+            .also {
+                delay(receiveDelayInMillis)
+                logger.debug { "Received $it" }
+            }
     }
 
-    override suspend fun send(frame: OutgoingRPCFrame<RPCEvent>) {
+    override suspend fun send(frame: SerializedFrame) {
         logger.debug {"Sending $frame" }
         delay(sendDelayInMillis)
-        channel.send(format.encodeToByteArray(outgoingSerializer, frame))
+        channel.send(frame)
     }
 
     override suspend fun close() {
-        scope.coroutineContext[Job]?.cancel()
+        scope.coroutineContext[Job]?.cancelAndJoin()
     }
 }

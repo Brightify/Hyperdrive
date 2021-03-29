@@ -41,6 +41,8 @@ object KnownType {
         val serializer = FqName("kotlinx.serialization.serializer")
         val polymorphicModuleBuilder = FqName("kotlinx.serialization.modules.PolymorphicModuleBuilder")
         val kserializer = FqName("kotlinx.serialization.KSerializer")
+        val useSerializers = FqName("kotlinx.serialization.UseSerializers")
+        val builtinSerializer = FqName("kotlinx.serialization.builtins.serializer")
     }
 
     object Annotation {

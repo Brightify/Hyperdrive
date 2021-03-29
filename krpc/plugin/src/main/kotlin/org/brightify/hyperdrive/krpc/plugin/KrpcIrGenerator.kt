@@ -3,9 +3,17 @@ package org.brightify.hyperdrive.krpc.plugin
 import org.jetbrains.kotlin.backend.common.ClassLoweringPass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.jvm.codegen.fileParent
+import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
+import org.jetbrains.kotlin.backend.wasm.ir2wasm.bind
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.declarations.addExtensionReceiver
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
@@ -27,6 +35,7 @@ import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.expressions.getClassTypeArguments
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
@@ -36,11 +45,16 @@ import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
 import org.jetbrains.kotlin.ir.types.starProjectedType
+import org.jetbrains.kotlin.ir.types.toKotlinType
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.SYNTHETIC_OFFSET
+import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
@@ -52,8 +66,22 @@ import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.js.translate.utils.AnnotationsUtils
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.firstArgument
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.typeUtil.representativeUpperBound
+import org.jetbrains.kotlin.types.typeUtil.supertypes
+import org.jetbrains.kotlinx.serialization.compiler.backend.common.AbstractSerialGenerator
+import org.jetbrains.kotlinx.serialization.compiler.backend.common.findStandardKotlinTypeSerializer
+import org.jetbrains.kotlinx.serialization.compiler.backend.ir.IrBuilderExtension
+import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationPluginContext
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -62,10 +90,15 @@ class KrpcIrGenerator(
     private val messageCollector: MessageCollector,
     private val printIR: Boolean,
     private val printKotlinLike: Boolean,
-): IrElementTransformerVoid(), ClassLoweringPass {
+): IrElementTransformerVoid(), ClassLoweringPass, IrBuilderExtension {
+
+    class SerialHelper(bindingContext: BindingContext, currentDeclaration: ClassDescriptor): AbstractSerialGenerator(bindingContext, currentDeclaration)
+
+    override val compilerContext: SerializationPluginContext = pluginContext
 
     private val flowType by lazy { pluginContext.referenceClass(KnownType.Coroutines.flow)!! }
 
+    @OptIn(ObsoleteDescriptorBasedAPI::class)
     override fun lower(irClass: IrClass) {
         when {
             irClass.isKrpcClient -> {
@@ -242,9 +275,44 @@ class KrpcIrGenerator(
                 }
             }
             irClass.isKrpcDescriptorCall -> {
-                val calls = getCalls(irClass.parentAsClass.parentAsClass)
+                val service = irClass.parentAsClass.parentAsClass
+                val calls = getCalls(service)
                 val descriptorClass = irClass.parentAsClass
                 val serviceIdentifier = descriptorClass.property(KnownType.Nested.Descriptor.serviceIdentifier)
+                val serialHelper = SerialHelper(pluginContext.bindingContext, irClass.descriptor)
+
+                fun toClassDescriptor(type: KotlinType?): ClassDescriptor? {
+                    return type?.constructor?.declarationDescriptor?.let { descriptor ->
+                        when(descriptor) {
+                            is ClassDescriptor -> descriptor
+                            is TypeParameterDescriptor -> toClassDescriptor(descriptor.representativeUpperBound)
+                            else -> null
+                        }
+                    }
+                }
+
+                val additionalSerializers: Map<Pair<ClassDescriptor, Boolean>, ClassDescriptor> by lazy {
+                    fun getKClassListFromFileAnnotation(annotationFqName: FqName, declarationInFile: DeclarationDescriptor): List<KotlinType> {
+                        val annotation = AnnotationsUtils.getContainingFileAnnotations(pluginContext.bindingContext, declarationInFile)
+                            .find { it.fqName == annotationFqName } ?: return emptyList()
+
+                        val typeList: List<KClassValue> = annotation.firstArgument()?.value as? List<KClassValue> ?: return emptyList()
+                        return typeList.map { it.getArgumentType(declarationInFile.module) }
+                    }
+
+                    fun isKSerializer(type: KotlinType?): Boolean =
+                        type != null && KotlinBuiltIns.isConstructedFromGivenClass(type, KnownType.Serialization.kserializer)
+
+                    getKClassListFromFileAnnotation(KnownType.Serialization.useSerializers, service.descriptor)
+                        .associateBy(
+                            {
+                                val kotlinType = it.supertypes().find(::isKSerializer)?.arguments?.firstOrNull()?.type
+                                val descriptor = toClassDescriptor(kotlinType) ?: throw AssertionError("Argument for ${KnownType.Serialization.useSerializers} does not implement KSerializer or does not provide serializer for concrete type")
+                                descriptor to kotlinType!!.isMarkedNullable
+                            },
+                            { toClassDescriptor(it)!! }
+                        )
+                }
 
                 for (property in irClass.properties) {
                     val rpcCall = calls[property.name] ?: continue
@@ -284,15 +352,69 @@ class KrpcIrGenerator(
                                         rpcCall.downstreamFlowType?.element ?: rpcCall.returnType
                                     )
 
-                                    arguments.forEachIndexed { index, type ->
-                                        val kserializer = KnownType.Serialization.kserializer.asClass().typeWith(type)
-                                        call.putValueArgument(index + 1,
+                                    val builtinSerializers = pluginContext.referenceFunctions(KnownType.Serialization.builtinSerializer).associateBy { it.owner.extensionReceiverParameter?.type }
+                                    fun serializerExpressionFor(type: IrType): IrExpression {
+                                        val kotlinType = type.toKotlinType()
+                                        val key = toClassDescriptor(kotlinType) to kotlinType.isMarkedNullable
+
+                                        val additionalSerializer: IrExpression? by lazy {
+                                            additionalSerializers[key]?.let {
+                                                it.fqNameOrNull()?.let(pluginContext::referenceClass)
+                                            }?.let { additionalSerializer ->
+                                                irConstructorCall(
+                                                    irCall(
+                                                        additionalSerializer.primaryConstructor
+                                                    ),
+                                                    additionalSerializer.primaryConstructor
+                                                )
+                                            }
+                                        }
+
+                                        val companionSerializer: IrExpression? by lazy {
+                                            type.getClass()?.let {
+                                                it.companionObject()?.functions?.singleOrNull { it.name.asString() == "serializer" }
+                                            }?.let { companionSerializer ->
+                                                irCall(
+                                                    companionSerializer.symbol,
+                                                    type,
+                                                    (type as IrSimpleType).arguments.map { it.typeOrNull!! }
+                                                ).also { call ->
+                                                    call.dispatchReceiver = irGetObject(type.getClass()?.companionObject()!!.symbol)
+                                                    for ((index, parameter) in (type as IrSimpleType).arguments.withIndex()) {
+                                                        call.putValueArgument(index, serializerExpressionFor(parameter.typeOrNull!!))
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        val builtinSerializer: IrExpression? by lazy {
+                                            findStandardKotlinTypeSerializer(pluginContext.moduleDescriptor, kotlinType)?.let {
+                                                it.fqNameOrNull()?.let(pluginContext::referenceClass)
+                                            }?.let { builtinSerializer ->
+                                                irGetObject(builtinSerializer)
+                                            }
+                                        }
+
+                                        val fallbackSerializer: IrExpression by lazy {
+                                            val kserializer = KnownType.Serialization.kserializer.asClass().typeWith(type)
                                             irCall(
                                                 serializer,
                                                 kserializer
                                             ).also { call ->
                                                 call.putTypeArgument(0, type)
                                             }
+                                        }
+
+                                        return additionalSerializer ?:
+                                            companionSerializer ?:
+                                            builtinSerializer ?:
+                                            fallbackSerializer
+                                    }
+
+                                    arguments.forEachIndexed { index, type ->
+                                        call.putValueArgument(
+                                            index + 1,
+                                            serializerExpressionFor(type)
                                         )
                                     }
                                     call.putValueArgument(arguments.count() + 1,
@@ -376,6 +498,9 @@ class KrpcIrGenerator(
 
     private val FqName.primaryConstructor: IrConstructorSymbol
         get() = pluginContext.referenceConstructors(this).single { it.owner.isPrimary }
+
+    private val IrClassSymbol.primaryConstructor: IrConstructorSymbol
+        get() = this.constructors.first { it.owner.isPrimary }
 
     private fun FqName.asClass(): IrClassSymbol = pluginContext.referenceClass(this)!!
 

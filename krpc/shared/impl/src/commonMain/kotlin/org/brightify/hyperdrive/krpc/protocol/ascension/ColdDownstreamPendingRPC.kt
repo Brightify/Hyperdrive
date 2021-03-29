@@ -1,6 +1,8 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -11,241 +13,239 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.serializer
 import org.brightify.hyperdrive.Logger
-import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
-import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
-import org.brightify.hyperdrive.krpc.frame.DownstreamRPCEvent
-import org.brightify.hyperdrive.krpc.frame.IncomingRPCFrame
-import org.brightify.hyperdrive.krpc.frame.RPCFrame
-import org.brightify.hyperdrive.krpc.RPCConnection
+import org.brightify.hyperdrive.krpc.SerializedPayload
 import org.brightify.hyperdrive.krpc.api.throwable
-import org.brightify.hyperdrive.krpc.util.RPCReference
-import org.brightify.hyperdrive.krpc.error.UnexpectedRPCEventException
-import org.brightify.hyperdrive.krpc.frame.UpstreamRPCEvent
+import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
+import org.brightify.hyperdrive.krpc.error.RPCError
 import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
 import org.brightify.hyperdrive.krpc.error.RPCStreamTimeoutError
-import org.brightify.hyperdrive.krpc.frame.OutgoingRPCFrame
+import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
+import org.brightify.hyperdrive.krpc.protocol.RPC
+import org.brightify.hyperdrive.krpc.util.RPCReference
 import org.brightify.hyperdrive.utils.Do
+import kotlin.coroutines.cancellation.CancellationException
 
 object ColdDownstreamPendingRPC {
-    private val <REQUEST, SERVER_STREAM> RunnableCallDescription.ColdDownstream<REQUEST, SERVER_STREAM>.serverStreamEventSerializer: KSerializer<out StreamEvent<out SERVER_STREAM>>
-        get() = StreamEventSerializer(responseSerializer, errorSerializer)
-
-    private val <REQUEST, SERVER_STREAM> ColdDownstreamCallDescription<REQUEST, SERVER_STREAM>.serverStreamEventSerializer: KSerializer<out StreamEvent<out SERVER_STREAM>>
-        get() = StreamEventSerializer(serverStreamSerializer, errorSerializer)
-
-    class Server<REQUEST, SERVER_STREAM>(
-        connection: RPCConnection,
+    class Callee(
+        protocol: AscensionRPCProtocol,
+        scope: CoroutineScope,
         reference: RPCReference,
-        call: RunnableCallDescription.ColdDownstream<REQUEST, SERVER_STREAM>,
-        onFinished: () -> Unit,
-    ): PendingRPC.Server<REQUEST, RunnableCallDescription.ColdDownstream<REQUEST, SERVER_STREAM>>(connection, reference, call, onFinished) {
+        private val implementation: RPC.Downstream.Callee.Implementation,
+    ): PendingRPC.Callee<AscensionRPCFrame.ColdDownstream.Upstream, AscensionRPCFrame.ColdDownstream.Downstream>(protocol, scope, reference, logger), RPC.Downstream.Callee {
         private companion object {
-            val logger = Logger<ColdDownstreamPendingRPC.Server<*, *>>()
+            val logger = Logger<ColdDownstreamPendingRPC.Callee>()
             // 60 seconds
             val flowStartTimeoutInMillis = 60 * 1000L
         }
 
-        private val outgoingFlowState = MutableStateFlow<OutgoingFlowState<SERVER_STREAM>>(OutgoingFlowState.Created())
-
-        sealed class OutgoingFlowState<SERVER_STREAM> {
-            class Created<SERVER_STREAM>: OutgoingFlowState<SERVER_STREAM>()
-            class Opened<SERVER_STREAM>(val flow: Flow<SERVER_STREAM>): OutgoingFlowState<SERVER_STREAM>()
-            class Started<SERVER_STREAM>(val job: Job): OutgoingFlowState<SERVER_STREAM>()
-            class Closed<SERVER_STREAM>: OutgoingFlowState<SERVER_STREAM>()
+        private sealed class StreamState {
+            object Created: StreamState()
+            class Opened(val flow: Flow<SerializedPayload>): StreamState()
+            class Started(val job: Job): StreamState()
+            object Closed: StreamState()
         }
 
-        override suspend fun handle(frame: IncomingRPCFrame<UpstreamRPCEvent>) {
-            org.brightify.hyperdrive.utils.Do exhaustive when (frame.header.event) {
-                is UpstreamRPCEvent.Open -> launch {
-                    val data = frame.decoder.decodeSerializableValue(call.requestSerializer)
+        private val serverStreamState = MutableStateFlow<StreamState>(StreamState.Created)
 
-                    val flow = call.perform(data)
+        override suspend fun handle(frame: AscensionRPCFrame.ColdDownstream.Upstream) {
+            Do exhaustive when (frame) {
+                is AscensionRPCFrame.ColdDownstream.Upstream.Open -> launch {
+                    when (val serverStreamOrError = implementation.perform(frame.payload)) {
+                        is RPC.StreamOrError.Stream -> {
+                            serverStreamState.value = StreamState.Opened(serverStreamOrError.stream)
+                            send(AscensionRPCFrame.ColdDownstream.Downstream.Opened(reference))
 
-                    outgoingFlowState.value = OutgoingFlowState.Opened(flow)
-                    frame.confirmOpened()
+                            // The client should subscribe to the stream right away. They have 60 seconds before we close it.
+                            val didTimeout = withTimeoutOrNull(flowStartTimeoutInMillis) {
+                                serverStreamState.filterNot { it is StreamState.Opened }.first()
+                                false
+                            } ?: true
 
-                    // The client should subscribe to the stream right away. They have 60 seconds before we close it.
-                    val didTimeout = withTimeoutOrNull(flowStartTimeoutInMillis) {
-                        outgoingFlowState.filterNot { it is OutgoingFlowState.Opened }.first()
-                        false
-                    } ?: true
-
-                    // If the stream wasn't started by this time, we send the timeout error frame.
-                    if (didTimeout) {
-                        throw RPCStreamTimeoutError(flowStartTimeoutInMillis)
-                    }
-                }
-                UpstreamRPCEvent.StreamOperation.Start -> {
-                    when (val state = outgoingFlowState.value) {
-                        is OutgoingFlowState.Opened -> {
-                            val job = launch {
-                                state.flow
-                                    .catch { exception ->
-                                        frame.sendStreamEvent(StreamEvent.Error(exception))
-                                    }
-                                    .collect {
-                                        frame.sendStreamEvent(StreamEvent.Next(it))
-                                    }
-
-                                frame.sendStreamEvent(StreamEvent.Complete())
+                            // If the stream wasn't started by this time, we send the timeout error frame.
+                            if (didTimeout) {
+                                throw RPCStreamTimeoutError(flowStartTimeoutInMillis)
                             }
-
-                            outgoingFlowState.value = OutgoingFlowState.Started(job)
                         }
-                        is OutgoingFlowState.Created -> {
-                            cancel("Flow is not ready yet.")
-                        }
-                        is OutgoingFlowState.Started -> {
-                            cancel("Flow is already being collected.")
-                        }
-                        is OutgoingFlowState.Closed -> {
-                            cancel("Flow has been collected.")
+                        is RPC.StreamOrError.Error -> {
+                            serverStreamState.value = StreamState.Closed
+                            send(AscensionRPCFrame.ColdDownstream.Downstream.Error(serverStreamOrError.error, reference))
                         }
                     }
                 }
-                UpstreamRPCEvent.StreamOperation.Close -> {
-                    when (val state = outgoingFlowState.value) {
-                        is OutgoingFlowState.Started -> {
-                            state.job.cancelAndJoin()
+                is AscensionRPCFrame.ColdDownstream.Upstream.StreamOperation.Start -> {
+                    Do exhaustive when (val state = serverStreamState.value) {
+                        is StreamState.Opened -> {
+                            launch(start = CoroutineStart.LAZY) {
+                                state.flow.collect {
+                                    send(AscensionRPCFrame.ColdDownstream.Downstream.StreamEvent(it, reference))
+                                }
+                            }.also {
+                                serverStreamState.value = StreamState.Started(it)
+                                it.start()
+                            }
                         }
-                        is OutgoingFlowState.Opened -> {
-                            outgoingFlowState.value = OutgoingFlowState.Closed()
-                        }
-                        is OutgoingFlowState.Created -> {
-                            throw UnexpectedRPCEventException(UpstreamRPCEvent.StreamOperation.Start::class, "Stream not ready.")
-                        }
-                        is OutgoingFlowState.Closed -> {
-                            frame.warnUnexpected("Stream was already closed. Ignoring.")
-                        }
+                        StreamState.Created -> throw RPCProtocolViolationError("Stream is not ready. Cannot be started.")
+                        is StreamState.Started -> throw RPCProtocolViolationError("Stream is already started. Cannot start again.")
+                        StreamState.Closed -> throw RPCProtocolViolationError("Stream has been closed. Cannot start again.")
                     }
                 }
-                UpstreamRPCEvent.Warning -> {
-                    val error = errorSerializer.decodeThrowable(frame.decoder)
-                    logger.warning(error) { "Received a warning from the client." }
-                }
-                UpstreamRPCEvent.Error -> {
-                    val error = errorSerializer.decodeThrowable(frame.decoder)
-                    cancel("Error received from the client.", error)
-                }
-                UpstreamRPCEvent.Cancel -> {
-                    cancel("Cancelled by the client.")
-                }
-                UpstreamRPCEvent.Data -> {
-                    throw RPCProtocolViolationError("Downstream call does not accept Data frames.")
+                is AscensionRPCFrame.ColdDownstream.Upstream.StreamOperation.Close -> {
+                    Do exhaustive when (val state = serverStreamState.value) {
+                        is StreamState.Started -> state.job.cancelAndJoin()
+                        StreamState.Created -> throw RPCProtocolViolationError("Stream not ready, cannot close.")
+                        is StreamState.Opened -> {
+                            logger.info { "Stream closed without starting it." }
+                            serverStreamState.value = StreamState.Closed
+                        }
+                        StreamState.Closed -> logger.warning { "Trying to close a closed stream, ignoring." }
+                    }
                 }
             }
-        }
-
-        private suspend fun IncomingRPCFrame<UpstreamRPCEvent>.confirmOpened() {
-            connection.send(OutgoingRPCFrame(
-                RPCFrame.Header(header.callReference, DownstreamRPCEvent.Opened),
-                Unit.serializer(),
-                Unit,
-            ))
-        }
-
-        private suspend fun IncomingRPCFrame<UpstreamRPCEvent>.sendStreamEvent(event: StreamEvent<SERVER_STREAM>) {
-            connection.send(OutgoingRPCFrame(
-                RPCFrame.Header(header.callReference, DownstreamRPCEvent.Data),
-                call.serverStreamEventSerializer,
-                event
-            ))
         }
     }
 
-    class Client<REQUEST, SERVER_STREAM>(
-        connection: RPCConnection,
+    class Caller(
+        protocol: AscensionRPCProtocol,
+        scope: CoroutineScope,
+        private val serviceCallIdentifier: ServiceCallIdentifier,
         reference: RPCReference,
-        call: ColdDownstreamCallDescription<REQUEST, SERVER_STREAM>,
-        onFinished: () -> Unit,
-    ): PendingRPC.Client<REQUEST, Flow<SERVER_STREAM>, ColdDownstreamCallDescription<REQUEST, SERVER_STREAM>>(connection, reference, call, onFinished) {
+    ): PendingRPC.Caller<AscensionRPCFrame.ColdDownstream.Downstream, AscensionRPCFrame.ColdDownstream.Upstream>(protocol, scope, reference, logger), RPC.Downstream.Caller {
         private companion object {
-            val logger = Logger<ColdDownstreamPendingRPC.Client<*, *>>()
+            val logger = Logger<ColdDownstreamPendingRPC.Caller>()
         }
 
-        private val channelDeferred = CompletableDeferred<Channel<SERVER_STREAM>>()
-        private val flowDeferred = CompletableDeferred<Flow<SERVER_STREAM>>()
-        private var closedByUpstream = false
+        private val channelDeferred = CompletableDeferred<Channel<SerializedPayload>>()
+        private val responseDeferred = CompletableDeferred<RPC.StreamOrError>()
 
-        override suspend fun perform(payload: REQUEST): Flow<SERVER_STREAM> = run {
-            open(payload)
+        override suspend fun perform(payload: SerializedPayload): RPC.StreamOrError = withContext(this.coroutineContext) {
+            send(AscensionRPCFrame.ColdDownstream.Upstream.Open(payload, serviceCallIdentifier, reference))
 
-            flowDeferred.await()
+            responseDeferred.await()
         }
 
-        override suspend fun handle(frame: IncomingRPCFrame<DownstreamRPCEvent>) {
-            org.brightify.hyperdrive.utils.Do exhaustive when (frame.header.event) {
-                DownstreamRPCEvent.Opened -> {
-                    retain()
-                    val channel = Channel<SERVER_STREAM>()
+        override suspend fun handle(frame: AscensionRPCFrame.ColdDownstream.Downstream) {
+            Do exhaustive when (frame) {
+                is AscensionRPCFrame.ColdDownstream.Downstream.Opened -> {
+                    if (responseDeferred.isCompleted) {
+                        throw RPCProtocolViolationError("Response already received, cannot pass stream!")
+                    }
+                    val job = Job(coroutineContext.job)
+                    val channel = Channel<SerializedPayload>()
                     channelDeferred.complete(channel)
-                    flowDeferred.complete(
+                    responseDeferred.complete(
                         channel.consumeAsFlow()
-                            .onStart { frame.startServerStream() }
-                            .onCompletion {
-                                if (!closedByUpstream) {
-                                    frame.closeServerStream()
-                                    release()
-                                }
+                            .onStart {
+                                startServerStream()
                             }
+                            .onCompletion {
+                                // TODO: !closedByUpstream?
+                                closeServerStream()
+                                job.complete()
+                            }
+                            .let(RPC.StreamOrError::Stream)
                     )
                 }
-                DownstreamRPCEvent.Data -> {
-                    if (channelDeferred.isCompleted) {
-                        val event = frame.decoder.decodeSerializableValue(call.serverStreamEventSerializer)
-                        val channel = channelDeferred.getCompleted()
-                        org.brightify.hyperdrive.utils.Do exhaustive when (event) {
-                            is StreamEvent.Next -> channel.send(event.data)
-                            is StreamEvent.Complete -> {
-                                closedByUpstream = true
-                                channel.close()
-                            }
-                            is StreamEvent.Error -> {
-                                closedByUpstream = true
-                                channel.close(event.error.throwable())
-                            }
-                        }
-                    } else {
-                        throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!")
+                is AscensionRPCFrame.ColdDownstream.Downstream.Error -> {
+                    if (responseDeferred.isCompleted) {
+                        throw RPCProtocolViolationError("Response already received, cannot pass error!")
                     }
+                    responseDeferred.complete(RPC.StreamOrError.Error(frame.payload))
                 }
-                DownstreamRPCEvent.Response -> {
-                    throw RPCProtocolViolationError("Downstream call requires data stream, not")
-                }
-                is DownstreamRPCEvent.StreamOperation -> {
-                    throw RPCProtocolViolationError("Downstream call doesn't support receiving stream operations from the server as there is no upstream to control.")
-                }
-                DownstreamRPCEvent.Warning -> {
-                    val error = errorSerializer.decodeThrowable(frame.decoder)
-                    logger.warning(error) { "Received a warning from the server." }
-                }
-                DownstreamRPCEvent.Error -> {
-                    val error = errorSerializer.decodeThrowable(frame.decoder)
-                    cancel("Server error", error)
+                is AscensionRPCFrame.ColdDownstream.Downstream.StreamEvent -> if (channelDeferred.isCompleted) {
+                    val channel = channelDeferred.getCompleted()
+                    channel.send(frame.event)
+                } else {
+                    throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!")
                 }
             }
         }
 
-        private suspend fun IncomingRPCFrame<DownstreamRPCEvent>.startServerStream() {
-            connection.send(OutgoingRPCFrame(
-                RPCFrame.Header(header.callReference, UpstreamRPCEvent.StreamOperation.Start),
-                Unit.serializer(),
-                Unit,
-            ))
+        private suspend fun startServerStream() {
+            send(AscensionRPCFrame.ColdDownstream.Upstream.StreamOperation.Start(reference))
         }
 
-        private suspend fun IncomingRPCFrame<DownstreamRPCEvent>.closeServerStream() {
-            connection.send(OutgoingRPCFrame(
-                RPCFrame.Header(header.callReference, UpstreamRPCEvent.StreamOperation.Close),
-                Unit.serializer(),
-                Unit,
-            ))
+        private suspend fun closeServerStream() {
+            send(AscensionRPCFrame.ColdDownstream.Upstream.StreamOperation.Close(reference))
+        }
+    }
+}
+
+object ColdDownstreamRunner {
+    class Callee<REQUEST, SERVER_STREAM>(
+        private val serializer: PayloadSerializer,
+        private val call: RunnableCallDescription.ColdDownstream<REQUEST, SERVER_STREAM>,
+    ): RPC.Downstream.Callee.Implementation {
+        private val streamEventSerializer = StreamEventSerializer(
+            call.responseSerializer,
+            call.errorSerializer,
+        )
+
+        override suspend fun perform(payload: SerializedPayload): RPC.StreamOrError {
+            val request = serializer.deserialize(call.requestSerializer, payload)
+
+            return try {
+                val stream = call.perform(request)
+                flow {
+                    try {
+                        stream.collect {
+                            emit(serializer.serialize(streamEventSerializer, StreamEvent.Element(it)))
+                        }
+
+                        emit(serializer.serialize(streamEventSerializer, StreamEvent.Complete()))
+                    } catch (t: Throwable) {
+                        emit(serializer.serialize(streamEventSerializer, StreamEvent.Error(t)))
+                    }
+                }.let(RPC.StreamOrError::Stream)
+            } catch (t: Throwable) {
+                RPC.StreamOrError.Error(serializer.serialize(call.errorSerializer, t.RPCError()))
+            }
+        }
+    }
+
+    class Caller<REQUEST, SERVER_STREAM>(
+        private val serializer: PayloadSerializer,
+        private val rpc: RPC.Downstream.Caller,
+        private val call: ColdDownstreamCallDescription<REQUEST, SERVER_STREAM>,
+    ) {
+        private val streamEventSerializer = StreamEventSerializer(
+            call.serverStreamSerializer,
+            call.errorSerializer,
+        )
+
+        suspend fun run(payload: REQUEST): Flow<SERVER_STREAM> {
+            val serializedPayload = serializer.serialize(call.outgoingSerializer, payload)
+
+            val serializedStreamOrError = rpc.perform(serializedPayload)
+            return when (serializedStreamOrError) {
+                is RPC.StreamOrError.Stream -> serializedStreamOrError.stream
+                    .map {
+                        return@map when (val event = serializer.deserialize(streamEventSerializer, it)) {
+                            is StreamEvent.Element -> event.element
+                            is StreamEvent.Complete -> throw CancellationException("Stream Completed")
+                            is StreamEvent.Error -> throw event.error.throwable()
+                        }
+                    }
+                    .catch { throwable ->
+                        if (throwable !is CancellationException) {
+                            throw throwable
+                        }
+                    }
+                is RPC.StreamOrError.Error -> {
+                    val error = serializer.deserialize(call.errorSerializer, serializedStreamOrError.error)
+                    throw error.throwable()
+                }
+            }
         }
     }
 }

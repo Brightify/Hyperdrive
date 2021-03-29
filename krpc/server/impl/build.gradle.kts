@@ -9,12 +9,14 @@ kotlin {
     jvm()
 
     sourceSets {
-        val jvmMain by getting {
+        val commonMain by getting {
             dependencies {
                 api(project(":krpc-server-api"))
                 api(project(":krpc-shared-api"))
                 api(project(":krpc-shared-impl"))
                 api(project(":krpc-annotations"))
+
+                implementation(project(":kotlin-utils"))
 
                 implementation("io.ktor:ktor-server-core:${Versions.ktor}")
                 implementation("io.ktor:ktor-server-netty:${Versions.ktor}")
