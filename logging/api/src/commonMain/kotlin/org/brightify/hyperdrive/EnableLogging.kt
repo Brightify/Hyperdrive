@@ -36,7 +36,7 @@ class Logger private constructor(private val ownerDescription: String) {
     }
 
     inline fun warning(throwable: Throwable? = null, crossinline entryBuilder: () -> String) {
-        logIfEnabled(LoggingLevel.Warn, null, entryBuilder)
+        logIfEnabled(LoggingLevel.Warn, throwable, entryBuilder)
     }
 
     inline fun error(throwable: Throwable? = null, crossinline entryBuilder: () -> String) {
