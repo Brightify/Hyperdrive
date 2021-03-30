@@ -45,15 +45,6 @@ class PayloadSerializerFactory: PayloadSerializer.Factory {
 }
 
 class KRPCNodeTest: BehaviorSpec({
-
-    val mockHandshakePerformer = object: RPCHandshakePerformer {
-        override suspend fun performHandshake(connection: RPCConnection): RPCHandshakePerformer.HandshakeResult {
-            return RPCHandshakePerformer.HandshakeResult.Success(
-                JsonTransportFrameSerializer(),
-                AscensionRPCProtocol.Factory(),
-            )
-        }
-    }
     val testScope = TestCoroutineScope(TestCoroutineExceptionHandler())
 
     beforeSpec {
@@ -80,7 +71,16 @@ class KRPCNodeTest: BehaviorSpec({
         beforeTest {
             connection = LoopbackConnection(testScope)
             registry = DefaultServiceRegistry()
-            val node = KRPCNode(registry, mockHandshakePerformer, PayloadSerializerFactory(), listOf(), connection)
+            val node = KRPCNode(
+                registry,
+                RPCHandshakePerformer.NoHandshake(
+                    JsonTransportFrameSerializer(),
+                    AscensionRPCProtocol.Factory(),
+                ),
+                PayloadSerializerFactory(),
+                listOf(),
+                connection
+            )
             testScope.launch { node.run() }
             val transport = node.transport()
             client = TestService.Client(transport)

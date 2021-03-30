@@ -23,6 +23,7 @@ import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.RPCTransport
+import org.brightify.hyperdrive.krpc.application.RPCExtension
 import org.brightify.hyperdrive.krpc.client.RPCClientConnector
 import org.brightify.hyperdrive.krpc.protocol.KRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.DefaultRPCHandshakePerformer
@@ -35,6 +36,7 @@ class KRPCClient(
     private val frameSerializerFactory: TransportFrameSerializer.Factory,
     private val payloadSerializerFactory: PayloadSerializer.Factory,
     private val serviceRegistry: ServiceRegistry,
+    private val additionalExtensions: List<RPCExtension.Factory> = emptyList(),
 ): RPCTransport, CoroutineScope by runScope + SupervisorJob(runScope.coroutineContext[Job]) {
     private companion object {
         val logger = Logger<KRPCClient>()
@@ -48,7 +50,7 @@ class KRPCClient(
             try {
                 connector.withConnection {
                     logger.info { "Connection created: $this" }
-                    val node = KRPCNode(serviceRegistry, handshakePerformer, payloadSerializerFactory, listOf(), this)
+                    val node = KRPCNode(serviceRegistry, handshakePerformer, payloadSerializerFactory, additionalExtensions, this)
                     activeNode.value = node
                     node.run()
                     logger.info { "Relasing connection: $this" }

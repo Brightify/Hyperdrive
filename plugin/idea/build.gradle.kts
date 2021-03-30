@@ -8,7 +8,7 @@ plugins {
 description = "IntelliJ IDEA plugin for Hyperdrive."
 
 dependencies {
-    implementation(project(":plugin-impl", configuration = "shadow"))
+    implementation(project(":plugin-impl-native"))
 }
 
 tasks.withType<KotlinCompile> {

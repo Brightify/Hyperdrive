@@ -1,7 +1,6 @@
 package org.brightify.hyperdrive.krpc.server.impl
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
@@ -12,6 +11,7 @@ import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.ServiceRegistry
+import org.brightify.hyperdrive.krpc.application.RPCExtension
 import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
 import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
 import org.brightify.hyperdrive.krpc.description.ServiceDescription
@@ -30,6 +30,7 @@ class KRPCServer(
     private val frameSerializerFactory: TransportFrameSerializer.Factory,
     private val payloadSerializerFactory: PayloadSerializer.Factory,
     private val serviceRegistry: ServiceRegistry,
+    private val additionalExtensions: List<RPCExtension.Factory> = emptyList(),
 ): CoroutineScope by runScope + SupervisorJob(runScope.coroutineContext[Job]) {
     private val handshakePerformer = DefaultRPCHandshakePerformer(frameSerializerFactory, DefaultRPCHandshakePerformer.Behavior.Server)
 
@@ -38,7 +39,7 @@ class KRPCServer(
             val connection = connector.nextConnection()
             // TODO: Check if we can make this launch die when the `runningJob` is canceled.
             connection.launch {
-                KRPCNode(serviceRegistry, handshakePerformer, payloadSerializerFactory, listOf(), connection).run()
+                KRPCNode(serviceRegistry, handshakePerformer, payloadSerializerFactory, additionalExtensions, connection).run()
                 connection.close()
             }
         }
@@ -65,36 +66,6 @@ class InternalServiceRegistry(
 
     override fun <T: RunnableCallDescription<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T? {
         return services[id]?.let { it as T }
-    }
-}
-
-/**
- * Service registry that searches a call in multiple registries passed into its constructor. The priority is ascending, so the first non-null
- * call returned from a registry will be used.
- *
- * NOTE: No two calls should ever have the same ID. This is currently not being enforced, but will be in a later version.
- * TODO: Enforce no two calls in registries have the same ID.
- */
-class MutableConcatServiceRegistry(
-    ascendingRegistries: List<ServiceRegistry> = emptyList(),
-): ServiceRegistry {
-    constructor(vararg ascendingRegistries: ServiceRegistry): this(ascendingRegistries.toList())
-
-    private val ascendingRegistries = ascendingRegistries.toMutableList()
-
-    fun prepend(registry: ServiceRegistry) {
-        ascendingRegistries.add(0, registry)
-    }
-
-    fun append(registry: ServiceRegistry) {
-        ascendingRegistries.add(registry)
-    }
-
-    override fun <T: RunnableCallDescription<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T? {
-        for (registry in ascendingRegistries) {
-            return registry.getCallById(id, type) ?: continue
-        }
-        return null
     }
 }
 

@@ -1,19 +1,18 @@
 package org.brightify.hyperdrive.krpc.application
 
-import kotlinx.coroutines.flow.Flow
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.RPCTransport
-import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
-import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
-import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
-import org.brightify.hyperdrive.krpc.description.SingleCallDescription
+import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import org.brightify.hyperdrive.krpc.protocol.RPCIncomingInterceptor
 import org.brightify.hyperdrive.krpc.protocol.RPCOutgoingInterceptor
 
 interface RPCExtension: RPCIncomingInterceptor, RPCOutgoingInterceptor {
     class Identifier(val value: String)
+
+    val providedServices: List<ServiceDescription>
+        get() = emptyList()
 
     suspend fun bind(transport: RPCTransport)
 

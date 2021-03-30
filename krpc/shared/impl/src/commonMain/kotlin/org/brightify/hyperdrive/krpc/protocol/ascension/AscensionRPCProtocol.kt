@@ -40,6 +40,15 @@ interface RPCHandshakePerformer {
     }
 
     suspend fun performHandshake(connection: RPCConnection): HandshakeResult
+
+    class NoHandshake(
+        val selectedFrameSerializer: TransportFrameSerializer,
+        val selectedProtocolFactory: RPCProtocol.Factory,
+    ): RPCHandshakePerformer {
+        override suspend fun performHandshake(connection: RPCConnection): RPCHandshakePerformer.HandshakeResult {
+            return HandshakeResult.Success(selectedFrameSerializer, selectedProtocolFactory)
+        }
+    }
 }
 
 class DefaultRPCHandshakePerformer(
