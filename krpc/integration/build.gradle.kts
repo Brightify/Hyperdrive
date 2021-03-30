@@ -14,7 +14,6 @@ plugins {
 
 kotlin {
     jvm()
-    macosX64()
 
     sourceSets {
         val commonMain by getting {

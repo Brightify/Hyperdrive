@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -71,6 +72,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.firstArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -81,6 +83,7 @@ import org.jetbrains.kotlin.types.typeUtil.supertypes
 import org.jetbrains.kotlinx.serialization.compiler.backend.common.AbstractSerialGenerator
 import org.jetbrains.kotlinx.serialization.compiler.backend.common.findStandardKotlinTypeSerializer
 import org.jetbrains.kotlinx.serialization.compiler.backend.ir.IrBuilderExtension
+import org.jetbrains.kotlinx.serialization.compiler.backend.jvm.OBJECT
 import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationPluginContext
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -352,7 +355,6 @@ class KrpcIrGenerator(
                                         rpcCall.downstreamFlowType?.element ?: rpcCall.returnType
                                     )
 
-                                    val builtinSerializers = pluginContext.referenceFunctions(KnownType.Serialization.builtinSerializer).associateBy { it.owner.extensionReceiverParameter?.type }
                                     fun serializerExpressionFor(type: IrType): IrExpression {
                                         val kotlinType = type.toKotlinType()
                                         val key = toClassDescriptor(kotlinType) to kotlinType.isMarkedNullable
@@ -361,12 +363,16 @@ class KrpcIrGenerator(
                                             additionalSerializers[key]?.let {
                                                 it.fqNameOrNull()?.let(pluginContext::referenceClass)
                                             }?.let { additionalSerializer ->
-                                                irConstructorCall(
-                                                    irCall(
+                                                if (additionalSerializer.descriptor.kind == ClassKind.OBJECT) {
+                                                    irGetObject(additionalSerializer)
+                                                } else {
+                                                    irConstructorCall(
+                                                        irCall(
+                                                            additionalSerializer.primaryConstructor
+                                                        ),
                                                         additionalSerializer.primaryConstructor
-                                                    ),
-                                                    additionalSerializer.primaryConstructor
-                                                )
+                                                    )
+                                                }
                                             }
                                         }
 
