@@ -282,7 +282,6 @@ class KrpcIrGenerator(
                 val calls = getCalls(service)
                 val descriptorClass = irClass.parentAsClass
                 val serviceIdentifier = descriptorClass.property(KnownType.Nested.Descriptor.serviceIdentifier)
-                val serialHelper = SerialHelper(pluginContext.bindingContext, irClass.descriptor)
 
                 fun toClassDescriptor(type: KotlinType?): ClassDescriptor? {
                     return type?.constructor?.declarationDescriptor?.let { descriptor ->
@@ -359,6 +358,34 @@ class KrpcIrGenerator(
                                         val kotlinType = type.toKotlinType()
                                         val key = toClassDescriptor(kotlinType) to kotlinType.isMarkedNullable
 
+                                        fun irSerializerConstructorCall(symbol: IrFunctionSymbol): IrExpression {
+                                            val call = if (type is IrSimpleType) {
+                                                irCall(
+                                                    symbol,
+                                                    type
+                                                ).also { call ->
+                                                    call.dispatchReceiver = type.getClass()?.companionObject()?.symbol?.let(::irGetObject)
+                                                    for ((index, parameter) in type.arguments.withIndex()) {
+                                                        call.putTypeArgument(index, parameter.typeOrNull ?: continue)
+                                                        call.putValueArgument(index, serializerExpressionFor(parameter.typeOrNull ?: continue))
+                                                    }
+                                                }
+                                            } else {
+                                                irCall(
+                                                    symbol,
+                                                    type
+                                                ).also { call ->
+                                                    call.dispatchReceiver = type.getClass()?.companionObject()?.symbol?.let(::irGetObject)
+                                                }
+                                            }
+
+                                            return if (symbol is IrConstructorSymbol) {
+                                                irConstructorCall(call, symbol)
+                                            } else {
+                                                call
+                                            }
+                                        }
+
                                         val additionalSerializer: IrExpression? by lazy {
                                             additionalSerializers[key]?.let {
                                                 it.fqNameOrNull()?.let(pluginContext::referenceClass)
@@ -366,6 +393,7 @@ class KrpcIrGenerator(
                                                 if (additionalSerializer.descriptor.kind == ClassKind.OBJECT) {
                                                     irGetObject(additionalSerializer)
                                                 } else {
+                                                    // TODO: Use `irSerializerConstructorCall`
                                                     irConstructorCall(
                                                         irCall(
                                                             additionalSerializer.primaryConstructor
@@ -380,16 +408,7 @@ class KrpcIrGenerator(
                                             type.getClass()?.let {
                                                 it.companionObject()?.functions?.singleOrNull { it.name.asString() == "serializer" }
                                             }?.let { companionSerializer ->
-                                                irCall(
-                                                    companionSerializer.symbol,
-                                                    type,
-                                                    (type as IrSimpleType).arguments.map { it.typeOrNull!! }
-                                                ).also { call ->
-                                                    call.dispatchReceiver = irGetObject(type.getClass()?.companionObject()!!.symbol)
-                                                    for ((index, parameter) in (type as IrSimpleType).arguments.withIndex()) {
-                                                        call.putValueArgument(index, serializerExpressionFor(parameter.typeOrNull!!))
-                                                    }
-                                                }
+                                                irSerializerConstructorCall(companionSerializer.symbol)
                                             }
                                         }
 
@@ -397,7 +416,11 @@ class KrpcIrGenerator(
                                             findStandardKotlinTypeSerializer(pluginContext.moduleDescriptor, kotlinType)?.let {
                                                 it.fqNameOrNull()?.let(pluginContext::referenceClass)
                                             }?.let { builtinSerializer ->
-                                                irGetObject(builtinSerializer)
+                                                if (builtinSerializer.descriptor.kind == ClassKind.OBJECT) {
+                                                    irGetObject(builtinSerializer)
+                                                } else {
+                                                    irSerializerConstructorCall(builtinSerializer.primaryConstructor)
+                                                }
                                             }
                                         }
 

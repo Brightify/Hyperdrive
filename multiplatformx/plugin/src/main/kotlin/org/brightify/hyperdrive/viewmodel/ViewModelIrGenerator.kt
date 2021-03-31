@@ -40,7 +40,7 @@ class ViewModelIrGenerator(
 
         val lazy = pluginContext.referenceClass(ViewModelNames.Kotlin.lazy) ?: return
         val lazyValue = lazy.getPropertyGetter(ViewModelNames.Kotlin.Lazy.value.identifier) ?: return
-        val observe = irClass.functions.single { it.name == Name.identifier("observe") }
+        val observe = irClass.functions.singleOrNull { it.name == Name.identifier("observe") } ?: return
 
         for (property in irClass.properties) {
             if (!property.name.identifier.startsWith("observe")) { continue }
