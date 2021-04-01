@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.krpc
 
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -8,6 +9,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
+import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.description.CallDescription
@@ -36,6 +38,11 @@ class SessionNodeExtension(
     private val payloadSerializerFactory: PayloadSerializer.Factory,
     private val plugins: List<Plugin>,
 ): Session, ContextUpdateService, RPCNodeExtension {
+    companion object {
+        val logger = Logger<SessionNodeExtension>()
+        const val maximumRejections = 10
+    }
+
     object Identifier: RPCNodeExtension.Identifier<SessionNodeExtension> {
         override val uniqueIdentifier: String = "builtin:Session"
         override val extensionClass = SessionNodeExtension::class
@@ -88,12 +95,15 @@ class SessionNodeExtension(
     }
 
     override suspend fun update(request: ContextUpdateRequest): ContextUpdateResult = contextModificationLock.withLock {
+        logger.debug { "Received a session context update request: $request." }
         val modificationsWithKeys = request.modifications.mapKeys { getKeyOrUnsupported(it.key) }
         val rejectedItems = modificationsWithKeys.filter { (key, modification) ->
             modification.oldRevisionOrNull != context[key]?.revision
         }
 
         if (rejectedItems.isEmpty()) {
+            logger.debug { "No reason for a rejection found. Accepting." }
+
             for ((key, modification) in modificationsWithKeys) {
                 when (modification) {
                     // No action is needed.
@@ -111,6 +121,8 @@ class SessionNodeExtension(
 
             ContextUpdateResult.Accepted
         } else {
+            logger.debug { "Found potential conflict in update request. Rejected items: $rejectedItems." }
+
             ContextUpdateResult.Rejected(
                 rejectedItems.mapValues { (key, _) ->
                     context[key]?.let {
@@ -172,7 +184,8 @@ class SessionNodeExtension(
         awaitCompletedContextSync()
         runningContextUpdate = ourJob
 
-        // TODO: Add timeout / number of retries.
+        // TODO: Don't rely on number of retries, but check the result from the other party to detect a bug.
+        var rejections = 0
         do {
             val modifications = mutableMapOf<Session.Context.Key<Any>, Session.Context.Mutator.Action>()
             val mutator = Session.Context.Mutator(context, modifications)
@@ -191,11 +204,18 @@ class SessionNodeExtension(
                     }
                 }.mapKeys { it.key.qualifiedName }
             )
+
+            logger.debug { "Will try updating context (try #${rejections + 1}) with $request." }
             val result = client.update(request)
 
             contextModificationLock.withLock {
                 when (result) {
                     is ContextUpdateResult.Rejected -> {
+                        rejections += 1
+                        if (rejections >= maximumRejections) {
+
+                        }
+                        logger.debug { "Context update rejected (try #$rejections). Reasons: ${result.rejectedModifications}" }
                         val modificationsWithKeys = result.rejectedModifications.mapKeys { getKeyOrUnsupported(it.key) }
                         for ((key, reason) in modificationsWithKeys) {
                             Do exhaustive when (reason) {
@@ -207,6 +227,7 @@ class SessionNodeExtension(
                         }
                     }
                     ContextUpdateResult.Accepted -> {
+                        logger.debug { "Context update accepted (try #$rejections). Saving to local context." }
                         for ((key, action) in modifications) {
                             Do exhaustive when (action) {
                                 is Session.Context.Mutator.Action.Required -> continue
@@ -217,7 +238,7 @@ class SessionNodeExtension(
                     }
                 }
             }
-        } while (result != ContextUpdateResult.Accepted)
+        } while (result != ContextUpdateResult.Accepted && rejections < maximumRejections)
 
         notifyPluginsContextChanged()
 
