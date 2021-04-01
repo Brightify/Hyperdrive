@@ -67,6 +67,28 @@ class KrpcPluginTest {
 
     @Test
     fun testKrpcPlugin() {
+        val uuidSource = SourceFile.kotlin("Uuid.kt", """
+            class Uuid(val value: String)
+        """.trimIndent())
+
+        val uuidSerializerSeource = SourceFile.kotlin("UuidSerializer.kt", """
+            import kotlinx.serialization.KSerializer
+            import kotlinx.serialization.descriptors.SerialDescriptor
+            import kotlinx.serialization.encoding.Decoder
+            import kotlinx.serialization.encoding.Encoder
+            import kotlinx.serialization.builtins.serializer
+            
+            class UuidSerializer: KSerializer<Uuid> {
+                override val descriptor: SerialDescriptor = String.serializer().descriptor
+                override fun serialize(encoder: Encoder, value: Uuid) {
+                    encoder.encodeString(value.value)
+                }
+                override fun deserialize(decoder: Decoder): Uuid {
+                    return Uuid(decoder.decodeString())
+                }
+            }
+        """.trimIndent())
+
         val serviceSource = SourceFile.kotlin("ProcessorTestService.kt", """
             @file:UseSerializers(UuidSerializer::class)
 
@@ -79,23 +101,6 @@ class KrpcPluginTest {
             import kotlinx.coroutines.flow.map
             import org.brightify.hyperdrive.krpc.RPCTransport
             import kotlinx.serialization.UseSerializers
-            import kotlinx.serialization.KSerializer
-            import kotlinx.serialization.descriptors.SerialDescriptor
-            import kotlinx.serialization.encoding.Decoder
-            import kotlinx.serialization.encoding.Encoder
-            import kotlinx.serialization.builtins.serializer
-            
-            class Uuid(val value: String)
-            
-            class UuidSerializer: KSerializer<Uuid> {
-                override val descriptor: SerialDescriptor = String.serializer().descriptor
-                override fun serialize(encoder: Encoder, value: Uuid) {
-                    encoder.encodeString(value.value)
-                }
-                override fun deserialize(decoder: Decoder): Uuid {
-                    return Uuid(decoder.decodeString())
-                }
-            }
             
             @EnableKRPC
             interface ProcessorTestService {
@@ -146,7 +151,7 @@ class KrpcPluginTest {
         """.trimIndent())
 
         val result = KotlinCompilation().apply {
-            sources = listOf(serviceSource) //, serviceClientSource, serviceDescriptorSource)
+            sources = listOf(serviceSource, uuidSource, uuidSerializerSeource) //, serviceClientSource, serviceDescriptorSource)
 
             compilerPlugins = listOf<ComponentRegistrar>(
                 KrpcComponentRegistrar()

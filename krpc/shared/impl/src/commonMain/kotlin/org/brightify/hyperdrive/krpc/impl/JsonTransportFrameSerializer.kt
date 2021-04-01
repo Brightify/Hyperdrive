@@ -38,12 +38,23 @@ class SerializerRegistry(
     }
 
     val payloadSerializerFactory: PayloadSerializer.Factory = object: PayloadSerializer.Factory {
+        override val supportedSerializationFormats = this@SerializerRegistry.supportedSerializationFormats
+
         override fun create(format: SerializationFormat): PayloadSerializer {
             require(supportedSerializationFormats.contains(format)) { "Format $format not supported." }
 
             return combinedSerializers.getOrPut(format) {
                 combinedSerializerFactories.single { it.format == format }.create()
             }.payloadSerializer
+        }
+
+        override fun <T> deserialize(strategy: DeserializationStrategy<T>, payload: SerializedPayload): T {
+            val serializer = create(payload.format)
+            return serializer.deserialize(strategy, payload)
+        }
+
+        override fun <T> serialize(strategy: SerializationStrategy<T>, value: T): SerializedPayload {
+            return create(supportedSerializationFormats.first()).serialize(strategy, value)
         }
     }
 
@@ -97,6 +108,9 @@ class JsonPayloadSerializer(private val builder: JsonBuilder.() -> Unit = { }): 
         encodeDefaults = false
         builder()
     }
+
+    override val format: SerializationFormat = SerializationFormat.Text.Json
+
     override fun <T> serialize(strategy: SerializationStrategy<T>, payload: T): SerializedPayload {
         return SerializedPayload.Text(
             json.encodeToString(strategy, payload),

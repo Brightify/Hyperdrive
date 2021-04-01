@@ -20,6 +20,12 @@ val CoroutineContext.rpcSession: Session
 interface Session: CoroutineContext.Element {
     public companion object Key: CoroutineContext.Key<Session>
 
+    operator fun <VALUE: Any> get(key: Context.Key<VALUE>): VALUE?
+
+    operator fun iterator(): Iterator<Context.Item<*>>
+
+    fun copyOfContext(): Context
+
     suspend fun contextTransaction(block: Context.Mutator.() -> Unit)
 
     object Id: Context.Key<Long> {
@@ -28,15 +34,24 @@ interface Session: CoroutineContext.Element {
     }
 
     class Context(
-        val data: MutableMap<Key<*>, Item<*>>,
+        @PublishedApi
+        internal val data: MutableMap<Key<*>, Item<*>>,
     ) {
         operator fun <VALUE: Any> get(key: Key<VALUE>): Item<VALUE>? = data[key] as? Item<VALUE>
 
-        fun <VALUE: Any> put(item: Item<VALUE>, key: Key<VALUE>) {
+        operator fun <VALUE: Any> set(key: Key<VALUE>, item: Item<VALUE>) {
             data[key] = item
         }
 
         fun <VALUE: Any> remove(key: Key<VALUE>): Item<VALUE>? = data.remove(key) as? Item<VALUE>
+
+        public inline operator fun iterator(): Iterator<Item<*>> = data.values.iterator()
+
+        fun copy(): Context {
+            return Context(
+                data.toMutableMap()
+            )
+        }
 
         interface Key<VALUE: Any> {
             val qualifiedName: String
@@ -73,7 +88,7 @@ interface Session: CoroutineContext.Element {
                 class Remove(val oldItem: Item<*>): Action()
             }
 
-            public fun <VALUE: Any> get(key: Key<VALUE>): VALUE? {
+            public operator fun <VALUE: Any> get(key: Key<VALUE>): VALUE? {
                 val oldItem = oldContext[key]
                 if (!modifications.containsKey(key as Key<Any>)) {
                     modifications[key] = Action.Required(oldItem)
@@ -81,7 +96,7 @@ interface Session: CoroutineContext.Element {
                 return oldItem?.value
             }
 
-            public fun <VALUE: Any> set(newValue: VALUE, key: Key<VALUE>) {
+            public operator fun <VALUE: Any> set(key: Key<VALUE>, newValue: VALUE) {
                 val oldItem = oldContext[key]
                 val newRevision = oldItem?.let { it.revision + 1 } ?: Int.MIN_VALUE
 

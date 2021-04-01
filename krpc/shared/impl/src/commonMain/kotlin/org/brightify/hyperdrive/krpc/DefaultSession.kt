@@ -1,23 +1,15 @@
 package org.brightify.hyperdrive.krpc
 
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationStrategy
-import kotlinx.serialization.builtins.ByteArraySerializer
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.protobuf.ProtoBuf
-import org.brightify.hyperdrive.krpc.application.RPCExtension
+import org.brightify.hyperdrive.krpc.application.RPCNode
+import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.description.CallDescription
 import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
@@ -28,11 +20,8 @@ import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
 import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
-import org.brightify.hyperdrive.krpc.protocol.RPCIncomingInterceptor
-import org.brightify.hyperdrive.krpc.protocol.RPCOutgoingInterceptor
-import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
 import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
-import org.brightify.hyperdrive.krpc.session.ContextKeyRegistry
+import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import org.brightify.hyperdrive.krpc.session.Session
 import org.brightify.hyperdrive.utils.Do
 import kotlin.contracts.ExperimentalContracts
@@ -43,16 +32,32 @@ import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
 class SessionNodeExtension(
-    private val contextKeyRegistry: ContextKeyRegistry,
-    private val payloadSerializer: PayloadSerializer,
-): Session, ContextUpdateService, RPCExtension {
+    private val sessionContextKeyRegistry: SessionContextKeyRegistry,
+    private val payloadSerializerFactory: PayloadSerializer.Factory,
+    private val plugins: List<Plugin>,
+): Session, ContextUpdateService, RPCNodeExtension {
+    object Identifier: RPCNodeExtension.Identifier<SessionNodeExtension> {
+        override val uniqueIdentifier: String = "builtin:Session"
+        override val extensionClass = SessionNodeExtension::class
+    }
+
+    interface Plugin {
+        suspend fun onBindComplete(session: Session) { }
+
+        suspend fun onContextChanged(session: Session) { }
+    }
+
     class Factory(
-        private val contextKeyRegistry: ContextKeyRegistry,
-        private val payloadSerializer: PayloadSerializer,
-    ): RPCExtension.Factory {
-        override val identifier = RPCExtension.Identifier("builtin:Session")
-        override fun create(): RPCExtension {
-            return SessionNodeExtension(contextKeyRegistry, payloadSerializer)
+        private val sessionContextKeyRegistry: SessionContextKeyRegistry,
+        private val payloadSerializerFactory: PayloadSerializer.Factory,
+        private val plugins: List<Plugin> = emptyList(),
+    ): RPCNodeExtension.Factory<SessionNodeExtension> {
+        override val identifier = Identifier
+
+        override val isRequiredOnOtherSide = true
+
+        override fun create(): SessionNodeExtension {
+            return SessionNodeExtension(sessionContextKeyRegistry, payloadSerializerFactory, plugins)
         }
     }
 
@@ -66,10 +71,20 @@ class SessionNodeExtension(
     private val contextModificationLock = Mutex()
     private var runningContextUpdate: Job? = null
 
+    private lateinit var payloadSerializer: PayloadSerializer
     private lateinit var client: ContextUpdateService.Client
 
-    override suspend fun bind(transport: RPCTransport) {
+    override fun copyOfContext(): Session.Context = context.copy()
+
+    override fun iterator(): Iterator<Session.Context.Item<*>> = context.iterator()
+
+    override suspend fun bind(transport: RPCTransport, contract: RPCNode.Contract) {
+        payloadSerializer = contract.payloadSerializer
         client = ContextUpdateService.Client(transport)
+
+        for (plugin in plugins) {
+            plugin.onBindComplete(this)
+        }
     }
 
     override suspend fun update(request: ContextUpdateRequest): ContextUpdateResult = contextModificationLock.withLock {
@@ -92,6 +107,8 @@ class SessionNodeExtension(
                 }
             }
 
+            notifyPluginsContextChanged()
+
             ContextUpdateResult.Accepted
         } else {
             ContextUpdateResult.Rejected(
@@ -104,16 +121,29 @@ class SessionNodeExtension(
         }
     }
     private fun getKeyOrUnsupported(qualifiedName: String): Session.Context.Key<*> {
-        return contextKeyRegistry.getKeyByQualifiedName(qualifiedName) ?: UnsupportedKey(qualifiedName)
+        return sessionContextKeyRegistry.getKeyByQualifiedName(qualifiedName) ?: UnsupportedKey(qualifiedName)
     }
 
-    private fun <T: Any> deserializeAndPut(key: Session.Context.Key<T>, item: ContextItemDto) {
-        val value = if (key is UnsupportedKey) {
-            item.value as T
-        } else {
-            payloadSerializer.deserialize(key.serializer, item.value)
+    private fun <T: Any> deserializeAndPut(key: Session.Context.Key<T>, itemDto: ContextItemDto) {
+        val item = when {
+            key is UnsupportedKey -> {
+                Session.Context.Item(key, itemDto.revision, itemDto.value)
+            }
+            itemDto.value.format == payloadSerializer.format -> {
+                Session.Context.Item(key, itemDto.revision, payloadSerializer.deserialize(key.serializer, itemDto.value))
+            }
+            payloadSerializerFactory.supportedSerializationFormats.contains(itemDto.value.format) -> {
+                Session.Context.Item(key, itemDto.revision, payloadSerializerFactory.create(itemDto.value.format).deserialize(key.serializer, itemDto.value))
+            }
+            else -> {
+                Session.Context.Item(UnsupportedKey(key.qualifiedName), itemDto.revision, itemDto.value)
+            }
         }
-        context.put(Session.Context.Item(key, item.revision, value), key)
+        putItem(item)
+    }
+
+    private fun <T: Any> putItem(item: Session.Context.Item<T>) {
+        context[item.key] = item
     }
 
     private fun <T: Any> Session.Context.Item<T>.toDto(): ContextItemDto {
@@ -123,6 +153,16 @@ class SessionNodeExtension(
             payloadSerializer.serialize(key.serializer, value)
         }
         return ContextItemDto(revision, serializedValue)
+    }
+
+    private suspend fun notifyPluginsContextChanged() {
+        for (plugin in plugins) {
+            plugin.onContextChanged(this)
+        }
+    }
+
+    override fun <VALUE: Any> get(key: Session.Context.Key<VALUE>): VALUE? {
+        return context[key]?.value
     }
 
     override suspend fun contextTransaction(block: Session.Context.Mutator.() -> Unit) {
@@ -170,7 +210,7 @@ class SessionNodeExtension(
                         for ((key, action) in modifications) {
                             Do exhaustive when (action) {
                                 is Session.Context.Mutator.Action.Required -> continue
-                                is Session.Context.Mutator.Action.Set -> context.put(action.newItem as Session.Context.Item<Any>, key)
+                                is Session.Context.Mutator.Action.Set -> context[key] = action.newItem as Session.Context.Item<Any>
                                 is Session.Context.Mutator.Action.Remove -> context.remove(key)
                             }
                         }
@@ -178,6 +218,8 @@ class SessionNodeExtension(
                 }
             }
         } while (result != ContextUpdateResult.Accepted)
+
+        notifyPluginsContextChanged()
 
         runningContextUpdate = null
         ourJob.complete()

@@ -32,7 +32,7 @@ import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.protocol.KRPCNode
+import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
@@ -71,7 +71,7 @@ class KRPCNodeTest: BehaviorSpec({
         beforeTest {
             connection = LoopbackConnection(testScope)
             registry = DefaultServiceRegistry()
-            val node = KRPCNode(
+            val node = DefaultRPCNode(
                 registry,
                 RPCHandshakePerformer.NoHandshake(
                     JsonTransportFrameSerializer(),

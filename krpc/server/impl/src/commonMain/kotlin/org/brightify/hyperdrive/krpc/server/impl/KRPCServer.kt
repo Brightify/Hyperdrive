@@ -9,20 +9,15 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
-import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.application.RPCExtension
-import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
-import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.description.ServiceDescription
-import org.brightify.hyperdrive.krpc.protocol.KRPCNode
+import org.brightify.hyperdrive.krpc.SessionNodeExtension
+import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
+import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.DefaultRPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.server.ServerConnector
-import org.brightify.hyperdrive.krpc.session.Session
+import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import org.brightify.hyperdrive.krpc.transport.TransportFrameSerializer
-import kotlin.coroutines.CoroutineContext
-import kotlin.reflect.KClass
 
 class KRPCServer(
     private val connector: ServerConnector,
@@ -30,16 +25,26 @@ class KRPCServer(
     private val frameSerializerFactory: TransportFrameSerializer.Factory,
     private val payloadSerializerFactory: PayloadSerializer.Factory,
     private val serviceRegistry: ServiceRegistry,
-    private val additionalExtensions: List<RPCExtension.Factory> = emptyList(),
+    private val sessionContextKeyRegistry: SessionContextKeyRegistry,
+    private val additionalExtensions: List<RPCNodeExtension.Factory<*>> = emptyList(),
 ): CoroutineScope by runScope + SupervisorJob(runScope.coroutineContext[Job]) {
     private val handshakePerformer = DefaultRPCHandshakePerformer(frameSerializerFactory, DefaultRPCHandshakePerformer.Behavior.Server)
+
+    private val builtinExtensions = listOf<RPCNodeExtension.Factory<*>>(
+        SessionNodeExtension.Factory(sessionContextKeyRegistry, payloadSerializerFactory),
+    )
 
     suspend fun run() = withContext(coroutineContext) {
         while (isActive) {
             val connection = connector.nextConnection()
             // TODO: Check if we can make this launch die when the `runningJob` is canceled.
             connection.launch {
-                KRPCNode(serviceRegistry, handshakePerformer, payloadSerializerFactory, additionalExtensions, connection).run()
+                DefaultRPCNode.Factory(
+                    handshakePerformer,
+                    payloadSerializerFactory,
+                    builtinExtensions + additionalExtensions,
+                    serviceRegistry
+                ).create(connection).run()
                 connection.close()
             }
         }
@@ -52,23 +57,4 @@ class KRPCServer(
     suspend fun close() {
         coroutineContext.job.cancelAndJoin()
     }
-}
-
-/**
- * Service registry for builtin kRPC services.
-  */
-class InternalServiceRegistry(
-    contextUpdateService: ServiceDescription,
-): ServiceRegistry {
-    private val services: Map<ServiceCallIdentifier, RunnableCallDescription<*>> = listOf(
-        contextUpdateService
-    ).flatMap { it.calls.map { it.identifier to it } }.toMap()
-
-    override fun <T: RunnableCallDescription<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T? {
-        return services[id]?.let { it as T }
-    }
-}
-
-class RPCConnectionWithSession(val connection: RPCConnection, val session: Session): RPCConnection by connection {
-    override val coroutineContext: CoroutineContext = connection.coroutineContext + session
 }

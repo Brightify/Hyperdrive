@@ -49,6 +49,9 @@ class ProtobufPayloadSerializer(private val builder: ProtoBufBuilder.() -> Unit 
         encodeDefaults = false
         builder()
     }
+
+    override val format: SerializationFormat = SerializationFormat.Binary.Protobuf
+
     override fun <T> serialize(strategy: SerializationStrategy<T>, payload: T): SerializedPayload {
         return SerializedPayload.Binary(
             protobuf.encodeToByteArray(strategy, payload),

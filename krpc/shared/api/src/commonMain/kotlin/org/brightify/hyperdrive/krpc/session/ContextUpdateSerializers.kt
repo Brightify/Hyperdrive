@@ -13,6 +13,10 @@ import kotlinx.serialization.descriptors.mapSerialDescriptor
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.brightify.hyperdrive.krpc.ServiceRegistry
+import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
+import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
+import kotlin.reflect.KClass
 
 @OptIn(ExperimentalSerializationApi::class)
 private object ContextUpdateSerializerDescriptor {
@@ -41,14 +45,17 @@ private object ContextUpdateSerializerDescriptor {
     }
 }
 
-interface ContextKeyRegistry {
-
+interface SessionContextKeyRegistry {
     fun getKeyByQualifiedName(keyQualifiedName: String): Session.Context.Key<*>?
+
+    object Empty: SessionContextKeyRegistry {
+        override fun getKeyByQualifiedName(keyQualifiedName: String): Session.Context.Key<*>? = null
+    }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
 class IncomingContextUpdateSerializer(
-    private val contextKeyRegistry: ContextKeyRegistry,
+    private val sessionContextKeyRegistry: SessionContextKeyRegistry,
 ): DeserializationStrategy<IncomingContextUpdate> {
     override val descriptor: SerialDescriptor = ContextUpdateSerializerDescriptor.descriptor
 
@@ -89,7 +96,7 @@ class IncomingContextUpdateSerializer(
     private fun readElement(decoder: CompositeDecoder, index: Int, builder: MutableMap<Session.Context.Key<*>, IncomingContextUpdate.Modification>, checkIndex: Boolean = true) {
         val keyQualifiedName: String = decoder.decodeSerializableElement(ContextUpdateSerializerDescriptor.mapDescriptor, index,
             ContextUpdateSerializerDescriptor.keySerializer)
-        val key = contextKeyRegistry.getKeyByQualifiedName(keyQualifiedName)!!
+        val key = sessionContextKeyRegistry.getKeyByQualifiedName(keyQualifiedName)!!
         val vIndex = if (checkIndex) {
             decoder.decodeElementIndex(ContextUpdateSerializerDescriptor.mapDescriptor).also {
                 require(it == index + 1) { "Value must follow key in a map, index for key: $index, returned index for value: $it" }

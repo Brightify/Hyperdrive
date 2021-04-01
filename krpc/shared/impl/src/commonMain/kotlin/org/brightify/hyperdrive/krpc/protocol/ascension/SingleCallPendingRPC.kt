@@ -70,12 +70,20 @@ object SingleCallPendingRPC {
 }
 
 interface PayloadSerializer {
+    val format: SerializationFormat
+
     fun <T> serialize(strategy: SerializationStrategy<T>, payload: T): SerializedPayload
 
     fun <T> deserialize(strategy: DeserializationStrategy<T>, payload: SerializedPayload): T
 
     interface Factory {
+        val supportedSerializationFormats: List<SerializationFormat>
+
         fun create(format: SerializationFormat): PayloadSerializer
+
+        fun <T> deserialize(strategy: DeserializationStrategy<T>, payload: SerializedPayload): T
+
+        fun <T> serialize(strategy: SerializationStrategy<T>, value: T): SerializedPayload
     }
 }
 
