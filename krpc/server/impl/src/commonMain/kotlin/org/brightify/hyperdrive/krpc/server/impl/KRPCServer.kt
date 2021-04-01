@@ -9,6 +9,7 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
+import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.ServiceRegistry
 import org.brightify.hyperdrive.krpc.SessionNodeExtension
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
@@ -28,6 +29,10 @@ class KRPCServer(
     private val sessionContextKeyRegistry: SessionContextKeyRegistry,
     private val additionalExtensions: List<RPCNodeExtension.Factory<*>> = emptyList(),
 ): CoroutineScope by runScope + SupervisorJob(runScope.coroutineContext[Job]) {
+    private companion object {
+        val logger = Logger<KRPCServer>()
+    }
+
     private val handshakePerformer = DefaultRPCHandshakePerformer(frameSerializerFactory, DefaultRPCHandshakePerformer.Behavior.Server)
 
     private val builtinExtensions = listOf<RPCNodeExtension.Factory<*>>(
@@ -39,12 +44,15 @@ class KRPCServer(
             val connection = connector.nextConnection()
             // TODO: Check if we can make this launch die when the `runningJob` is canceled.
             connection.launch {
-                DefaultRPCNode.Factory(
+                val node = DefaultRPCNode.Factory(
                     handshakePerformer,
                     payloadSerializerFactory,
                     builtinExtensions + additionalExtensions,
                     serviceRegistry
-                ).create(connection).run()
+                ).create(connection)
+                node.run {
+                    logger.debug { "Server node initialized." }
+                }
                 connection.close()
             }
         }

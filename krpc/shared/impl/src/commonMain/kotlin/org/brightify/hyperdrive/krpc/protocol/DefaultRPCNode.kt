@@ -106,13 +106,15 @@ class DefaultRPCNode(
         }
     }
 
-    suspend fun run() = withContext(coroutineContext) {
+    suspend fun run(onInitializationCompleted: suspend () -> Unit) = withContext(coroutineContext) {
         // We need the protocol to be running before we bind the extensions.
         val runningProtocol = async { contract.protocol.run() }
 
         for (extension in contract.extensions.values) {
             extension.bind(transport, contract)
         }
+
+        onInitializationCompleted()
 
         // We want to end when the protocol does and rethrow any exceptions from it.
         runningProtocol.await()

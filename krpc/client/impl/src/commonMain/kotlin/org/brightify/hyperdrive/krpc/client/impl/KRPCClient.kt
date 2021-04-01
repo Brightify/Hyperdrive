@@ -104,8 +104,10 @@ class KRPCClient(
                 connector.withConnection {
                     logger.info { "Connection created: $this" }
                     val node = DefaultRPCNode.Factory(handshakePerformer, payloadSerializerFactory, combinedExtensions, serviceRegistry).create(this)
-                    activeNode.value = node
-                    node.run()
+                    node.run {
+                        logger.info { "Client node initialized." }
+                        activeNode.value = node
+                    }
                     logger.info { "Relasing connection: $this" }
                 }
             } catch (t: Throwable) {

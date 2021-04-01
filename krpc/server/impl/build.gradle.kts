@@ -17,6 +17,7 @@ kotlin {
                 api(project(":krpc-annotations"))
 
                 implementation(project(":kotlin-utils"))
+                implementation(project(":logging-api"))
 
                 implementation("io.ktor:ktor-server-core:${Versions.ktor}")
                 implementation("io.ktor:ktor-server-netty:${Versions.ktor}")
