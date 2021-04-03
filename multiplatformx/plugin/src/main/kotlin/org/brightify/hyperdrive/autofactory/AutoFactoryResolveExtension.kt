@@ -1,15 +1,23 @@
 package org.brightify.hyperdrive.autofactory
 
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptorWithResolutionScopes
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
+import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.SupertypeLoopChecker
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorBase
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -19,13 +27,41 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtClassBody
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtDestructuringDeclarationEntry
+import org.jetbrains.kotlin.psi.KtModifierList
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtPrimaryConstructor
+import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPureClassOrObject
+import org.jetbrains.kotlin.psi.KtPureElement
+import org.jetbrains.kotlin.psi.KtSecondaryConstructor
+import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
+import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.synthetics.SyntheticClassOrObjectDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DescriptorFactory
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
+import org.jetbrains.kotlin.resolve.lazy.data.KtClassLikeInfo
+import org.jetbrains.kotlin.resolve.lazy.data.KtClassOrObjectInfo
+import org.jetbrains.kotlin.resolve.lazy.data.KtScriptInfo
 import org.jetbrains.kotlin.resolve.lazy.declarations.ClassMemberDeclarationProvider
+import org.jetbrains.kotlin.resolve.lazy.descriptors.ClassResolutionScopesSupport
+import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassMemberScope
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.storage.StorageManager
+import org.jetbrains.kotlin.types.AbstractClassTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeConstructor
+import org.jetbrains.kotlin.types.checker.KotlinTypeRefiner
 
 val ClassDescriptor.autoFactoryConstructor: ConstructorDescriptor?
     get() = constructors.firstOrNull { it.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) } ?:
@@ -82,60 +118,18 @@ open class AutoFactoryResolveExtension: SyntheticResolveExtension {
         result: MutableSet<ClassDescriptor>
     ) {
         if (name != AutoFactoryNames.factory) { return }
-        val autoFactoryConstructor = thisDescriptor.autoFactoryConstructor ?: return
 
         val thisDeclaration = declarationProvider.correspondingClassOrObject ?: return
         val scope = ctx.declarationScopeProvider.getResolutionScopeForDeclaration(declarationProvider.ownerInfo?.scopeAnchor ?:  return)
 
-        val injectedValueParameters = autoFactoryConstructor.injectedValueParameters
-
-        val factoryDescriptor = SyntheticClassOrObjectDescriptor(
+        val factoryDescriptor = FactoryClassDescriptor(
             ctx,
             thisDeclaration,
             thisDescriptor,
             name,
             thisDescriptor.source,
             scope,
-            Modality.FINAL,
-            DescriptorVisibilities.PUBLIC,
-            Annotations.EMPTY,
-            if (injectedValueParameters.isEmpty()) DescriptorVisibilities.PUBLIC else DescriptorVisibilities.PRIVATE,
-            ClassKind.CLASS,
-            false
         )
-        factoryDescriptor.initialize(emptyList())
-
-        if (injectedValueParameters.isNotEmpty()) {
-            factoryDescriptor.secondaryConstructors = listOf(
-                ClassConstructorDescriptorImpl.create(
-                    factoryDescriptor,
-                    Annotations.EMPTY,
-                    false,
-                    factoryDescriptor.source
-                ).apply {
-                    initialize(
-                        injectedValueParameters
-                            .mapIndexed { index, parameter ->
-                                ValueParameterDescriptorImpl(
-                                    this,
-                                    null,
-                                    index,
-                                    Annotations.EMPTY,
-                                    parameter.name,
-                                    parameter.type,
-                                    declaresDefaultValue = false,
-                                    isCrossinline = false,
-                                    isNoinline = false,
-                                    varargElementType = null,
-                                    source = this.source
-                                )
-                            },
-                        DescriptorVisibilities.PUBLIC
-                    )
-                    this.returnType = factoryDescriptor.defaultType
-                }
-            )
-        }
 
         result.add(factoryDescriptor)
     }
@@ -174,8 +168,7 @@ open class AutoFactoryResolveExtension: SyntheticResolveExtension {
             null,
             thisDescriptor.thisAsReceiverParameter,
             emptyList(),
-            autoFactoryConstructor.valueParameters
-                .filter { it.annotations.hasAnnotation(AutoFactoryNames.Annotation.provided) }
+            autoFactoryConstructor.providedValueParameters
                 .mapIndexed { index, parameter ->
                     ValueParameterDescriptorImpl(
                         createFunDescriptor,
@@ -210,3 +203,152 @@ open class AutoFactoryResolveExtension: SyntheticResolveExtension {
 
 object AUTO_FACTORY_PLUGIN_ORIGIN : IrDeclarationOriginImpl("AUTO_FACTORY", true)
 
+class FactoryClassDescriptor(
+    context: LazyClassContext,
+    parentClassOrObject: KtPureClassOrObject,
+    private val autoFactoryParentDeclaration: ClassDescriptor,
+    name: Name,
+    source: SourceElement,
+    outerScope: LexicalScope,
+): ClassDescriptorBase(context.storageManager, autoFactoryParentDeclaration, name, source, false), ClassDescriptorWithResolutionScopes {
+    val syntheticDeclaration: KtPureClassOrObject = SyntheticDeclaration(parentClassOrObject, name.asString())
+    private val thisDescriptor: FactoryClassDescriptor get() = this // code readability
+
+    private val typeConstructor = SyntheticTypeConstructor(context.storageManager)
+    private val resolutionScopesSupport = ClassResolutionScopesSupport(thisDescriptor, context.storageManager, context.languageVersionSettings, { outerScope })
+    private val syntheticSupertypes = context.storageManager.createLazyValue {
+        mutableListOf<KotlinType>().apply {
+            context.syntheticResolveExtension.addSyntheticSupertypes(thisDescriptor, this)
+        }
+    }
+    private val unsubstitutedMemberScope = LazyClassMemberScope(context, SyntheticClassMemberDeclarationProvider(syntheticDeclaration), this, context.trace)
+
+    private lateinit var constructorReference: ClassConstructorDescriptor
+    private val _unsubstitutedPrimaryConstructor = context.storageManager.createLazyValue({
+        createUnsubstitutedPrimaryConstructor(autoFactoryParentDeclaration.visibility)
+    }, onRecursiveCall = { isFirstCall ->
+        constructorReference
+    })
+
+    private fun createUnsubstitutedPrimaryConstructor(constructorVisibility: DescriptorVisibility): ClassConstructorDescriptor {
+        return ClassConstructorDescriptorImpl.create(
+            thisDescriptor,
+            Annotations.EMPTY,
+            true,
+            source
+        )
+        .also {
+            constructorReference = it
+        }
+        .apply {
+            val injectedValueParameters = autoFactoryParentDeclaration.autoFactoryConstructor?.injectedValueParameters ?: emptyList()
+            initialize(
+                injectedValueParameters
+                    .mapIndexed { index, parameter ->
+                        ValueParameterDescriptorImpl(
+                            this,
+                            null,
+                            index,
+                            Annotations.EMPTY,
+                            parameter.name,
+                            parameter.type,
+                            declaresDefaultValue = false,
+                            isCrossinline = false,
+                            isNoinline = false,
+                            varargElementType = null,
+                            source = parameter.source
+                        )
+                    },
+                constructorVisibility,
+            )
+            this.returnType = getDefaultType()
+        }
+    }
+
+    override fun toString(): String = "AutoFactory class " + name.toString() + " in " + containingDeclaration
+
+    override fun getUnsubstitutedMemberScope(kotlinTypeRefiner: KotlinTypeRefiner): MemberScope = unsubstitutedMemberScope
+    override fun getTypeConstructor(): TypeConstructor = typeConstructor
+    override fun getVisibility(): DescriptorVisibility = autoFactoryParentDeclaration.visibility
+    override fun getDeclaredTypeParameters(): List<TypeParameterDescriptor> = autoFactoryParentDeclaration.declaredTypeParameters
+    override fun getConstructors(): Collection<ClassConstructorDescriptor> = listOf(_unsubstitutedPrimaryConstructor())
+    override fun getUnsubstitutedPrimaryConstructor(): ClassConstructorDescriptor? = _unsubstitutedPrimaryConstructor()
+
+    override val annotations: Annotations = Annotations.EMPTY
+    override fun getCompanionObjectDescriptor(): ClassDescriptorWithResolutionScopes? = null
+    override fun getModality(): Modality = Modality.FINAL
+    override fun isExpect(): Boolean = false
+    override fun isActual(): Boolean = false
+    override fun isInner(): Boolean = false
+    override fun getKind(): ClassKind = ClassKind.CLASS
+    override fun isCompanionObject(): Boolean = false
+    override fun isData(): Boolean = false
+    override fun isInline(): Boolean = false
+    override fun isFun(): Boolean = false
+    override fun isValue(): Boolean = false
+    override fun getStaticScope(): MemberScope = MemberScope.Empty
+    override fun getSealedSubclasses(): Collection<ClassDescriptor> = emptyList()
+
+    override fun getScopeForClassHeaderResolution(): LexicalScope = resolutionScopesSupport.scopeForClassHeaderResolution()
+    override fun getScopeForConstructorHeaderResolution(): LexicalScope = resolutionScopesSupport.scopeForConstructorHeaderResolution()
+    override fun getScopeForCompanionObjectHeaderResolution(): LexicalScope = resolutionScopesSupport.scopeForCompanionObjectHeaderResolution()
+    override fun getScopeForMemberDeclarationResolution(): LexicalScope = resolutionScopesSupport.scopeForMemberDeclarationResolution()
+    override fun getScopeForStaticMemberDeclarationResolution(): LexicalScope = resolutionScopesSupport.scopeForStaticMemberDeclarationResolution()
+    override fun getScopeForInitializerResolution(): LexicalScope = throw UnsupportedOperationException("Not supported for synthetic autofactory class.")
+    override fun getDeclaredCallableMembers(): Collection<CallableMemberDescriptor> =
+        DescriptorUtils.getAllDescriptors(unsubstitutedMemberScope).filterIsInstance<CallableMemberDescriptor>().filter {
+            it.kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE
+        }
+
+    private inner class SyntheticTypeConstructor(storageManager: StorageManager): AbstractClassTypeConstructor(storageManager) {
+        override val supertypeLoopChecker: SupertypeLoopChecker = SupertypeLoopChecker.EMPTY
+        override fun computeSupertypes(): Collection<KotlinType> = syntheticSupertypes()
+        override fun getDeclarationDescriptor(): ClassDescriptor = thisDescriptor
+        override fun getParameters(): List<TypeParameterDescriptor> = autoFactoryParentDeclaration.declaredTypeParameters
+        override fun isDenotable(): Boolean = true
+    }
+
+    private class SyntheticClassMemberDeclarationProvider(
+        override val correspondingClassOrObject: KtPureClassOrObject
+    ) : ClassMemberDeclarationProvider {
+        override val ownerInfo: KtClassLikeInfo? = null
+        override fun getDeclarations(kindFilter: DescriptorKindFilter, nameFilter: (Name) -> Boolean): List<KtDeclaration> = emptyList()
+        override fun getFunctionDeclarations(name: Name): Collection<KtNamedFunction> = emptyList()
+        override fun getPropertyDeclarations(name: Name): Collection<KtProperty> = emptyList()
+        override fun getDestructuringDeclarationsEntries(name: Name): Collection<KtDestructuringDeclarationEntry> = emptyList()
+        override fun getClassOrObjectDeclarations(name: Name): Collection<KtClassOrObjectInfo<*>> = emptyList()
+        override fun getScriptDeclarations(name: Name): Collection<KtScriptInfo> = emptyList()
+        override fun getTypeAliasDeclarations(name: Name): Collection<KtTypeAlias> = emptyList()
+        override fun getDeclarationNames() = emptySet<Name>()
+    }
+
+    internal inner class SyntheticDeclaration(
+        private val _parent: KtPureElement,
+        private val _name: String
+    ) : KtPureClassOrObject {
+        fun descriptor() = thisDescriptor
+
+        override fun getName(): String? = _name
+        override fun isLocal(): Boolean = false
+
+        override fun getDeclarations(): List<KtDeclaration> = emptyList()
+        override fun getSuperTypeListEntries(): List<KtSuperTypeListEntry> = emptyList()
+        override fun getCompanionObjects(): List<KtObjectDeclaration> = emptyList()
+
+        override fun hasExplicitPrimaryConstructor(): Boolean = false
+        override fun hasPrimaryConstructor(): Boolean = false
+        override fun getPrimaryConstructor(): KtPrimaryConstructor? = null
+        override fun getPrimaryConstructorModifierList(): KtModifierList? = null
+        override fun getPrimaryConstructorParameters(): List<KtParameter> = emptyList()
+        override fun getSecondaryConstructors(): List<KtSecondaryConstructor> = emptyList()
+
+        override fun getPsiOrParent() = _parent.psiOrParent
+        override fun getParent() = _parent.psiOrParent
+        @Suppress("USELESS_ELVIS")
+        override fun getContainingKtFile() =
+            // in theory `containingKtFile` is `@NotNull` but in practice EA-114080
+            _parent.containingKtFile ?: throw IllegalStateException("containingKtFile was null for $_parent of ${_parent.javaClass}")
+
+        override fun getBody(): KtClassBody? = null
+    }
+}

@@ -25,5 +25,8 @@
 
         <syntheticResolveExtension implementation="org.brightify.hyperdrive.ViewModelIDEResolveExtension" />
         <irGenerationExtension implementation="org.brightify.hyperdrive.ViewModelIDEIrGenerationExtension" />
+
+        <syntheticResolveExtension implementation="org.brightify.hyperdrive.KrpcIDEResolveExtension" />
+        <irGenerationExtension implementation="org.brightify.hyperdrive.KrpcIDEIrGenerationExtension" />
     </extensions>
 </idea-plugin>

@@ -23,6 +23,16 @@ internal class AutoFactoryTest {
                 @Provided
                 private val b: String
             )
+            
+            @AutoFactory
+            class RecursionTestA(
+                private val b: RecursionTestB.Factory,
+            )
+            
+            @AutoFactory
+            class RecursionTestB(
+                private val a: RecursionTestA.Factory,
+            )
         """.trimIndent())
 
 
@@ -45,8 +55,8 @@ internal class AutoFactoryTest {
             )
 
             pluginOptions = listOf(
-                PluginOption(BuildConfig.KOTLIN_PLUGIN_ID, MultiplatformxCommandLineProcessor.Options.enabled.optionName, "true"),
-                PluginOption(BuildConfig.KOTLIN_PLUGIN_ID, MultiplatformxCommandLineProcessor.Options.autoFactoryEnabled.optionName, "true")
+                PluginOption(MultiplatformxCommandLineProcessor.pluginId, MultiplatformxCommandLineProcessor.Options.enabled.optionName, "true"),
+                PluginOption(MultiplatformxCommandLineProcessor.pluginId, MultiplatformxCommandLineProcessor.Options.autoFactoryEnabled.optionName, "true")
             )
 
             useIR = true

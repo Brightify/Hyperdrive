@@ -42,8 +42,8 @@ internal class ViewModelTest {
             )
 
             pluginOptions = listOf(
-                PluginOption(BuildConfig.KOTLIN_PLUGIN_ID, MultiplatformxCommandLineProcessor.Options.enabled.optionName, "true"),
-                PluginOption(BuildConfig.KOTLIN_PLUGIN_ID, MultiplatformxCommandLineProcessor.Options.viewModelEnabled.optionName, "true")
+                PluginOption(MultiplatformxCommandLineProcessor.pluginId, MultiplatformxCommandLineProcessor.Options.enabled.optionName, "true"),
+                PluginOption(MultiplatformxCommandLineProcessor.pluginId, MultiplatformxCommandLineProcessor.Options.viewModelEnabled.optionName, "true")
             )
 
             useIR = true

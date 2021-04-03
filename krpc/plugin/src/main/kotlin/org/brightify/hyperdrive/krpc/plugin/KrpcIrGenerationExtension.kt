@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.backend.common.runOnFilePostfix
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
-class KrpcIrGenerationExtension(
+open class KrpcIrGenerationExtension(
     val printIR: Boolean = false,
     val printKotlinLike: Boolean = false,
     val messageCollector: MessageCollector = MessageCollector.NONE,
@@ -18,4 +18,3 @@ class KrpcIrGenerationExtension(
         }
     }
 }
-

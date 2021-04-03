@@ -74,7 +74,7 @@ val IrClass.isKrpcDescriptor: Boolean
 val IrClass.isKrpcDescriptorCall: Boolean
     get() = name == KnownType.Nested.call && parentClassOrNull?.isKrpcDescriptor ?: false
 
-class KrpcResolveExtension: SyntheticResolveExtension {
+open class KrpcResolveExtension: SyntheticResolveExtension {
     companion object {
         val nestedClassNames = listOf(
             KnownType.Nested.client,
