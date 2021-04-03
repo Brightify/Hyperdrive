@@ -33,6 +33,10 @@ internal class AutoFactoryTest {
             class RecursionTestB(
                 private val a: RecursionTestA.Factory,
             )
+            
+            class RecursionTestC @AutoFactory constructor(
+                private val b: RecursionTestB.Factory,
+            )
         """.trimIndent())
 
 

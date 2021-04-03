@@ -46,6 +46,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorFactory
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.resolve.descriptorUtil.secondaryConstructors
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
 import org.jetbrains.kotlin.resolve.lazy.data.KtClassLikeInfo
@@ -62,6 +63,10 @@ import org.jetbrains.kotlin.types.AbstractClassTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeConstructor
 import org.jetbrains.kotlin.types.checker.KotlinTypeRefiner
+
+val ClassDescriptor.isAutoFactoryAnnotated: Boolean
+    get() = secondaryConstructors.any { it.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) } ||
+        annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory)
 
 val ClassDescriptor.autoFactoryConstructor: ConstructorDescriptor?
     get() = constructors.firstOrNull { it.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) } ?:
@@ -120,18 +125,23 @@ open class AutoFactoryResolveExtension: SyntheticResolveExtension {
         if (name != AutoFactoryNames.factory) { return }
 
         val thisDeclaration = declarationProvider.correspondingClassOrObject ?: return
-        val scope = ctx.declarationScopeProvider.getResolutionScopeForDeclaration(declarationProvider.ownerInfo?.scopeAnchor ?:  return)
+        if (thisDescriptor.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) ||
+            thisDeclaration.primaryConstructor?.let { it.annotationEntries.any { it.shortName == AutoFactoryNames.Annotation.autoFactory.shortName() } } ?: false ||
+            thisDeclaration.secondaryConstructors.any { it.annotationEntries.any { it.shortName == AutoFactoryNames.Annotation.autoFactory.shortName() } }
+        ) {
+            val scope = ctx.declarationScopeProvider.getResolutionScopeForDeclaration(declarationProvider.ownerInfo?.scopeAnchor ?:  return)
 
-        val factoryDescriptor = FactoryClassDescriptor(
-            ctx,
-            thisDeclaration,
-            thisDescriptor,
-            name,
-            thisDescriptor.source,
-            scope,
-        )
+            val factoryDescriptor = FactoryClassDescriptor(
+                ctx,
+                thisDeclaration,
+                thisDescriptor,
+                name,
+                thisDescriptor.source,
+                scope,
+            )
 
-        result.add(factoryDescriptor)
+            result.add(factoryDescriptor)
+        }
     }
 
     override fun addSyntheticSupertypes(thisDescriptor: ClassDescriptor, supertypes: MutableList<KotlinType>) {
