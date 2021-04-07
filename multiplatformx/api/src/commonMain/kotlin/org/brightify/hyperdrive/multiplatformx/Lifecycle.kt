@@ -70,13 +70,13 @@ public class Lifecycle {
         // TODO: Subscribe scope.onCancel to detach
         notifyListeners(ListenerRegistration.Kind.WillAttach)
 
-        state = State.Attached(scope)
-
         activeJobs.addAll(whileAttachedRunners.map { runner ->
             scope.launchDetachingOnCancellation(runner)
         })
 
         children.forEach { it.attach(scope) }
+
+        state = State.Attached(scope)
 
         notifyListeners(ListenerRegistration.Kind.DidAttach)
     }
@@ -93,9 +93,9 @@ public class Lifecycle {
 
         notifyListeners(ListenerRegistration.Kind.WillDetach)
 
-        children.forEach { it.detach() }
-
         state = State.Detached
+
+        children.forEach { it.detach() }
 
         for (job in activeJobs) {
             if (job.isActive) {

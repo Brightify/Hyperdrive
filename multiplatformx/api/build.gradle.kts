@@ -33,6 +33,13 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
             }
         }
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit5"))
+                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
+            }
+        }
 
         val nativeMain by creating {
             dependsOn(commonMain)
@@ -50,4 +57,8 @@ kotlin {
             dependsOn(nativeMain)
         }
     }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
+    useJUnitPlatform()
 }
