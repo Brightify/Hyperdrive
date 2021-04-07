@@ -104,7 +104,6 @@ public class Lifecycle {
         }
         activeJobs.clear()
 
-
         notifyListeners(ListenerRegistration.Kind.DidDetach)
     }
 
@@ -112,6 +111,10 @@ public class Lifecycle {
      * Adds [child] as a dependent lifecycle sharing the same scope and attachment status as this instance.
      */
     public fun addChild(child: Lifecycle) {
+        if (children.contains(child)) {
+            return
+        }
+
         runIfAttached {
             child.attach(this)
         }
