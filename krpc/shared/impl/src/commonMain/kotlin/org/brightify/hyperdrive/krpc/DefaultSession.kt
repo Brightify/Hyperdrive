@@ -1,8 +1,16 @@
 package org.brightify.hyperdrive.krpc
 
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -51,7 +59,7 @@ class SessionNodeExtension(
     interface Plugin {
         suspend fun onBindComplete(session: Session) { }
 
-        suspend fun onContextChanged(session: Session) { }
+        suspend fun onContextChanged(session: Session, modifiedKeys: Set<Session.Context.Key<*>>) { }
     }
 
     class Factory(
@@ -104,20 +112,23 @@ class SessionNodeExtension(
         if (rejectedItems.isEmpty()) {
             logger.debug { "No reason for a rejection found. Accepting." }
 
+            val modifiedKeys = mutableSetOf<Session.Context.Key<*>>()
             for ((key, modification) in modificationsWithKeys) {
                 when (modification) {
                     // No action is needed.
                     is ContextUpdateRequest.Modification.Required -> continue
                     is ContextUpdateRequest.Modification.Set -> {
                         deserializeAndPut(key, modification.newItem)
+                        modifiedKeys.add(key)
                     }
                     is ContextUpdateRequest.Modification.Remove -> {
                         context.remove(key)
+                        modifiedKeys.add(key)
                     }
                 }
             }
 
-            notifyPluginsContextChanged()
+            notifyPluginsContextChanged(modifiedKeys)
 
             ContextUpdateResult.Accepted
         } else {
@@ -167,9 +178,9 @@ class SessionNodeExtension(
         return ContextItemDto(revision, serializedValue)
     }
 
-    private suspend fun notifyPluginsContextChanged() {
+    private suspend fun notifyPluginsContextChanged(modifiedKeys: Set<Session.Context.Key<*>>) {
         for (plugin in plugins) {
-            plugin.onContextChanged(this)
+            plugin.onContextChanged(this, modifiedKeys)
         }
     }
 
@@ -184,6 +195,7 @@ class SessionNodeExtension(
         awaitCompletedContextSync()
         runningContextUpdate = ourJob
 
+        val modifiedKeys = mutableSetOf<Session.Context.Key<*>>()
         // TODO: Don't rely on number of retries, but check the result from the other party to detect a bug.
         var rejections = 0
         do {
@@ -219,9 +231,13 @@ class SessionNodeExtension(
                         val modificationsWithKeys = result.rejectedModifications.mapKeys { getKeyOrUnsupported(it.key) }
                         for ((key, reason) in modificationsWithKeys) {
                             Do exhaustive when (reason) {
-                                ContextUpdateResult.Rejected.Reason.Removed -> context.remove(key)
+                                ContextUpdateResult.Rejected.Reason.Removed -> {
+                                    context.remove(key)
+                                    modifiedKeys.add(key)
+                                }
                                 is ContextUpdateResult.Rejected.Reason.Updated -> {
                                     deserializeAndPut(key, reason.newItem)
+                                    modifiedKeys.add(key)
                                 }
                             }
                         }
@@ -231,8 +247,14 @@ class SessionNodeExtension(
                         for ((key, action) in modifications) {
                             Do exhaustive when (action) {
                                 is Session.Context.Mutator.Action.Required -> continue
-                                is Session.Context.Mutator.Action.Set -> context[key] = action.newItem as Session.Context.Item<Any>
-                                is Session.Context.Mutator.Action.Remove -> context.remove(key)
+                                is Session.Context.Mutator.Action.Set -> {
+                                    context[key] = action.newItem as Session.Context.Item<Any>
+                                    modifiedKeys.add(key)
+                                }
+                                is Session.Context.Mutator.Action.Remove -> {
+                                    context.remove(key)
+                                    modifiedKeys.add(key)
+                                }
                             }
                         }
                     }
@@ -240,7 +262,7 @@ class SessionNodeExtension(
             }
         } while (result != ContextUpdateResult.Accepted && rejections < maximumRejections)
 
-        notifyPluginsContextChanged()
+        notifyPluginsContextChanged(modifiedKeys)
 
         runningContextUpdate = null
         ourJob.complete()
@@ -391,13 +413,13 @@ class ContextUpdateRequest(
         abstract val oldRevisionOrNull: Int?
 
         @Serializable
-        class Required(val oldRevision: Int?): Modification() {
+        class Required(val oldRevision: Int? = null): Modification() {
             override val oldRevisionOrNull: Int?
                 get() = oldRevision
         }
 
         @Serializable
-        class Set(val oldRevision: Int?, val newItem: ContextItemDto): Modification() {
+        class Set(val oldRevision: Int? = null, val newItem: ContextItemDto): Modification() {
             override val oldRevisionOrNull: Int?
                 get() = oldRevision
         }
