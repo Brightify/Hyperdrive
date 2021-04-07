@@ -30,6 +30,8 @@ internal class ManagedPropertyProvider<OWNER, T: BaseViewModel?>(
                 oldChild to newChild
             }.collect {
                 val (oldChild, newChild) = it
+                // Nothing to do if the child is the same.
+                if (oldChild == newChild) { return@collect }
                 if (oldChild != null) {
                     owner.lifecycle.removeChild(oldChild.lifecycle)
                 }
