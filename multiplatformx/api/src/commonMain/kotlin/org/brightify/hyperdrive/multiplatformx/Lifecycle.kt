@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.cancellation.CancellationException
 
 public fun <T: Any> NonNullFlowWrapper<T>.collectWhileAttached(lifecycle: Lifecycle, collection: (T) -> Unit) {
@@ -40,6 +41,7 @@ public fun Lifecycle.attachToMainScope() {
  */
 public class Lifecycle {
     private val children = mutableSetOf<Lifecycle>()
+    private val childrenProviders = mutableSetOf<Flow<Lifecycle>>()
     private var state: State = State.Detached
 
     public val isAttached: Boolean
@@ -65,7 +67,6 @@ public class Lifecycle {
         if (isAttached) {
             throw IllegalStateException("Trying to attach a lifecycle that's already attached to a different scope!")
         }
-
 
         // TODO: Subscribe scope.onCancel to detach
         notifyListeners(ListenerRegistration.Kind.WillAttach)
@@ -107,6 +108,10 @@ public class Lifecycle {
         notifyListeners(ListenerRegistration.Kind.DidDetach)
     }
 
+    public fun hasChild(child: Lifecycle): Boolean {
+        return children.contains(child)
+    }
+
     /**
      * Adds [child] as a dependent lifecycle sharing the same scope and attachment status as this instance.
      */
@@ -122,6 +127,8 @@ public class Lifecycle {
         children.add(child)
     }
 
+    public fun addChildren(childrenToAdd: Collection<Lifecycle>): Unit = childrenToAdd.forEach(::addChild)
+
     /**
      * Removes [child] if it's dependent of this lifecycle instance. If not does nothing.
      */
@@ -134,6 +141,8 @@ public class Lifecycle {
             child.detach()
         }
     }
+
+    public fun removeChildren(childrenToRemove: Collection<Lifecycle>): Unit  = childrenToRemove.forEach(::removeChild)
 
     /**
      * Launches [runner] right away if attached, does nothing otherwise.

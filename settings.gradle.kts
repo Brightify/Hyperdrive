@@ -11,12 +11,17 @@ pluginManagement {
         id("com.github.johnrengelman.shadow") version "6.1.0"
         id("com.github.gmazzo.buildconfig") version "2.0.2"
         kotlin("plugin.serialization") version "1.4.31"
+        kotlin("multiplatform") version "1.4.31"
+        kotlin("jvm") version "1.4.31"
         id("com.chromaticnoise.multiplatform-swiftpackage") version "2.0.3"
+        id("io.spring.dependency-management") version "1.0.11.RELEASE"
+        id("com.github.gmazzo.buildconfig") version "2.0.2"
+        id("org.jetbrains.intellij") version "0.6.5"
     }
     resolutionStrategy {
         eachPlugin {
             if (requested.id.namespace == "com.android" || requested.id.name == "kotlin-android-extensions") {
-                useModule("com.android.tools.build:gradle:4.0.1")
+                useModule("com.android.tools.build:gradle:4.1.0")
             }
 
             when (requested.id.id) {

@@ -17,18 +17,13 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-common"))
-
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+                implementation("co.touchlab:stately-common")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             }
         }
         val commonTest by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
             }
@@ -36,8 +31,8 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
+                implementation("org.junit.jupiter:junit-jupiter")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
             }
         }
 
@@ -57,8 +52,4 @@ kotlin {
             dependsOn(nativeMain)
         }
     }
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
-    useJUnitPlatform()
 }

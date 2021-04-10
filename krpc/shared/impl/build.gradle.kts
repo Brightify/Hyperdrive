@@ -1,9 +1,6 @@
-import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
-import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
-
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version Versions.kotlin
+    kotlin("plugin.serialization")
 }
 
 kotlin {
@@ -24,9 +21,9 @@ kotlin {
                 implementation(project(":logging-api"))
                 implementation(project(":kotlin-utils"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
             }
         }
         val commonTest by getting {
@@ -42,16 +39,16 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+                implementation("org.junit.jupiter:junit-jupiter")
 
-                implementation("io.kotest:kotest-runner-junit5:${Versions.kotest}") {
+                implementation("io.kotest:kotest-runner-junit5") {
                     exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
                 }
-                implementation("io.kotest:kotest-assertions-core:${Versions.kotest}") {
+                implementation("io.kotest:kotest-assertions-core") {
                     exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
                 }
-                implementation("io.kotest:kotest-property:${Versions.kotest}") {
+                implementation("io.kotest:kotest-property") {
                     exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
                 }
             }
@@ -64,8 +61,3 @@ kotlin {
         }
     }
 }
-
-tasks.withType<KotlinJvmTest> {
-    useJUnitPlatform()
-}
-

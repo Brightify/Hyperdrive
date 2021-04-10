@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version Versions.kotlin
+    kotlin("plugin.serialization")
 }
 
 kotlin {
@@ -27,9 +27,9 @@ kotlin {
                 api(project(":krpc-shared-impl"))
                 api(project(":logging-api"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
             }
         }
         val commonTest by getting {
@@ -44,7 +44,7 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.junit.jupiter:junit-jupiter")
             }
         }
     }

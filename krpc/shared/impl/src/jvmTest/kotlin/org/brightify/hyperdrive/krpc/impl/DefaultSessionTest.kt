@@ -9,6 +9,7 @@ import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.MutableServiceRegistry
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.SessionNodeExtension
+import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
@@ -42,22 +43,20 @@ class SessionNodeExtensionTest: BehaviorSpec({
         beforeTest {
             connection = LoopbackConnection(testScope)
             registry = DefaultServiceRegistry()
-            val node = DefaultRPCNode(
-                registry,
+            val serializers = SerializerRegistry(
+                JsonCombinedSerializer.Factory(),
+            )
+            val node = DefaultRPCNode.Factory(
                 RPCHandshakePerformer.NoHandshake(
                     JsonTransportFrameSerializer(),
                     AscensionRPCProtocol.Factory(),
                 ),
-                PayloadSerializerFactory(),
-                listOf(
-                    SessionNodeExtension.Factory(
-
-                    )
-                ),
-                connection
-            )
-            testScope.launch { node.run() }
-            val transport = node.transport()
+                serializers.payloadSerializerFactory,
+                emptyList(),
+                registry,
+            ).create(connection)
+            testScope.launch { node.run { } }
+            val transport = node.transport
             client = KRPCNodeTest.TestService.Client(transport)
         }
 

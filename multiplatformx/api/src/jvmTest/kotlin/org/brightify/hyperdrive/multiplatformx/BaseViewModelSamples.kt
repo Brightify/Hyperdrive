@@ -1,5 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.withTestContext
 import kotlin.test.Test
@@ -9,7 +11,7 @@ class BaseViewModelSamples {
     val testScope = TestCoroutineScope()
 
     @Test
-    fun managedTest() {
+    fun managedTest() = runBlocking {
         class Child: BaseViewModel()
 
         class Parent: BaseViewModel() {
@@ -18,8 +20,15 @@ class BaseViewModelSamples {
 
         val parent = Parent()
         parent.lifecycle.attach(testScope)
+        delay(1000)
         parent.lifecycle.detach()
+        delay(1000)
         parent.lifecycle.attach(testScope)
+        delay(1000)
+        parent.lifecycle.detach()
+        delay(1000)
+        parent.lifecycle.attach(testScope)
+        delay(1000)
     }
 
     @Test

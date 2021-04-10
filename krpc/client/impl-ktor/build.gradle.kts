@@ -1,9 +1,6 @@
-import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
-import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
-
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version Versions.kotlin
+    kotlin("plugin.serialization")
 }
 
 kotlin {
@@ -22,11 +19,11 @@ kotlin {
                 api(project(":krpc-client-impl"))
                 api(project(":krpc-shared-impl-ktor"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
 
-                implementation("io.ktor:ktor-client-websockets:${Versions.ktor}")
+                implementation("io.ktor:ktor-client-websockets")
             }
         }
         val commonTest by getting {
@@ -38,7 +35,7 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-cio:${Versions.ktor}")
+                implementation("io.ktor:ktor-client-cio")
             }
         }
 
@@ -47,19 +44,19 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.junit.jupiter:junit-jupiter")
             }
         }
 
         val iosMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-cio:${Versions.ktor}")
+                implementation("io.ktor:ktor-client-cio")
             }
         }
 
         val jsMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-js:${Versions.ktor}")
+                implementation("io.ktor:ktor-client-js")
             }
         }
     }
@@ -70,8 +67,3 @@ kotlin {
         }
     }
 }
-
-tasks.withType<KotlinJvmTest> {
-    useJUnitPlatform()
-}
-

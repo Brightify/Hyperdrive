@@ -1,7 +1,7 @@
 plugins {
     kotlin("multiplatform")
     kotlin("kapt")
-    kotlin("plugin.serialization") version Versions.kotlin
+    kotlin("plugin.serialization")
 }
 
 repositories {
@@ -20,8 +20,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib"))
                 implementation(project(":multiplatformx-api"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
             }
         }
 
@@ -30,15 +30,10 @@ kotlin {
             resources.setSrcDirs(listOf("src/test/resources"))
 
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
-
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.junit.jupiter:junit-jupiter")
             }
         }
     }

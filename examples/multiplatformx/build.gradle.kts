@@ -67,11 +67,7 @@ kotlin {
                 implementation(project(":multiplatformx-api"))
 
                 implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             }
         }
         val commonTest by getting {

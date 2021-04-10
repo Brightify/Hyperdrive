@@ -19,13 +19,9 @@ kotlin {
                 implementation(project(":kotlin-utils"))
                 implementation(project(":logging-api"))
 
-                implementation("io.ktor:ktor-server-core:${Versions.ktor}")
-                implementation("io.ktor:ktor-server-netty:${Versions.ktor}")
-                implementation("io.ktor:ktor-websockets:${Versions.ktor}")
-
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
             }
         }
 
@@ -33,12 +29,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.junit.jupiter:junit-jupiter")
             }
         }
     }
-}
-
-tasks.withType<KotlinJvmTest> {
-    useJUnitPlatform()
 }

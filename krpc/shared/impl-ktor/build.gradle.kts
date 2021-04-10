@@ -1,9 +1,6 @@
-import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
-import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
-
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version Versions.kotlin
+    kotlin("plugin.serialization")
 }
 
 kotlin {
@@ -23,8 +20,8 @@ kotlin {
                 implementation(project(":logging-api"))
                 implementation(project(":kotlin-utils"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
-                implementation("io.ktor:ktor-client-websockets:${Versions.ktor}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+                implementation("io.ktor:ktor-client-websockets")
             }
         }
         val commonTest by getting {
@@ -40,12 +37,12 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+                implementation("org.junit.jupiter:junit-jupiter")
 
-                implementation("io.kotest:kotest-runner-junit5:${Versions.kotest}")
-                implementation("io.kotest:kotest-assertions-core:${Versions.kotest}")
-                implementation("io.kotest:kotest-property:${Versions.kotest}")
+                implementation("io.kotest:kotest-runner-junit5")
+                implementation("io.kotest:kotest-assertions-core")
+                implementation("io.kotest:kotest-property")
             }
         }
     }
@@ -56,8 +53,3 @@ kotlin {
         }
     }
 }
-
-tasks.withType<KotlinJvmTest> {
-    useJUnitPlatform()
-}
-

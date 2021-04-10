@@ -21,9 +21,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":krpc-shared-api"))
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
-
-                implementation(kotlin("stdlib-common"))
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             }
         }
         val commonTest by getting {
@@ -31,11 +29,7 @@ kotlin {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
 
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             }
         }
 
@@ -44,14 +38,10 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.junit.jupiter:junit-jupiter")
             }
         }
 
-        val iosMain by getting {
-            dependencies {
-//                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:1.3.8")
-            }
-        }
+        val iosMain by getting
     }
 }

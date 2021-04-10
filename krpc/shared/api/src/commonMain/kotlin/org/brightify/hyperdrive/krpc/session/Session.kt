@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.krpc.session
 
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.job
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable

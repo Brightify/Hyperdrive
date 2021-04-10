@@ -1,20 +1,12 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     kotlin("jvm")
-    id("org.jetbrains.intellij") version "0.6.5"
+    id("org.jetbrains.intellij")
 }
 
 description = "IntelliJ IDEA plugin for Hyperdrive."
 
 dependencies {
     implementation(project(":plugin-impl-native"))
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
 }
 
 tasks.jar {

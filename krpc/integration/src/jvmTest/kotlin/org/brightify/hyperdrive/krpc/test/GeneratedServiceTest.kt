@@ -29,6 +29,7 @@ import org.brightify.hyperdrive.krpc.impl.JsonCombinedSerializer
 import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
 import org.brightify.hyperdrive.krpc.server.impl.KRPCServer
 import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
+import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 
 class GeneratedServiceTest: BehaviorSpec({
     val serviceImpl = object: BasicTestService {
@@ -95,14 +96,14 @@ class GeneratedServiceTest: BehaviorSpec({
             testScope,
             serializers.transportFrameSerializerFactory,
             serializers.payloadSerializerFactory,
-            registry
+            registry,
+            SessionContextKeyRegistry.Empty,
         ).start()
 
         KRPCClient(
             WebSocketClient(),
             testScope,
-            serializers.transportFrameSerializerFactory,
-            serializers.payloadSerializerFactory,
+            serializers,
             registry
         ).also { it.start() }
     }
@@ -110,7 +111,7 @@ class GeneratedServiceTest: BehaviorSpec({
     listOf(client).forEach { lazyTransport ->
         val transport = lazyTransport.value
         Given("An RPCTransport ${transport::class.simpleName}") {
-            val service = BasicTestService.Client(transport) as BasicTestService
+            val service = BasicTestService.Client(transport)
             And("Basic Test Service") {
                 When("Running single call") {
                     Then("`multiplyByTwo` returns input times two") {

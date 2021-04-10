@@ -34,9 +34,3 @@ interface BasicTestService {
 
     suspend fun multiplyEachByTwo(stream: Flow<Int>): Flow<Int>
 }
-
-fun x() {
-    val x = "hel"
-    x
-    val b = BasicTestService.Client(null as RPCTransport)
-}

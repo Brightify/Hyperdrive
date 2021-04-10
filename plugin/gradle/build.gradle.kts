@@ -4,7 +4,7 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     `java-gradle-plugin`
-    id("com.github.gmazzo.buildconfig") version Versions.buildConfig
+    id("com.github.gmazzo.buildconfig")
 }
 
 buildConfig {
@@ -14,19 +14,6 @@ buildConfig {
     buildConfigField("String", "KOTLIN_PLUGIN_VERSION", "\"${project.version}\"")
     buildConfigField("String", "KOTLIN_PLUGIN_NAME", "\"${project(":plugin-impl").name}\"")
     buildConfigField("String", "KOTLIN_NATIVE_PLUGIN_NAME", "\"${project(":plugin-impl-native").name}\"")
-}
-
-tasks.withType(KotlinCompile::class).all {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-}
-
-repositories {
-    mavenCentral()
-    jcenter()
-    google()
-    gradlePluginPortal()
 }
 
 gradlePlugin {
@@ -40,22 +27,21 @@ gradlePlugin {
 
 dependencies {
     compileOnly(kotlin("stdlib"))
-    compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin-api:${Versions.kotlin}")
-    compileOnly(kotlin("gradle-plugin", version = Versions.kotlin))
-    implementation("com.google.devtools.ksp:symbol-processing:${Versions.symbolProcessing}")
+    compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin-api")
+    compileOnly(kotlin("gradle-plugin"))
     implementation(project(":plugin-impl"))
 
     compileOnly(gradleApi())
     compileOnly(gradleKotlinDsl())
 
-    compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")
-    kapt("com.google.auto.service:auto-service:${Versions.autoService}")
+    compileOnly("com.google.auto.service:auto-service")
+    kapt("com.google.auto.service:auto-service")
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.1")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing")
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 tasks.getByName<Test>("test") {

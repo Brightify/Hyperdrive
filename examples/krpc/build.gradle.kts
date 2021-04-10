@@ -7,6 +7,7 @@ plugins {
     id("com.android.library")
     kotlin("multiplatform")
     id("com.chromaticnoise.multiplatform-swiftpackage")
+    kotlin("plugin.serialization")
 }
 
 tasks.publish {
@@ -57,6 +58,7 @@ kotlin {
             }
         }
     }
+    macosX64()
 
     val iphonesimulator = iosX64()
     val iphoneos = iosArm64()
@@ -68,14 +70,11 @@ kotlin {
                 implementation(project(":krpc-shared-impl"))
                 implementation(project(":krpc-test"))
                 implementation(project(":logging-api"))
+                implementation(project(":multiplatformx-api"))
 
                 implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             }
         }
         val commonTest by getting {
@@ -103,7 +102,9 @@ kotlin {
         compilations.all {
             kotlinOptions {
                 freeCompilerArgs += listOf(
-                    "-P", "plugin:org.brightify.hyperdrive.krpc:enabled=true"
+                    "-P", "plugin:org.brightify.hyperdrive.krpc:enabled=true",
+                    "-P", "plugin:org.brightify.hyperdrive.krpc:printIR=false",
+                    "-P", "plugin:org.brightify.hyperdrive.krpc:printKotlinLike=false"
                 )
             }
         }

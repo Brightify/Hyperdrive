@@ -21,20 +21,16 @@ kotlin {
                 api(project(":krpc-annotations"))
                 implementation(project(":kotlin-utils"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
 
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             }
         }
         val commonTest by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}") {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
             }
@@ -46,7 +42,7 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.junit.jupiter:junit-jupiter")
             }
         }
     }
@@ -57,8 +53,3 @@ kotlin {
         }
     }
 }
-
-tasks.withType<KotlinJvmTest> {
-    useJUnitPlatform()
-}
-

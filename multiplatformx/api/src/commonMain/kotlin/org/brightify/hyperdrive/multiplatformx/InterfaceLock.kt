@@ -23,7 +23,7 @@ import org.brightify.hyperdrive.multiplatformx.util.setValue
  */
 public class InterfaceLock(
     // TODO: Research if we should be using a "global" scope, or if we should use a "lifecycle" scope instead.
-    private val scope: CoroutineScope,
+    private val lifecycle: Lifecycle,
     private val group: Group = Group(),
 ) {
     private val mutableState = MutableStateFlow<State>(State.Idle)
@@ -37,7 +37,7 @@ public class InterfaceLock(
      * While the supplied `work` is running, this lock is considered taken and all other invocations of this method will just return, doing nothing.
      */
     public fun runExclusively(work: suspend () -> Unit) {
-        scope.launch {
+        lifecycle.runOnceIfAttached {
             group.runExclusively {
                 mutableState.value = State.Running
                 mutableState.value = try {

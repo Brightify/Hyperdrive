@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
 import org.brightify.hyperdrive.krpc.MutableServiceRegistry
@@ -16,7 +17,7 @@ import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
 import org.brightify.hyperdrive.krpc.impl.JsonCombinedSerializer
 import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
-import org.brightify.hyperdrive.krpc.protocol.KRPCNode
+import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
@@ -34,7 +35,7 @@ class KrpcPluginTest {
 
     private val testScope = TestCoroutineScope()
     private lateinit var registry: MutableServiceRegistry
-    private lateinit var node: KRPCNode
+    private lateinit var node: DefaultRPCNode
 
     @BeforeEach
     fun setup() {
@@ -44,20 +45,21 @@ class KrpcPluginTest {
         val serializerRegistry = SerializerRegistry(
             JsonCombinedSerializer.Factory()
         )
-        node = KRPCNode(
-            registry,
-            object: RPCHandshakePerformer {
-                override suspend fun performHandshake(connection: RPCConnection): RPCHandshakePerformer.HandshakeResult {
-                    return RPCHandshakePerformer.HandshakeResult.Success(
-                        serializerRegistry.transportFrameSerializerFactory.create(SerializationFormat.Text.Json),
-                        AscensionRPCProtocol.Factory(),
-                    )
-                }
-            },
-            serializerRegistry.payloadSerializerFactory,
-            listOf(),
-            connection,
-        )
+        node = runBlocking {
+            DefaultRPCNode.Factory(
+                object: RPCHandshakePerformer {
+                    override suspend fun performHandshake(connection: RPCConnection): RPCHandshakePerformer.HandshakeResult {
+                        return RPCHandshakePerformer.HandshakeResult.Success(
+                            serializerRegistry.transportFrameSerializerFactory.create(SerializationFormat.Text.Json),
+                            AscensionRPCProtocol.Factory(),
+                        )
+                    }
+                },
+                serializerRegistry.payloadSerializerFactory,
+                emptyList(),
+                registry,
+            ).create(connection)
+        }
     }
 
     @AfterEach
@@ -196,8 +198,8 @@ class KrpcPluginTest {
         val clientClass = result.classLoader.loadClass("ProcessorTestService\$Client").kotlin
 
         testScope.runBlockingTest {
-            launch { node.run() }
-            val clientInstance = clientClass.constructors.first().call(node.transport())
+            launch { node.run({ }) }
+            val clientInstance = clientClass.constructors.first().call(node.transport)
             val response = clientClass.declaredFunctions.single { it.name == "testedSingleCall" }.callSuspend(clientInstance, 10)
             println(response)
             assertEquals("Hello 10", response)

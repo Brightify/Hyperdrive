@@ -1,21 +1,6 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-}
-
-tasks.withType(KotlinCompile::class).all {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-}
-
-repositories {
-    mavenCentral()
-    jcenter()
-    google()
-    gradlePluginPortal()
 }
 
 dependencies {
@@ -27,8 +12,8 @@ dependencies {
     implementationWorkaround(project(":krpc-client-api"))
     implementationWorkaround(project(":krpc-annotations"))
 
-    compileOnly("com.google.auto.service:auto-service:${Versions.autoService}")
-    kapt("com.google.auto.service:auto-service:${Versions.autoService}")
+    compileOnly("com.google.auto.service:auto-service")
+    kapt("com.google.auto.service:auto-service")
 
     testImplementationWorkaround(project(":krpc-shared-api"))
     testImplementationWorkaround(project(":krpc-shared-impl"))
@@ -43,11 +28,11 @@ dependencies {
     testImplementation(kotlin("reflect"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${Versions.serialization}")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:${Versions.serialization}")
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.3.6")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing")
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 fun DependencyHandlerScope.implementationWorkaround(dependency: ProjectDependency) {
@@ -64,10 +49,6 @@ fun DependencyHandlerScope.testImplementationWorkaround(dependency: ProjectDepen
     testCompileOnly(
         files(File(project.buildDir, "libs/${project.name}-jvm-${project.version}.jar"))
     )
-}
-
-tasks.getByName<Test>("test") {
-    useJUnitPlatform()
 }
 
 publishing {

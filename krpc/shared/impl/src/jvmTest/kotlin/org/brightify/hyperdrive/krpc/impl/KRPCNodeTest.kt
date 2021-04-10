@@ -37,13 +37,6 @@ import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 
-
-class PayloadSerializerFactory: PayloadSerializer.Factory {
-    override fun create(format: SerializationFormat): PayloadSerializer {
-        return JsonPayloadSerializer()
-    }
-}
-
 class KRPCNodeTest: BehaviorSpec({
     val testScope = TestCoroutineScope(TestCoroutineExceptionHandler())
 
@@ -71,18 +64,20 @@ class KRPCNodeTest: BehaviorSpec({
         beforeTest {
             connection = LoopbackConnection(testScope)
             registry = DefaultServiceRegistry()
-            val node = DefaultRPCNode(
-                registry,
+            val serializers = SerializerRegistry(
+                JsonCombinedSerializer.Factory(),
+            )
+            val node = DefaultRPCNode.Factory(
                 RPCHandshakePerformer.NoHandshake(
                     JsonTransportFrameSerializer(),
                     AscensionRPCProtocol.Factory(),
                 ),
-                PayloadSerializerFactory(),
+                serializers.payloadSerializerFactory,
                 listOf(),
-                connection
-            )
-            testScope.launch { node.run() }
-            val transport = node.transport()
+                registry,
+            ).create(connection)
+            testScope.launch { node.run { } }
+            val transport = node.transport
             client = TestService.Client(transport)
         }
 

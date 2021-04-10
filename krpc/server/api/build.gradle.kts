@@ -20,13 +20,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter:5.6.2")
+                implementation("org.junit.jupiter:junit-jupiter")
             }
         }
     }
-}
-
-
-tasks.withType<KotlinJvmTest> {
-    useJUnitPlatform()
 }

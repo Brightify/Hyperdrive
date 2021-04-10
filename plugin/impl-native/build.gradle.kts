@@ -5,13 +5,6 @@ plugins {
     `maven-publish`
 }
 
-repositories {
-    mavenCentral()
-    jcenter()
-    google()
-    gradlePluginPortal()
-}
-
 dependencies {
     implementation(project(":plugin-impl", configuration = "shadow"))
 }

@@ -5,15 +5,22 @@ package org.brightify.hyperdrive.multiplatformx
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import org.brightify.hyperdrive.multiplatformx.internal.BoundPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.CollectedPropertyProvider
+import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyFlowListProvider
+import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyFlowProvider
+import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyListProvider
 import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.PublishedMutableListPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.PublishedPropertyProvider
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
+import co.touchlab.stately.ensureNeverFrozen
+import kotlin.jvm.JvmName
 
 /**
  * Common behavior for all view models.
@@ -90,7 +97,12 @@ public abstract class BaseViewModel {
 
     public val lifecycle: Lifecycle = Lifecycle()
 
+    private val locks = LockRegistry()
+
     init {
+        ensureNeverFrozen()
+        lifecycle.ensureNeverFrozen()
+
         lifecycle.whileAttached {
             whileAttached()
         }
@@ -157,7 +169,7 @@ public abstract class BaseViewModel {
      * as an initial value. This means that when detached, the property is not kept in sync with the soruce [StateFlow] instance.
      */
     protected fun <OWNER, T> collected(stateFlow: StateFlow<T>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>> {
-        return CollectedPropertyProvider(this, stateFlow.value, stateFlow)
+        return CollectedPropertyProvider(this, stateFlow.value, stateFlow.drop(1))
     }
 
     /**
@@ -166,7 +178,7 @@ public abstract class BaseViewModel {
      * @see collected
      */
     protected fun <OWNER, T, U> collected(stateFlow: StateFlow<T>, mapping: (T) -> U): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
-        return CollectedPropertyProvider(this, mapping(stateFlow.value), stateFlow.map { mapping(it) })
+        return CollectedPropertyProvider(this, mapping(stateFlow.value), stateFlow.drop(1).map { mapping(it) })
     }
 
     /**
@@ -204,12 +216,94 @@ public abstract class BaseViewModel {
      *
      * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managed
      */
-    protected fun <OWNER, T: BaseViewModel?> managed(childModel: T): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
-        return ManagedPropertyProvider(this, childModel)
+    protected fun <OWNER, T: BaseViewModel?> managed(
+        childModel: T,
+        published: Boolean = false
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
+        return ManagedPropertyProvider(this, childModel, published)
     }
 
-    // TODO: Return a list proxy that will trigger the `objectWillLoad` every time its contents are changed and also that keeps each item managed.
-    // protected fun <OWNER, T: BaseInterfaceModel> managed(childModels: List<T>): ReadWriteProperty<OWNER, MutableList<T>>
+    @JvmName("managedList")
+    protected fun <OWNER, T: BaseViewModel> managed(
+        childModels: List<T>,
+        published: Boolean = false
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<T>>> {
+        return ManagedPropertyListProvider(this, childModels, published)
+    }
+
+    protected fun <OWNER, VM: BaseViewModel?> managed(
+        childStateFlow: StateFlow<VM>,
+        published: Boolean = false,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
+        return ManagedPropertyFlowProvider(this, childStateFlow.value, childStateFlow.drop(1), published)
+    }
+
+    protected fun <OWNER, T, VM: BaseViewModel?> managed(
+        valueStateFlow: StateFlow<T>,
+        published: Boolean = false,
+        mapping: (T) -> VM,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
+        return ManagedPropertyFlowProvider(this, mapping(valueStateFlow.value), valueStateFlow.drop(1).map { mapping(it) }, published)
+    }
+
+    protected fun <OWNER, T, VM: BaseViewModel?> managed(
+        initialChild: VM,
+        valueFlow: Flow<T>,
+        published: Boolean = false,
+        mapping: suspend (T) -> VM,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
+        return ManagedPropertyFlowProvider(this, initialChild, valueFlow.map { mapping(it) }, published)
+    }
+
+    @JvmName("managedList")
+    protected fun <OWNER, VM: BaseViewModel?> managed(
+        childStateFlow: StateFlow<List<VM>>,
+        published: Boolean = false,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
+        return ManagedPropertyFlowListProvider(this, childStateFlow.value, childStateFlow.drop(1), published)
+    }
+
+    @JvmName("managedList")
+    protected fun <OWNER, T, VM: BaseViewModel?> managed(
+        valueStateFlow: StateFlow<T>,
+        published: Boolean = false,
+        mapping: (T) -> List<VM>,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
+        return ManagedPropertyFlowListProvider(this, mapping(valueStateFlow.value), valueStateFlow.drop(1).map { mapping(it) }, published)
+    }
+
+    @JvmName("managedList")
+    protected fun <OWNER, T, VM: BaseViewModel?> managed(
+        initialChild: List<VM>,
+        valueFlow: Flow<T>,
+        published: Boolean = false,
+        mapping: suspend (T) -> List<VM>,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
+        return ManagedPropertyFlowListProvider(this, initialChild, valueFlow.map { mapping(it) }, published)
+    }
+
+    protected fun <OWNER, T> binding(
+        lock: InterfaceLock,
+        stateFlow: StateFlow<T>,
+        set: suspend (T) -> Unit,
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
+        return BoundPropertyProvider(this, lock, collected(stateFlow), set)
+    }
+
+    protected fun <OWNER, T, U> binding(
+        lock: InterfaceLock,
+        stateFlow: StateFlow<T>,
+        mapping: (T) -> U,
+        set: suspend (U) -> Unit,
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, U>> {
+        return BoundPropertyProvider(this, lock, collected(stateFlow, mapping), set)
+    }
+
+    protected fun propertyLock(property: KProperty<*>, group: InterfaceLock.Group? = null): InterfaceLock
+        = locks.propertyLock(property, group)
+
+    protected fun functionLock(function: KFunction<*>, group: InterfaceLock.Group? = null): InterfaceLock
+        = locks.functionLock(function, group)
 
     /**
      * Informs the object that it's about to change/mutate.
@@ -223,13 +317,34 @@ public abstract class BaseViewModel {
         objectWillChangeTrigger.offer(Unit)
     }
 
+    // Workaround to allow PropertyDelegate classes to trigger a change.
+    // TODO: We could probably do without this just passing in a closure.
     internal fun internalNotifyObjectWillChange() {
         objectWillChangeTrigger.offer(Unit)
     }
 
     internal fun <T> getPropertyObserver(property: KProperty<*>, initialValue: T): MutableStateFlow<T> {
+        // We assume this method is never called with a property named the same but with a different type.
+        @Suppress("UNCHECKED_CAST")
         return propertyObservers.getOrPut(property.name) {
             MutableStateFlow(initialValue)
         } as MutableStateFlow<T>
+    }
+
+    private inner class LockRegistry {
+        private val propertyLocks = mutableMapOf<KProperty<*>, MutableMap<InterfaceLock.Group?, InterfaceLock>>()
+        private val functionLocks = mutableMapOf<KFunction<*>, MutableMap<InterfaceLock.Group?, InterfaceLock>>()
+
+        fun propertyLock(property: KProperty<*>, group: InterfaceLock.Group?): InterfaceLock {
+            return propertyLocks
+                .getOrPut(property) { mutableMapOf() }
+                .getOrPut(group) { InterfaceLock(lifecycle, group ?: InterfaceLock.Group()) }
+        }
+
+        fun functionLock(function: KFunction<*>, group: InterfaceLock.Group?): InterfaceLock {
+            return functionLocks
+                .getOrPut(function) { mutableMapOf() }
+                .getOrPut(group) { InterfaceLock(lifecycle, group ?: InterfaceLock.Group()) }
+        }
     }
 }

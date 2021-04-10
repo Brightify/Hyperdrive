@@ -7,44 +7,39 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.zip
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
-import org.brightify.hyperdrive.multiplatformx.Lifecycle
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-internal class ManagedPropertyProvider<OWNER, T: BaseViewModel?>(
+internal class ManagedPropertyProvider<OWNER, VM: BaseViewModel?>(
     private val owner: BaseViewModel,
-    private val initialChild: T
-): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
-    override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, T> {
+    private val initialChild: VM,
+    private val publishedChanges: Boolean,
+): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, VM>> {
+    override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, VM> {
         val child = owner.getPropertyObserver(property, initialChild)
 
-        owner.lifecycle.whileAttached {
-            val previousChild = child.map {
-                // This cast is not useless, without it we can't emit null in the `onStart` operator.
-                @Suppress("USELESS_CAST")
-                it as T?
-            }.onStart { emit(null) }
+        var latestChildLifecycle = child.value?.lifecycle
+        latestChildLifecycle?.let(owner.lifecycle::addChild)
 
-            previousChild.zip(child) { oldChild, newChild ->
-                oldChild to newChild
-            }.collect {
-                val (oldChild, newChild) = it
-                // Nothing to do if the child is the same.
-                if (oldChild == newChild) { return@collect }
-                if (oldChild != null) {
-                    owner.lifecycle.removeChild(oldChild.lifecycle)
-                }
-
-                if (newChild != null) {
-                    owner.lifecycle.addChild(newChild.lifecycle)
-                }
+        fun replaceChild(newChild: VM) {
+            val newLifecycle = newChild?.lifecycle
+            if (newLifecycle != latestChildLifecycle) {
+                latestChildLifecycle?.let(owner.lifecycle::removeChild)
+                latestChildLifecycle = newLifecycle
+                newChild?.lifecycle?.let(owner.lifecycle::addChild)
             }
         }
 
         owner.lifecycle.whileAttached {
-            child.flatMapLatest { it?.observeObjectWillChange ?: emptyFlow() }.collect {
-                owner.internalNotifyObjectWillChange()
+            child.collect(::replaceChild)
+        }
+
+        if (publishedChanges) {
+            owner.lifecycle.whileAttached {
+                child.flatMapLatest { it?.observeObjectWillChange ?: emptyFlow() }.collect {
+                    owner.internalNotifyObjectWillChange()
+                }
             }
         }
 
