@@ -5,11 +5,12 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.merge
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-internal class ManagedPropertyFlowListProvider<OWNER, VM: BaseViewModel?>(
+internal class ManagedPropertyFlowListProvider<OWNER, VM: ManageableViewModel?>(
     private val owner: BaseViewModel,
     private val initialChild: List<VM>,
     private val viewModelFlow: Flow<List<VM>>,

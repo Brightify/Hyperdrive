@@ -7,11 +7,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.zip
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-internal class ManagedPropertyProvider<OWNER, VM: BaseViewModel?>(
+internal class ManagedPropertyProvider<OWNER, VM: ManageableViewModel?>(
     private val owner: BaseViewModel,
     private val initialChild: VM,
     private val publishedChanges: Boolean,

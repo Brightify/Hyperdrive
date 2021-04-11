@@ -87,15 +87,15 @@ import kotlin.jvm.JvmName
  *   child view models.
  * - Include required Swift code as a template in resources allowing for an easy import.
  */
-public abstract class BaseViewModel {
+public abstract class BaseViewModel: ManageableViewModel {
     private val propertyObservers = mutableMapOf<String, MutableStateFlow<*>>()
 
     private val objectWillChangeTrigger = BroadcastChannel<Unit>(Channel.CONFLATED)
-    public val observeObjectWillChange: Flow<Unit> = objectWillChangeTrigger.asFlow()
+    public final override val observeObjectWillChange: Flow<Unit> = objectWillChangeTrigger.asFlow()
     @Suppress("unused")
     public val observeObjectWillChangeWrapper: NonNullFlowWrapper<Unit> = NonNullFlowWrapper(observeObjectWillChange)
 
-    public val lifecycle: Lifecycle = Lifecycle()
+    public final override val lifecycle: Lifecycle = Lifecycle()
 
     private val locks = LockRegistry()
 
@@ -216,29 +216,29 @@ public abstract class BaseViewModel {
      *
      * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managed
      */
-    protected fun <OWNER, T: BaseViewModel?> managed(
-        childModel: T,
+    protected fun <OWNER, VM: ManageableViewModel?> managed(
+        childModel: VM,
         published: Boolean = false
-    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, VM>> {
         return ManagedPropertyProvider(this, childModel, published)
     }
 
     @JvmName("managedList")
-    protected fun <OWNER, T: BaseViewModel> managed(
-        childModels: List<T>,
+    protected fun <OWNER, VM: ManageableViewModel> managed(
+        childModels: List<VM>,
         published: Boolean = false
-    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<T>>> {
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<VM>>> {
         return ManagedPropertyListProvider(this, childModels, published)
     }
 
-    protected fun <OWNER, VM: BaseViewModel?> managed(
+    protected fun <OWNER, VM: ManageableViewModel?> managed(
         childStateFlow: StateFlow<VM>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return ManagedPropertyFlowProvider(this, childStateFlow.value, childStateFlow.drop(1), published)
     }
 
-    protected fun <OWNER, T, VM: BaseViewModel?> managed(
+    protected fun <OWNER, T, VM: ManageableViewModel?> managed(
         valueStateFlow: StateFlow<T>,
         published: Boolean = false,
         mapping: (T) -> VM,
@@ -246,7 +246,7 @@ public abstract class BaseViewModel {
         return ManagedPropertyFlowProvider(this, mapping(valueStateFlow.value), valueStateFlow.drop(1).map { mapping(it) }, published)
     }
 
-    protected fun <OWNER, T, VM: BaseViewModel?> managed(
+    protected fun <OWNER, T, VM: ManageableViewModel?> managed(
         initialChild: VM,
         valueFlow: Flow<T>,
         published: Boolean = false,
@@ -256,7 +256,7 @@ public abstract class BaseViewModel {
     }
 
     @JvmName("managedList")
-    protected fun <OWNER, VM: BaseViewModel?> managed(
+    protected fun <OWNER, VM: ManageableViewModel?> managed(
         childStateFlow: StateFlow<List<VM>>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
@@ -264,7 +264,7 @@ public abstract class BaseViewModel {
     }
 
     @JvmName("managedList")
-    protected fun <OWNER, T, VM: BaseViewModel?> managed(
+    protected fun <OWNER, T, VM: ManageableViewModel?> managed(
         valueStateFlow: StateFlow<T>,
         published: Boolean = false,
         mapping: (T) -> List<VM>,
@@ -273,7 +273,7 @@ public abstract class BaseViewModel {
     }
 
     @JvmName("managedList")
-    protected fun <OWNER, T, VM: BaseViewModel?> managed(
+    protected fun <OWNER, T, VM: ManageableViewModel?> managed(
         initialChild: List<VM>,
         valueFlow: Flow<T>,
         published: Boolean = false,
@@ -283,7 +283,7 @@ public abstract class BaseViewModel {
     }
 
     protected fun <OWNER, T> binding(
-        lock: InterfaceLock,
+        lock: InterfaceLock = createLock(),
         stateFlow: StateFlow<T>,
         set: suspend (T) -> Unit,
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
@@ -291,7 +291,7 @@ public abstract class BaseViewModel {
     }
 
     protected fun <OWNER, T, U> binding(
-        lock: InterfaceLock,
+        lock: InterfaceLock = createLock(),
         stateFlow: StateFlow<T>,
         mapping: (T) -> U,
         set: suspend (U) -> Unit,

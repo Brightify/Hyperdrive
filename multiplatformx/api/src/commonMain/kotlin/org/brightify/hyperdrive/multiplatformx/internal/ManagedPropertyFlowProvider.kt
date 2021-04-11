@@ -6,11 +6,12 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEmpty
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-internal class ManagedPropertyFlowProvider<OWNER, VM: BaseViewModel?>(
+internal class ManagedPropertyFlowProvider<OWNER, VM: ManageableViewModel?>(
     private val owner: BaseViewModel,
     private val initialChild: VM,
     private val viewModelFlow: Flow<VM>,
