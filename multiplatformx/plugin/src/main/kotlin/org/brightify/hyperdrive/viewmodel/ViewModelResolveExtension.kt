@@ -50,7 +50,9 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
     private companion object {
         val observableDelegates = listOf(
             "published",
-            "collected"
+            "collected",
+            "binding",
+            "managed",
         )
     }
 
