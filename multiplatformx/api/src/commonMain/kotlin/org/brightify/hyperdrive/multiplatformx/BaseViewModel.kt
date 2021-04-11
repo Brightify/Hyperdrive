@@ -223,14 +223,6 @@ public abstract class BaseViewModel: ManageableViewModel {
         return ManagedPropertyProvider(this, childModel, published)
     }
 
-    @JvmName("managedList")
-    protected fun <OWNER, VM: ManageableViewModel> managed(
-        childModels: List<VM>,
-        published: Boolean = false
-    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<VM>>> {
-        return ManagedPropertyListProvider(this, childModels, published)
-    }
-
     protected fun <OWNER, VM: ManageableViewModel?> managed(
         childStateFlow: StateFlow<VM>,
         published: Boolean = false,
@@ -263,16 +255,21 @@ public abstract class BaseViewModel: ManageableViewModel {
         return ManagedPropertyFlowProvider(this, initialChild, childFlow, published)
     }
 
-    @JvmName("managedList")
-    protected fun <OWNER, VM: ManageableViewModel?> managed(
+    protected fun <OWNER, VM: ManageableViewModel> managedList(
+        childModels: List<VM>,
+        published: Boolean = false
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<VM>>> {
+        return ManagedPropertyListProvider(this, childModels, published)
+    }
+
+    protected fun <OWNER, VM: ManageableViewModel?> managedList(
         childStateFlow: StateFlow<List<VM>>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return ManagedPropertyFlowListProvider(this, childStateFlow.value, childStateFlow.drop(1), published)
     }
 
-    @JvmName("managedList")
-    protected fun <OWNER, T, VM: ManageableViewModel?> managed(
+    protected fun <OWNER, T, VM: ManageableViewModel?> managedList(
         valueStateFlow: StateFlow<T>,
         published: Boolean = false,
         mapping: (T) -> List<VM>,
@@ -280,8 +277,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         return ManagedPropertyFlowListProvider(this, mapping(valueStateFlow.value), valueStateFlow.drop(1).map { mapping(it) }, published)
     }
 
-    @JvmName("managedList")
-    protected fun <OWNER, T, VM: ManageableViewModel?> managed(
+    protected fun <OWNER, T, VM: ManageableViewModel?> managedList(
         initialChild: List<VM>,
         valueFlow: Flow<T>,
         published: Boolean = false,
@@ -290,10 +286,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         return ManagedPropertyFlowListProvider(this, initialChild, valueFlow.map { mapping(it) }, published)
     }
 
-    @JvmName("managedList")
-    protected fun <OWNER, VM: ManageableViewModel?> managed(
+    protected fun <OWNER, VM: ManageableViewModel?> managedList(
         initialChild: List<VM>,
-        childFlow: Flow<VM>,
+        childFlow: Flow<List<VM>>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return ManagedPropertyFlowListProvider(this, initialChild, childFlow, published)
