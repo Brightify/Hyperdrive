@@ -53,6 +53,7 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
             "collected",
             "binding",
             "managed",
+            "managedList",
         )
     }
 
