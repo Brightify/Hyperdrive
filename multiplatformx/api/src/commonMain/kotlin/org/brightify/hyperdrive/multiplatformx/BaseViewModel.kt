@@ -255,6 +255,14 @@ public abstract class BaseViewModel: ManageableViewModel {
         return ManagedPropertyFlowProvider(this, initialChild, valueFlow.map { mapping(it) }, published)
     }
 
+    protected fun <OWNER, VM: ManageableViewModel?> managed(
+        initialChild: VM,
+        childFlow: Flow<VM>,
+        published: Boolean = false,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
+        return ManagedPropertyFlowProvider(this, initialChild, childFlow, published)
+    }
+
     @JvmName("managedList")
     protected fun <OWNER, VM: ManageableViewModel?> managed(
         childStateFlow: StateFlow<List<VM>>,
@@ -280,6 +288,15 @@ public abstract class BaseViewModel: ManageableViewModel {
         mapping: suspend (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return ManagedPropertyFlowListProvider(this, initialChild, valueFlow.map { mapping(it) }, published)
+    }
+
+    @JvmName("managedList")
+    protected fun <OWNER, VM: ManageableViewModel?> managed(
+        initialChild: List<VM>,
+        childFlow: Flow<VM>,
+        published: Boolean = false,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
+        return ManagedPropertyFlowListProvider(this, initialChild, childFlow, published)
     }
 
     protected fun <OWNER, T> binding(
