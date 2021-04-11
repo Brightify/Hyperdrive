@@ -299,6 +299,12 @@ public abstract class BaseViewModel {
         return BoundPropertyProvider(this, lock, collected(stateFlow, mapping), set)
     }
 
+    protected fun createLock(group: InterfaceLock.Group? = null): InterfaceLock = locks.createLock(group)
+
+    protected fun instanceLock(): InterfaceLock = locks.instanceLock()
+
+    protected fun objectLock(obj: Any): InterfaceLock = locks.objectLock(obj)
+
     protected fun propertyLock(property: KProperty<*>, group: InterfaceLock.Group? = null): InterfaceLock
         = locks.propertyLock(property, group)
 
@@ -332,19 +338,28 @@ public abstract class BaseViewModel {
     }
 
     private inner class LockRegistry {
+        private val instanceLock by lazy {
+            InterfaceLock(lifecycle)
+        }
+        private val objectLocks = mutableMapOf<Any, InterfaceLock>()
         private val propertyLocks = mutableMapOf<KProperty<*>, MutableMap<InterfaceLock.Group?, InterfaceLock>>()
         private val functionLocks = mutableMapOf<KFunction<*>, MutableMap<InterfaceLock.Group?, InterfaceLock>>()
 
-        fun propertyLock(property: KProperty<*>, group: InterfaceLock.Group?): InterfaceLock {
-            return propertyLocks
-                .getOrPut(property) { mutableMapOf() }
-                .getOrPut(group) { InterfaceLock(lifecycle, group ?: InterfaceLock.Group()) }
+        fun createLock(group: InterfaceLock.Group? = null) = InterfaceLock(lifecycle, group ?: InterfaceLock.Group())
+
+        fun instanceLock(): InterfaceLock = instanceLock
+
+        fun objectLock(obj: Any): InterfaceLock = objectLocks.getOrPut(obj) {
+            InterfaceLock(lifecycle)
         }
 
-        fun functionLock(function: KFunction<*>, group: InterfaceLock.Group?): InterfaceLock {
-            return functionLocks
-                .getOrPut(function) { mutableMapOf() }
-                .getOrPut(group) { InterfaceLock(lifecycle, group ?: InterfaceLock.Group()) }
-        }
+        fun propertyLock(property: KProperty<*>, group: InterfaceLock.Group?): InterfaceLock = propertyLocks
+            .getOrPut(property) { mutableMapOf() }
+            .getOrPut(group) { InterfaceLock(lifecycle, group ?: InterfaceLock.Group()) }
+
+
+        fun functionLock(function: KFunction<*>, group: InterfaceLock.Group?): InterfaceLock = functionLocks
+            .getOrPut(function) { mutableMapOf() }
+            .getOrPut(group) { InterfaceLock(lifecycle, group ?: InterfaceLock.Group()) }
     }
 }

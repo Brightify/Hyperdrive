@@ -29,7 +29,7 @@ allprojects {
     }
 
     group = "org.brightify.hyperdrive"
-    version = "0.1.31"
+    version = "0.1.32"
 
     apply(plugin = "org.jetbrains.dokka")
 
