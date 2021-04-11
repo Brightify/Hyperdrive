@@ -12,8 +12,8 @@ dependencies {
     implementationWorkaround(project(":krpc-client-api"))
     implementationWorkaround(project(":krpc-annotations"))
 
-    compileOnly("com.google.auto.service:auto-service")
-    kapt("com.google.auto.service:auto-service")
+    compileOnly(libs.auto.service)
+    kapt(libs.auto.service)
 
     testImplementationWorkaround(project(":krpc-shared-api"))
     testImplementationWorkaround(project(":krpc-shared-impl"))
@@ -28,11 +28,10 @@ dependencies {
     testImplementation(kotlin("reflect"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing")
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.bundles.serialization)
+    testImplementation(libs.compile.testing)
+    testImplementation(libs.junit.jupiter)
 }
 
 fun DependencyHandlerScope.implementationWorkaround(dependency: ProjectDependency) {

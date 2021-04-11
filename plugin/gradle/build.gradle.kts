@@ -34,16 +34,12 @@ dependencies {
     compileOnly(gradleApi())
     compileOnly(gradleKotlinDsl())
 
-    compileOnly("com.google.auto.service:auto-service")
-    kapt("com.google.auto.service:auto-service")
+    compileOnly(libs.auto.service)
+    kapt(libs.auto.service)
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing")
-    testImplementation("org.junit.jupiter:junit-jupiter")
-}
-
-tasks.getByName<Test>("test") {
-    useJUnitPlatform()
+    testImplementation(libs.compile.testing)
+    testImplementation(libs.junit.jupiter)
 }

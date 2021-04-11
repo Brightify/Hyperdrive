@@ -20,8 +20,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib"))
                 implementation(project(":multiplatformx-api"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
+                implementation(libs.coroutines.core)
+                implementation(libs.serialization.protobuf)
             }
         }
 
@@ -30,10 +30,10 @@ kotlin {
             resources.setSrcDirs(listOf("src/test/resources"))
 
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation(libs.coroutines.core)
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter")
+                implementation(libs.junit.jupiter)
             }
         }
     }
@@ -41,8 +41,4 @@ kotlin {
 
 kapt {
     includeCompileClasspath = true
-}
-
-tasks.getByName<Test>("jvmTest") {
-    useJUnitPlatform()
 }

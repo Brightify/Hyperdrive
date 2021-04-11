@@ -14,7 +14,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation(libs.coroutines.core)
             }
         }
         val commonTest by getting {
@@ -28,15 +28,12 @@ kotlin {
 
                 implementation(project(":logging-api"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation(libs.coroutines.core)
 
                 implementation(kotlin("test"))
-                implementation("io.kotest:kotest-assertions-core")
-                implementation("io.kotest:kotest-property")
+                implementation(libs.bundles.kotest.common)
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
+                implementation(libs.bundles.serialization)
             }
         }
         val jvmTest by getting {
@@ -46,9 +43,9 @@ kotlin {
                 implementation(project(":krpc-server-impl-ktor"))
 
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-                implementation("io.kotest:kotest-runner-junit5")
+                implementation(libs.junit.jupiter)
+                implementation(libs.coroutines.test)
+                implementation(libs.bundles.kotest.jvm)
             }
         }
     }

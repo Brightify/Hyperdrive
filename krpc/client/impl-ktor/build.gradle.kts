@@ -19,11 +19,9 @@ kotlin {
                 api(project(":krpc-client-impl"))
                 api(project(":krpc-shared-impl-ktor"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
+                implementation(libs.bundles.serialization)
 
-                implementation("io.ktor:ktor-client-websockets")
+                implementation(libs.ktor.client.websockets)
             }
         }
         val commonTest by getting {
@@ -35,7 +33,7 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-cio")
+                implementation(libs.ktor.client.cio)
             }
         }
 
@@ -44,19 +42,19 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.junit.jupiter:junit-jupiter")
+                implementation(libs.junit.jupiter)
             }
         }
 
         val iosMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-cio")
+                implementation(libs.ktor.client.cio)
             }
         }
 
         val jsMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-js")
+                implementation(libs.ktor.client.js)
             }
         }
     }

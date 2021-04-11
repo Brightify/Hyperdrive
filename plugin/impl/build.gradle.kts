@@ -12,8 +12,8 @@ dependencies {
     api(project(":krpc-plugin"))
 
     compileOnly(kotlin("compiler-embeddable"))
-    compileOnly("com.google.auto.service:auto-service")
-    kapt("com.google.auto.service:auto-service")
+    compileOnly(libs.auto.service)
+    kapt(libs.auto.service)
 }
 
 tasks.shadowJar {

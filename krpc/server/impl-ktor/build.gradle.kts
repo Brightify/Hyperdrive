@@ -14,13 +14,11 @@ kotlin {
                 api(project(":krpc-server-impl"))
                 api(project(":krpc-shared-impl-ktor"))
 
-                implementation("io.ktor:ktor-server-core")
-                implementation("io.ktor:ktor-server-netty")
-                implementation("io.ktor:ktor-websockets")
+                implementation(libs.ktor.server.core)
+                implementation(libs.ktor.server.netty)
+                implementation(libs.ktor.websockets)
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf")
+                implementation(libs.bundles.serialization)
             }
         }
 
@@ -28,7 +26,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter")
+                implementation(libs.junit.jupiter)
             }
         }
     }

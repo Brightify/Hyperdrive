@@ -17,12 +17,12 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                api(libs.coroutines.core)
             }
         }
         val commonTest by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation(libs.coroutines.core)
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
             }
@@ -34,7 +34,7 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.junit.jupiter:junit-jupiter")
+                implementation(libs.junit.jupiter)
             }
         }
     }

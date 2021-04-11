@@ -66,8 +66,7 @@ kotlin {
             dependencies {
                 implementation(project(":multiplatformx-api"))
 
-                implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation(libs.coroutines.core)
             }
         }
         val commonTest by getting {

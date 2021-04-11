@@ -20,7 +20,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter")
+                implementation(libs.junit.jupiter)
             }
         }
     }

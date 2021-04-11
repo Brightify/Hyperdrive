@@ -17,13 +17,13 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("co.touchlab:stately-common")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation(libs.stately.common)
+                implementation(libs.coroutines.core)
             }
         }
         val commonTest by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation(libs.coroutines.core)
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
             }
@@ -31,8 +31,8 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter:junit-jupiter")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+                implementation(libs.junit.jupiter)
+                implementation(libs.coroutines.test)
             }
         }
 

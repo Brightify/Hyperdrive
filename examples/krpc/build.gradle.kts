@@ -72,9 +72,8 @@ kotlin {
                 implementation(project(":logging-api"))
                 implementation(project(":multiplatformx-api"))
 
-                implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+                implementation(libs.serialization.core)
+                implementation(libs.coroutines.core)
             }
         }
         val commonTest by getting {

@@ -20,8 +20,8 @@ kotlin {
                 implementation(project(":logging-api"))
                 implementation(project(":kotlin-utils"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
-                implementation("io.ktor:ktor-client-websockets")
+                implementation(libs.serialization.core)
+                implementation(libs.ktor.client.websockets)
             }
         }
         val commonTest by getting {
@@ -37,12 +37,10 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-                implementation("org.junit.jupiter:junit-jupiter")
+                implementation(libs.coroutines.test)
+                implementation(libs.junit.jupiter)
 
-                implementation("io.kotest:kotest-runner-junit5")
-                implementation("io.kotest:kotest-assertions-core")
-                implementation("io.kotest:kotest-property")
+                implementation(libs.bundles.kotest.jvm)
             }
         }
     }
