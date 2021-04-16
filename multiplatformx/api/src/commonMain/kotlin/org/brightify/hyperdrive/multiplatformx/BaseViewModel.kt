@@ -182,6 +182,16 @@ public abstract class BaseViewModel: ManageableViewModel {
     }
 
     /**
+     * Property delegate used to mirror an instance of [StateFlow], flat-mapping its value.
+     *
+     * @see collected
+     */
+    @JvmName("collectedFlatMap")
+    protected fun <OWNER, T, U> collected(stateFlow: StateFlow<T>, flatMapping: (T) -> StateFlow<U>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
+        return CollectedPropertyProvider(this, flatMapping(stateFlow.value).value, stateFlow.flatMapLatest { flatMapping(it).drop(1) })
+    }
+
+    /**
      * Property delegate used to mirror the latest value of a [Flow].
      *
      * As opposed to the [collected] method for [StateFlow], this one requires passing in an [initialValue] so that this property has a value
