@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtDestructuringDeclarationEntry
@@ -41,6 +42,7 @@ import org.jetbrains.kotlin.psi.KtPureElement
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeAlias
+import org.jetbrains.kotlin.psi.allConstructors
 import org.jetbrains.kotlin.psi.synthetics.SyntheticClassOrObjectDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorFactory
@@ -58,15 +60,16 @@ import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassMemberScope
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.resolve.source.getPsi
 import org.jetbrains.kotlin.storage.StorageManager
 import org.jetbrains.kotlin.types.AbstractClassTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeConstructor
 import org.jetbrains.kotlin.types.checker.KotlinTypeRefiner
 
-val ClassDescriptor.isAutoFactoryAnnotated: Boolean
-    get() = secondaryConstructors.any { it.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) } ||
-        annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory)
+val KtPureClassOrObject.isAnyConstructorAutoFactoryAnnotated: Boolean
+    get() = primaryConstructor?.let { it.annotationEntries.any { it.shortName == AutoFactoryNames.Annotation.autoFactory.shortName() } } ?: false ||
+        secondaryConstructors.any { it.annotationEntries.any { it.shortName == AutoFactoryNames.Annotation.autoFactory.shortName() } }
 
 val ClassDescriptor.autoFactoryConstructor: ConstructorDescriptor?
     get() = constructors.firstOrNull { it.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) } ?:
@@ -98,8 +101,7 @@ val ConstructorDescriptor.providedValueParameters: List<ValueParameterDescriptor
 open class AutoFactoryResolveExtension: SyntheticResolveExtension {
     override fun getSyntheticNestedClassNames(thisDescriptor: ClassDescriptor): List<Name> = if (
         thisDescriptor.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) ||
-        thisDescriptor.constructors.any { it.isPrimary && it.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) })
-    {
+        (thisDescriptor.source.getPsi() as? KtPureClassOrObject)?.isAnyConstructorAutoFactoryAnnotated == true) {
         listOf(AutoFactoryNames.factory)
     } else {
         emptyList()
@@ -125,9 +127,9 @@ open class AutoFactoryResolveExtension: SyntheticResolveExtension {
         if (name != AutoFactoryNames.factory) { return }
 
         val thisDeclaration = declarationProvider.correspondingClassOrObject ?: return
-        if (thisDescriptor.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) ||
-            thisDeclaration.primaryConstructor?.let { it.annotationEntries.any { it.shortName == AutoFactoryNames.Annotation.autoFactory.shortName() } } ?: false ||
-            thisDeclaration.secondaryConstructors.any { it.annotationEntries.any { it.shortName == AutoFactoryNames.Annotation.autoFactory.shortName() } }
+        if (
+            thisDescriptor.annotations.hasAnnotation(AutoFactoryNames.Annotation.autoFactory) ||
+            thisDeclaration.isAnyConstructorAutoFactoryAnnotated
         ) {
             val scope = ctx.declarationScopeProvider.getResolutionScopeForDeclaration(declarationProvider.ownerInfo?.scopeAnchor ?:  return)
 
