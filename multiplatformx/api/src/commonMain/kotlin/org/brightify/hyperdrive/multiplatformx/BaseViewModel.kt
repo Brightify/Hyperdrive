@@ -166,7 +166,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      *
      * The property using this delegate will keep its value synchronized with the [StateFlow] as long as the [Lifecycle] of this view model
      * is attached. Although [StateFlow] always has a value that can be accessed in synchronous code, this delegate only uses the value
-     * as an initial value. This means that when detached, the property is not kept in sync with the soruce [StateFlow] instance.
+     * as an initial value. This means that when detached, the property is not kept in sync with the source [StateFlow] instance.
      */
     protected fun <OWNER, T> collected(stateFlow: StateFlow<T>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>> {
         return CollectedPropertyProvider(this, stateFlow.value, stateFlow.drop(1))
@@ -220,7 +220,7 @@ public abstract class BaseViewModel: ManageableViewModel {
     /**
      * Property delegate used for view model composition.
      *
-     * Any child view model that is a part of your view model should be initated using the managed delegate. Its [lifecycle] then automatically
+     * Any child view model that is a part of your view model should be initiated using the managed delegate. Its [lifecycle] then automatically
      * attached and detached from the parent view model's [lifecycle].
      *
      * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managed

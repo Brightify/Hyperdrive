@@ -45,9 +45,9 @@ class ExampleServiceTest {
         Logger.setLevel(LoggingLevel.Trace)
 
         runYieldingBlocking {
-            val client = makeClient()
-            logger.debug { "here!" }
-            assertEquals(5, client.strlen("Hello"))
+            // val client = makeClient()
+            // logger.debug { "here!" }
+            // assertEquals(5, client.strlen("Hello"))
             // supervisorScope {
             //     val connection = LoopbackConnection(this, 0)
             //
