@@ -51,6 +51,7 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
         val observableDelegates = listOf(
             "published",
             "collected",
+            "collectedFlatMap",
             "binding",
             "managed",
             "managedList",
