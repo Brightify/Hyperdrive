@@ -187,7 +187,13 @@ public abstract class BaseViewModel: ManageableViewModel {
      * @see collected
      */
     protected fun <OWNER, T, U> collectedFlatMap(stateFlow: StateFlow<T>, flatMapping: (T) -> StateFlow<U>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
-        return CollectedPropertyProvider(this, flatMapping(stateFlow.value).value, stateFlow.flatMapLatest { flatMapping(it).drop(1) })
+        return CollectedPropertyProvider(this, flatMapping(stateFlow.value).value, stateFlow.withIndex().flatMapLatest { (index, value) ->
+            if (index == 0) {
+                flatMapping(value).drop(1)
+            } else {
+                flatMapping(value)
+            }
+        })
     }
 
     /**
