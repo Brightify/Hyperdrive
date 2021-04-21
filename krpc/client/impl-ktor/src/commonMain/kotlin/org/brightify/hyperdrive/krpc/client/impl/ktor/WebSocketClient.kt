@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.krpc.client.impl.ktor
 
 import io.ktor.client.*
 import io.ktor.client.features.websocket.*
+import io.ktor.http.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
@@ -16,6 +17,7 @@ class WebSocketClient(
     private val host: String = "localhost",
     private val port: Int = 8000,
     private val path: String = "/",
+    private val useSecureConnection: Boolean = false,
     clientFactory: (HttpClientConfig<*>.() -> Unit) -> HttpClient = ::HttpClient,
 ) : RPCClientConnector {
 
@@ -43,7 +45,12 @@ class WebSocketClient(
             if (oldConnection != null && oldConnection.isActive) {
                 oldConnection.close()
             }
-            val newConnection = WebSocketSessionConnection(httpClient.webSocketSession(host = host, port = port, path = path))
+            val webSocketSession = httpClient.webSocketSession(host = host, port = port, path = path) {
+                if (useSecureConnection) {
+                    url { protocol = URLProtocol.WSS }
+                }
+            }
+            val newConnection = WebSocketSessionConnection(webSocketSession)
             activeConnection = newConnection
             return@withLock newConnection
         }
