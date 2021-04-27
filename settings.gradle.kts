@@ -27,6 +27,10 @@ pluginManagement {
     }
 }
 
+plugins {
+    id("io.alcide.gradle-semantic-build-versioning") version "4.2.1"
+}
+
 enableFeaturePreview("VERSION_CATALOGS")
 
 rootProject.name = "Hyperdrive"
