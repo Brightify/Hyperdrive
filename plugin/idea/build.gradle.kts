@@ -26,6 +26,11 @@ intellij {
     updateSinceUntilBuild = false
 }
 
+tasks.publishPlugin {
+    token(System.getenv("ORG_GRADLE_PROJECT_intellijPublishToken") ?: "")
+    channels(System.getenv("ORG_GRADLE_PROJECT_intellijChannels") ?: "default")
+}
+
 tasks.buildSearchableOptions {
     enabled = false
 }
