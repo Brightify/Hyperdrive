@@ -65,7 +65,6 @@ subprojects {
     }
 
     tasks.publish {
-        dependsOn("checkMavenArtifact")
         onlyIf {
             fun urlExists(repositoryUrl: String) =
                 try {
