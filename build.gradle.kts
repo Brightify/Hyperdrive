@@ -27,9 +27,9 @@ allprojects {
         gradlePluginPortal()
     }
 
-    group = "org.brightify.hyperdrive"
-
     apply(plugin = "org.jetbrains.dokka")
+
+    group = "org.brightify.hyperdrive"
 
     tasks.withType(KotlinCompile::class).all {
         kotlinOptions {
@@ -56,17 +56,63 @@ subprojects {
 
     val isSnapshot = project.version.withGroovyBuilder { "isSnapshot"() } as Boolean
 
-    if (!isSnapshot) {
-        tasks.named("publishToMavenLocal").get().dependsOn("checkMavenArtifact")
-        tasks.named("publish").get().dependsOn("checkMavenArtifact")
-    }
-
     val brightifyUsername: String by project
     val brightifyPassword: String by project
     val brightifyMavenUrl = if (isSnapshot) {
         "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-snapshots"
     } else {
         "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-releases"
+    }
+
+    tasks.publish {
+        dependsOn("checkMavenArtifact")
+        onlyIf {
+            fun urlExists(repositoryUrl: String) =
+                try {
+                    val connection = java.net.URL(repositoryUrl).openConnection() as java.net.HttpURLConnection
+
+                    val base64EncodedCredentials = java.util.Base64.getEncoder().encodeToString("$brightifyUsername:$brightifyPassword".toByteArray())
+                    connection.setRequestProperty("Authorization", "Basic $base64EncodedCredentials")
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 10000
+                    connection.requestMethod = "HEAD"
+
+                    val responseCode = connection.responseCode
+
+                    if (responseCode == 401) {
+                        throw RuntimeException("Unauthorized MavenUser user. Please provide valid username and password.")
+                    }
+
+                    responseCode == 200
+                } catch (ignored: java.io.IOException) {
+                    println("Ignoring exception: $ignored")
+                    false
+                } catch (e: Exception) {
+                    false
+                }
+
+            println("# Maven artifact check for ${project.name} version ${project.version}")
+
+            // We're not checking snapshot artifacts.
+            if (isSnapshot) {
+                println("\t- Skipping check for snapshot release.")
+                return@onlyIf true
+            }
+
+            val pomFileName = "${project.name}-${project.version}.pom"
+            val artifactPath = "${project.group.toString().replace(".", "/")}/${project.name}/${project.version}/${pomFileName}"
+            val repositoryUrl = "$brightifyMavenUrl/${artifactPath}"
+
+            println("\t- Full repository URL: $repositoryUrl")
+
+            return@onlyIf if (urlExists(repositoryUrl)) {
+                println("\t- Existing Maven artifact found. Stopping.")
+                false
+            } else {
+                println("\t- No existing Maven artifact found. Proceeding.")
+                true
+            }
+        }
     }
 
     publishing {
@@ -76,57 +122,6 @@ subprojects {
                     username = brightifyUsername
                     password = brightifyPassword
                 }
-            }
-        }
-    }
-
-    task("checkMavenArtifact") {
-        group = "upload"
-
-        fun urlExists(repositoryUrl: String) =
-            try {
-                val connection = java.net.URL(repositoryUrl).openConnection() as java.net.HttpURLConnection
-
-                val base64EncodedCredentials = java.util.Base64.getEncoder().encodeToString("$brightifyUsername:$brightifyPassword".toByteArray())
-                connection.setRequestProperty("Authorization", "Basic $base64EncodedCredentials")
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
-                connection.requestMethod = "HEAD"
-
-                val responseCode = connection.responseCode
-
-                if (responseCode == 401) {
-                    throw RuntimeException("Unauthorized MavenUser user. Please provide valid username and password.")
-                }
-
-                responseCode == 200
-            } catch (ignored: java.io.IOException) {
-                println("Ignoring exception: $ignored")
-                false
-            } catch (e: Exception) {
-                false
-            }
-
-        doLast {
-            println("# Maven artifact check for ${project.name} version ${project.version}")
-
-            // We're not checking snapshot artifacts.
-            if (isSnapshot) {
-                println("\t- Skipping check for snapshot release.")
-                return@doLast
-            }
-
-            val pomFileName = "${project.name}-${project.version}.pom"
-            val artifactPath = "${project.group.toString().replace(".", "/")}/${project.name}/${project.version}/${pomFileName}"
-            val repositoryUrl = "$brightifyMavenUrl/${artifactPath}"
-
-            println("\t- Full repository URL: $repositoryUrl")
-
-            if (urlExists(repositoryUrl)) {
-                println("\t- Existing Maven artifact found. Stopping.")
-                throw RuntimeException("Maven artifact for ${project.name} with version ${project.version} already exists.")
-            } else {
-                println("\t- No existing Maven artifact found. Proceeding.")
             }
         }
     }
