@@ -64,7 +64,7 @@ subprojects {
         "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-releases"
     }
 
-    tasks.publish {
+    tasks.withType<PublishToMavenRepository> {
         onlyIf {
             fun urlExists(repositoryUrl: String) =
                 try {
@@ -90,7 +90,7 @@ subprojects {
                     false
                 }
 
-            println("# Maven artifact check for ${project.name} version ${project.version}")
+            println("# Maven artifact check for ${this.publication.artifactId} version ${this.publication.version}")
 
             // We're not checking snapshot artifacts.
             if (isSnapshot) {
@@ -98,9 +98,9 @@ subprojects {
                 return@onlyIf true
             }
 
-            val pomFileName = "${project.name}-${project.version}.pom"
-            val artifactPath = "${project.group.toString().replace(".", "/")}/${project.name}/${project.version}/${pomFileName}"
-            val repositoryUrl = "$brightifyMavenUrl/${artifactPath}"
+            val pomFileName = "${this.publication.artifactId}-${this.publication.version}.pom"
+            val artifactPath = "${project.group.toString().replace(".", "/")}/${this.publication.artifactId}/${this.publication.version}/${pomFileName}"
+            val repositoryUrl = "${this.repository.url}/${artifactPath}"
 
             println("\t- Full repository URL: $repositoryUrl")
 
