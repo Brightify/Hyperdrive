@@ -2,4 +2,5 @@
 
 ## Usage
 
-Yes.
+Allowed.
+
