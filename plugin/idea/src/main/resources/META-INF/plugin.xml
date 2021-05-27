@@ -15,7 +15,7 @@
     <depends>org.jetbrains.kotlin</depends>
     <depends>com.intellij.java</depends>
 
-    <idea-version since-build="201.8743.12" />
+    <idea-version since-build="211" />
 
     <vendor url="https://www.brightify.org" email="info@brightify.org">Brightify</vendor>
 

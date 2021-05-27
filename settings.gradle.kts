@@ -16,7 +16,7 @@ pluginManagement {
         kotlin("jvm") version kotlinVersion
         id("com.chromaticnoise.multiplatform-swiftpackage") version "2.0.3"
         id("com.github.gmazzo.buildconfig") version "2.0.2"
-        id("org.jetbrains.intellij") version "0.6.5"
+        id("org.jetbrains.intellij") version "0.7.3"
     }
     resolutionStrategy {
         eachPlugin {
