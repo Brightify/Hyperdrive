@@ -169,7 +169,9 @@ public abstract class BaseViewModel: ManageableViewModel {
      * as an initial value. This means that when detached, the property is not kept in sync with the source [StateFlow] instance.
      */
     protected fun <OWNER, T> collected(stateFlow: StateFlow<T>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>> {
-        return CollectedPropertyProvider(this, stateFlow.value, stateFlow.drop(1))
+        return withNonRepeatingStateFlow(stateFlow) { initialValue, autoFilteredFlow ->
+            CollectedPropertyProvider(this, initialValue, autoFilteredFlow)
+        }
     }
 
     /**
@@ -178,7 +180,9 @@ public abstract class BaseViewModel: ManageableViewModel {
      * @see collected
      */
     protected fun <OWNER, T, U> collected(stateFlow: StateFlow<T>, mapping: (T) -> U): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
-        return CollectedPropertyProvider(this, mapping(stateFlow.value), stateFlow.drop(1).map { mapping(it) })
+        return withNonRepeatingStateFlow(stateFlow) { initialValue, autoFilteredFlow ->
+            CollectedPropertyProvider(this, mapping(initialValue), autoFilteredFlow.map { mapping(it) })
+        }
     }
 
     /**
@@ -189,6 +193,7 @@ public abstract class BaseViewModel: ManageableViewModel {
     protected fun <OWNER, T, U> collectedFlatMap(stateFlow: StateFlow<T>, flatMapping: (T) -> StateFlow<U>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
         return CollectedPropertyProvider(this, flatMapping(stateFlow.value).value, stateFlow.withIndex().flatMapLatest { (index, value) ->
             if (index == 0) {
+                // FIXME: This might be dropping a value we don't want to be dropped.
                 flatMapping(value).drop(1)
             } else {
                 flatMapping(value)
@@ -242,7 +247,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         childStateFlow: StateFlow<VM>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyFlowProvider(this, childStateFlow.value, childStateFlow.drop(1), published)
+        return withNonRepeatingStateFlow(childStateFlow) { initialValue, autoFilteredFlow ->
+            ManagedPropertyFlowProvider(this, initialValue, autoFilteredFlow, published)
+        }
     }
 
     protected fun <OWNER, T, VM: ManageableViewModel?> managed(
@@ -250,7 +257,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         mapping: (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyFlowProvider(this, mapping(valueStateFlow.value), valueStateFlow.drop(1).map { mapping(it) }, published)
+        return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
+            ManagedPropertyFlowProvider(this, mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published)
+        }
     }
 
     protected fun <OWNER, T, VM: ManageableViewModel?> managed(
@@ -281,7 +290,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         childStateFlow: StateFlow<List<VM>>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
-        return ManagedPropertyFlowListProvider(this, childStateFlow.value, childStateFlow.drop(1), published)
+        return withNonRepeatingStateFlow(childStateFlow) { initialValue, autoFilteredFlow ->
+            ManagedPropertyFlowListProvider(this, initialValue, autoFilteredFlow, published)
+        }
     }
 
     protected fun <OWNER, T, VM: ManageableViewModel?> managedList(
@@ -289,7 +300,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         mapping: (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
-        return ManagedPropertyFlowListProvider(this, mapping(valueStateFlow.value), valueStateFlow.drop(1).map { mapping(it) }, published)
+        return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
+            ManagedPropertyFlowListProvider(this, mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published)
+        }
     }
 
     protected fun <OWNER, T, VM: ManageableViewModel?> managedList(
@@ -362,6 +375,11 @@ public abstract class BaseViewModel: ManageableViewModel {
         return propertyObservers.getOrPut(property.name) {
             MutableStateFlow(initialValue)
         } as MutableStateFlow<T>
+    }
+
+    private fun <T, RESULT> withNonRepeatingStateFlow(stateFlow: StateFlow<T>, block: (initialValue: T, autoFilteredFlow: Flow<T>) -> RESULT): RESULT {
+        var latestValue: T = stateFlow.value
+        return block(latestValue, stateFlow.filter { it != latestValue }.onEach { latestValue = it })
     }
 
     private inner class LockRegistry {
