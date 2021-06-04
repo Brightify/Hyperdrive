@@ -42,4 +42,5 @@ dependencies {
     testImplementation(kotlin("compiler-embeddable"))
     testImplementation(libs.compile.testing)
     testImplementation(libs.junit.jupiter)
+    testImplementation(gradleTestKit())
 }

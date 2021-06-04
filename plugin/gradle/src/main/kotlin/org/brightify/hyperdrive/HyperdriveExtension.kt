@@ -1,5 +1,7 @@
 package org.brightify.hyperdrive
 
+import org.brightify.hyperdrive.swifttemplate.SwiftTemplateComponent
+
 open class HyperdriveExtension {
     var isMultiplatformEnabled
         get() = multiplatformx != null
@@ -21,6 +23,7 @@ open class HyperdriveExtension {
         private set
     var krpc: KrpcSettings? = null
         private set
+    internal lateinit var swiftTemplate: SwiftTemplateComponent
 
     fun multiplatformx() {
         multiplatformx = MultiplatformxSettings()
@@ -40,6 +43,10 @@ open class HyperdriveExtension {
         val krpc = KrpcSettings()
         configure(krpc)
         this.krpc = krpc
+    }
+
+    fun swiftTemplate(configure: SwiftTemplateComponent.() -> Unit) {
+        configure(swiftTemplate)
     }
 
     class MultiplatformxSettings {

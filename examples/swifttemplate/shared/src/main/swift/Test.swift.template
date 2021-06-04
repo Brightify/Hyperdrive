@@ -1,0 +1,5 @@
+import ${baseName}
+
+class Hello {
+    var world = "Hello World"
+}

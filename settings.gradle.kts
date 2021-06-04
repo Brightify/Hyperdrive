@@ -109,13 +109,14 @@ val exampleModules = listOf(
 
 val exampleProjects = exampleModules.map { "example-$it" to "examples/$it" }
 
+
 val projects = listOf(
     mainProjects,
     pluginProjects,
     krpcProjects,
     multiplatformXProjects,
     exampleProjects,
-    loggingProjects
+    loggingProjects,
 ).flatten()
 
 for ((name, path) in projects) {
