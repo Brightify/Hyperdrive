@@ -406,7 +406,7 @@ typealias KeyDto = String
 
 @Serializable
 class ContextUpdateRequest(
-    val modifications: Map<KeyDto, Modification>
+    val modifications: Map<KeyDto, Modification> = emptyMap(),
 ) {
     @Serializable
     sealed class Modification {
@@ -437,7 +437,7 @@ sealed class ContextUpdateResult {
     object Accepted: ContextUpdateResult()
     @Serializable
     class Rejected(
-        val rejectedModifications: Map<KeyDto, Reason>
+        val rejectedModifications: Map<KeyDto, Reason> = emptyMap(),
     ): ContextUpdateResult() {
         @Serializable
         sealed class Reason {

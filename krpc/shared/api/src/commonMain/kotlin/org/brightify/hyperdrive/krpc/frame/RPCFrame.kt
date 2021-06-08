@@ -28,7 +28,7 @@ interface HandshakeRPCFrame: RPCFrame {
     sealed class ProtocolSelection: HandshakeRPCFrame {
 
         @Serializable
-        class Request(val supportedProtocolVersions: List<RPCProtocol.Version>): ProtocolSelection()
+        class Request(val supportedProtocolVersions: List<RPCProtocol.Version> = emptyList()): ProtocolSelection()
 
         @Serializable
         sealed class Response: ProtocolSelection() {
@@ -93,7 +93,7 @@ sealed class AscensionRPCFrame: RPCFrame {
             val message: String? = null,
             val stacktrace: String,
             val cause: SerializableThrowable? = null,
-            val suppressed: List<SerializableThrowable>,
+            val suppressed: List<SerializableThrowable> = emptyList(),
         ) {
             constructor(throwable: Throwable): this(
                 throwable.message,
