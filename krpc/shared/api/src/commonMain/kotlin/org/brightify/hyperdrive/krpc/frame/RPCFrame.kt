@@ -92,7 +92,7 @@ sealed class AscensionRPCFrame: RPCFrame {
         class SerializableThrowable(
             val message: String? = null,
             val stacktrace: String,
-            val cause: SerializableThrowable?,
+            val cause: SerializableThrowable? = null,
             val suppressed: List<SerializableThrowable>,
         ) {
             constructor(throwable: Throwable): this(
