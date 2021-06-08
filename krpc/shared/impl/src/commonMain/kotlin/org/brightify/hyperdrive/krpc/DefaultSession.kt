@@ -225,7 +225,7 @@ class SessionNodeExtension(
                     is ContextUpdateResult.Rejected -> {
                         rejections += 1
                         if (rejections >= maximumRejections) {
-
+                            // FIXME: Throw error and inform user
                         }
                         logger.debug { "Context update rejected (try #$rejections). Reasons: ${result.rejectedModifications}" }
                         val modificationsWithKeys = result.rejectedModifications.mapKeys { getKeyOrUnsupported(it.key) }
