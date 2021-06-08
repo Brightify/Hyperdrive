@@ -35,7 +35,8 @@ allprojects {
         kotlinOptions {
             jvmTarget = "1.8"
             freeCompilerArgs += listOf(
-                "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi"
+                // TODO: Find out why this doesn't work.
+                // "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi"
             )
         }
     }
