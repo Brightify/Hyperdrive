@@ -3,6 +3,7 @@ package org.brightify.hyperdrive.krpc.plugin
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
+import io.github.classgraph.ClassGraph
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
@@ -24,6 +25,7 @@ import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import java.io.File
 import kotlin.reflect.KClass
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.createInstance
@@ -70,7 +72,7 @@ class KrpcPluginTest {
     @Test
     fun testKrpcPlugin() {
         val uuidSource = SourceFile.kotlin("Uuid.kt", """
-            class Uuid(val value: String)
+            // class Uuid(val value: String)
         """.trimIndent())
 
         val uuidSerializerSeource = SourceFile.kotlin("UuidSerializer.kt", """
@@ -79,34 +81,39 @@ class KrpcPluginTest {
             import kotlinx.serialization.encoding.Decoder
             import kotlinx.serialization.encoding.Encoder
             import kotlinx.serialization.builtins.serializer
+            import com.benasher44.uuid.Uuid
+            import com.benasher44.uuid.uuidFrom
+            
+            typealias TestId = Uuid
             
             class UuidSerializer: KSerializer<Uuid> {
                 override val descriptor: SerialDescriptor = String.serializer().descriptor
                 override fun serialize(encoder: Encoder, value: Uuid) {
-                    encoder.encodeString(value.value)
+                    encoder.encodeString(value.toString())
                 }
                 override fun deserialize(decoder: Decoder): Uuid {
-                    return Uuid(decoder.decodeString())
+                    return uuidFrom(decoder.decodeString())
                 }
             }
         """.trimIndent())
 
         val serviceSource = SourceFile.kotlin("ProcessorTestService.kt", """
             @file:UseSerializers(UuidSerializer::class)
-
+            
             import kotlinx.coroutines.flow.Flow
             import kotlinx.coroutines.flow.fold
             import org.brightify.hyperdrive.krpc.api.EnableKRPC
             import org.brightify.hyperdrive.krpc.api.Error
-            import org.brightify.hyperdrive.krpc.error.RPCNotFoundError
+            // import org.brightify.hyperdrive.krpc.error.RPCNotFoundError
             import kotlinx.coroutines.flow.asFlow
             import kotlinx.coroutines.flow.map
-            import org.brightify.hyperdrive.krpc.RPCTransport
+            // import org.brightify.hyperdrive.krpc.RPCTransport
+            import com.benasher44.uuid.Uuid
             import kotlinx.serialization.UseSerializers
             
             @EnableKRPC
             interface ProcessorTestService {
-                @Error(RPCNotFoundError::class)
+                // @Error(RPCNotFoundError::class)
                 suspend fun testedSingleCall(parameter1: Int): String
                 
                 suspend fun testedSingleCall2(): String
@@ -117,7 +124,9 @@ class KrpcPluginTest {
                 
                 suspend fun bidiStream(flow: Flow<Int>): Flow<String>
                 
-                suspend fun singleCallWithAdditionalSerializer(normalParameter: Int, additionalParameter: Uuid)     
+                suspend fun singleCallWithAdditionalSerializer(normalParameter: Int, additionalParameter: Uuid)
+                
+                suspend fun singleCallWithAdditionalSerializerByTypealias(normalParameter: Int, additionalParameter: TestId)
             }
             
             class DefaultProcessorTestService: ProcessorTestService {
@@ -143,14 +152,28 @@ class KrpcPluginTest {
                 
                 override suspend fun singleCallWithAdditionalSerializer(normalParameter: Int, additionalParameter: Uuid) {
                 }
+            
+                override suspend fun singleCallWithAdditionalSerializerByTypealias(normalParameter: Int, additionalParameter: TestId) {
+                }
             }
             
             fun x() {
-                val x = ProcessorTestService.Client(null as RPCTransport)
-                val b = ProcessorTestService.Descriptor
-                val c = ProcessorTestService.Descriptor.Call
+                // val x = ProcessorTestService.Client(null as RPCTransport)
+                // val b = ProcessorTestService.Descriptor
+                // val c = ProcessorTestService.Descriptor.Call
             }
         """.trimIndent())
+
+        val classpathFiles = run {
+            val classGraph = ClassGraph()
+                .enableSystemJarsAndModules()
+                .removeTemporaryFilesAfterScan()
+
+            val classpaths = classGraph.classpathFiles
+            val modules = classGraph.modules.mapNotNull { it.locationFile }
+
+            (classpaths + modules).distinctBy(File::getAbsolutePath)
+        }
 
         val result = KotlinCompilation().apply {
             sources = listOf(serviceSource, uuidSource, uuidSerializerSeource) //, serviceClientSource, serviceDescriptorSource)
@@ -180,7 +203,16 @@ class KrpcPluginTest {
             )
 
             useIR = true
-            inheritClassPath = true
+            inheritClassPath = false
+            classpaths = classpathFiles.filter { file ->
+                listOf(
+                    "kotlinx-serialization-core-jvm",
+                    "krpc/annotations",
+                    "krpc/shared",
+                    "kotlinx-coroutines-core-jvm",
+                    "com.benasher44/uuid",
+                ).any { file.absolutePath.contains(it) }
+            }
             messageOutputStream = System.out
         }.compile()
 

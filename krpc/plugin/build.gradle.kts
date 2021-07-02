@@ -32,6 +32,9 @@ dependencies {
     testImplementation(libs.bundles.serialization)
     testImplementation(libs.compile.testing)
     testImplementation(libs.junit.jupiter)
+    testImplementation("com.benasher44:uuid:0.2.3")
+
+    testImplementation("io.github.classgraph:classgraph:4.8.105")
 }
 
 fun DependencyHandlerScope.implementationWorkaround(dependency: ProjectDependency) {
