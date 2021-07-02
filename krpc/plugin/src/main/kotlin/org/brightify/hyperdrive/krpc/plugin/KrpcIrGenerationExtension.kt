@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.krpc.plugin
 
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.phaser.transform
 import org.jetbrains.kotlin.backend.common.runOnFilePostfix
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -12,9 +13,17 @@ open class KrpcIrGenerationExtension(
     val messageCollector: MessageCollector = MessageCollector.NONE,
 ): IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val generator = KrpcIrGenerator(pluginContext, messageCollector, printIR = printIR, printKotlinLike = printKotlinLike)
+        val transformers = listOf(
+            KrpcClientLowering(pluginContext, messageCollector),
+            KrpcDescriptorLowering(pluginContext, messageCollector),
+            KrpcDescriptorCallLowering(pluginContext, messageCollector),
+            KrpcDebugPrintingLowering(printIR = printIR, printKotlinLike = printKotlinLike),
+        )
+
         for (file in moduleFragment.files) {
-            generator.runOnFilePostfix(file)
+            for (transformer in transformers) {
+                transformer.runOnFilePostfix(file)
+            }
         }
     }
 }
