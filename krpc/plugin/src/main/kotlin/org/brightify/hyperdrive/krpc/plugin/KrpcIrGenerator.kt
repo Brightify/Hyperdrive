@@ -406,7 +406,18 @@ class KrpcIrGenerator(
 
                                         val companionSerializer: IrExpression? by lazy {
                                             type.getClass()?.let {
-                                                it.companionObject()?.functions?.singleOrNull { it.name.asString() == "serializer" }
+                                                val predicate: (IrSimpleFunction) -> Boolean = if (type is IrSimpleType) {
+                                                    {
+                                                        it.name.asString() == "serializer" &&
+                                                            it.typeParameters.zip(type.arguments).all { (parameter, argument) ->
+                                                                parameter.defaultType == argument.typeOrNull
+                                                            }
+                                                    }
+                                                } else {
+                                                    { it.name.asString() == "serializer" }
+                                                }
+
+                                                it.companionObject()?.functions?.singleOrNull(predicate)
                                             }?.let { companionSerializer ->
                                                 irSerializerConstructorCall(companionSerializer.symbol)
                                             }
