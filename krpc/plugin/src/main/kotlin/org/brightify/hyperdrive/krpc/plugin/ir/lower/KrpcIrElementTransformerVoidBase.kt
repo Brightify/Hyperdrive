@@ -31,30 +31,35 @@ import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationPlug
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), IrBuilderExtension {
+interface PluginContextExtension {
+    val pluginContext: IrPluginContext
 
-    protected abstract val pluginContext: IrPluginContext
+    val FqName.primaryConstructor: IrConstructorSymbol
+        get() = pluginContext.referenceConstructors(this).single { it.owner.isPrimary }
+
+    fun FqName.asClass(): IrClassSymbol = pluginContext.referenceClass(this)!!
+
+    fun FqName.asFunction(filter: (IrSimpleFunctionSymbol) -> Boolean) = pluginContext.referenceFunctions(this).single(filter)
+
+    fun FqName.asFunctions(): Collection<IrFunctionSymbol> = pluginContext.referenceFunctions(this)
+}
+
+fun IrClass.property(name: Name): IrProperty =
+    properties.single { it.name == name }
+
+val IrClassSymbol.primaryConstructor: IrConstructorSymbol
+    get() = constructors.first { it.owner.isPrimary }
+
+
+abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), IrBuilderExtension, PluginContextExtension {
+
+    abstract override val pluginContext: IrPluginContext
     protected abstract val messageCollector: MessageCollector
 
     override val compilerContext: SerializationPluginContext
         get() = pluginContext
 
     protected val flowType by lazy { pluginContext.referenceClass(KnownType.Coroutines.flow)!! }
-
-    protected val FqName.primaryConstructor: IrConstructorSymbol
-        get() = pluginContext.referenceConstructors(this).single { it.owner.isPrimary }
-
-    protected val IrClassSymbol.primaryConstructor: IrConstructorSymbol
-        get() = this.constructors.first { it.owner.isPrimary }
-
-    protected fun FqName.asClass(): IrClassSymbol = pluginContext.referenceClass(this)!!
-
-    protected fun FqName.asFunction(filter: (IrSimpleFunctionSymbol) -> Boolean) = pluginContext.referenceFunctions(this).single(filter)
-
-    protected fun FqName.asFunctions(): Collection<IrFunctionSymbol> = pluginContext.referenceFunctions(this)
-
-    protected fun IrClass.property(name: Name): IrProperty =
-        properties.single { it.name == name }
 
     protected fun getCalls(irClass: IrClass): Map<Name, KrpcCall_> {
         return irClass.functions.mapNotNull { function ->

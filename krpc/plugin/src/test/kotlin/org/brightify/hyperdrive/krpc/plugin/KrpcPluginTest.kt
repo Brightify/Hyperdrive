@@ -23,6 +23,7 @@ import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationComponentRegistrar
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import java.io.File
@@ -109,11 +110,17 @@ class KrpcPluginTest {
             import kotlinx.coroutines.flow.map
             // import org.brightify.hyperdrive.krpc.RPCTransport
             import com.benasher44.uuid.Uuid
+            import kotlinx.serialization.Serializable
             import kotlinx.serialization.UseSerializers
-            
+            import org.brightify.hyperdrive.krpc.api.BaseRPCError
+            import org.brightify.hyperdrive.krpc.api.RPCError
+                
+            @Serializable
+            class TestError: BaseRPCError(RPCError.StatusCode.BadRequest, "This is a test error.")
+
             @EnableKRPC
             interface ProcessorTestService {
-                // @Error(RPCNotFoundError::class)
+                @Error(TestError::class)
                 suspend fun testedSingleCall(parameter1: Int): String
                 
                 suspend fun testedSingleCall2(): String
@@ -179,10 +186,11 @@ class KrpcPluginTest {
             sources = listOf(serviceSource, uuidSource, uuidSerializerSeource) //, serviceClientSource, serviceDescriptorSource)
 
             compilerPlugins = listOf<ComponentRegistrar>(
-                KrpcComponentRegistrar()
+                KrpcComponentRegistrar(),
+                SerializationComponentRegistrar(),
             )
             commandLineProcessors = listOf(
-                KrpcCommandLineProcessor()
+                KrpcCommandLineProcessor(),
             )
             pluginOptions = listOf(
                 PluginOption(
