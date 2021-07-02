@@ -56,13 +56,6 @@ abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), IrB
     protected fun IrClass.property(name: Name): IrProperty =
         properties.single { it.name == name }
 
-    protected fun IrTypeParameter.accepts(argument: IrTypeArgument): Boolean {
-        val argumentType = argument.typeOrNull ?: return true
-        return superTypes.all {
-            argumentType.isSubtypeOf(it, pluginContext.irBuiltIns)
-        }
-    }
-
     protected fun getCalls(irClass: IrClass): Map<Name, KrpcCall_> {
         return irClass.functions.mapNotNull { function ->
             if (!function.isSuspend) {

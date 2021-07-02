@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -31,8 +32,10 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.getClass
+import org.jetbrains.kotlin.ir.types.isSubtypeOf
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -201,6 +204,7 @@ class KrpcDescriptorCallLowering(
                                         val predicate: (IrSimpleFunction) -> Boolean = if (type is IrSimpleType) {
                                             {
                                                 it.name.asString() == "serializer" &&
+                                                    it.typeParameters.count() == type.arguments.count() &&
                                                     it.typeParameters.zip(type.arguments).all { (parameter, argument) ->
                                                         parameter.accepts(argument)
                                                     }
@@ -309,5 +313,12 @@ class KrpcDescriptorCallLowering(
             }
         }
 
+    }
+
+    protected fun IrTypeParameter.accepts(argument: IrTypeArgument): Boolean {
+        val argumentType = argument.typeOrNull ?: return true
+        return superTypes.all {
+            argumentType.isSubtypeOf(it, pluginContext.irBuiltIns)
+        }
     }
 }
