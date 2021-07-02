@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.backend.common.ClassLoweringPass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.jvm.codegen.fileParent
+import org.jetbrains.kotlin.backend.jvm.ir.erasedUpperBound
 import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
 import org.jetbrains.kotlin.backend.wasm.ir2wasm.bind
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
@@ -87,6 +88,9 @@ import org.jetbrains.kotlinx.serialization.compiler.backend.jvm.OBJECT
 import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationPluginContext
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
+import org.jetbrains.kotlin.ir.types.IrTypeArgument
+import org.jetbrains.kotlin.ir.types.isSubtypeOf
 
 class KrpcIrGenerator(
     private val pluginContext: IrPluginContext,
@@ -410,7 +414,7 @@ class KrpcIrGenerator(
                                                     {
                                                         it.name.asString() == "serializer" &&
                                                             it.typeParameters.zip(type.arguments).all { (parameter, argument) ->
-                                                                parameter.defaultType == argument.typeOrNull
+                                                                parameter.accepts(argument)
                                                             }
                                                     }
                                                 } else {
@@ -550,6 +554,13 @@ class KrpcIrGenerator(
 
     private fun IrClass.property(name: Name): IrProperty =
         properties.single { it.name == name }
+
+    private fun IrTypeParameter.accepts(argument: IrTypeArgument): Boolean {
+        val argumentType = argument.typeOrNull ?: return true
+        return superTypes.all {
+            argumentType.isSubtypeOf(it, pluginContext.irBuiltIns)
+        }
+    }
 
     private fun getCalls(irClass: IrClass): Map<Name, KrpcCall_> {
         return irClass.functions.mapNotNull { function ->
