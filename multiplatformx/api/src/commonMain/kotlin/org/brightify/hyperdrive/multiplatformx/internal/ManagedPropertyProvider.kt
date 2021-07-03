@@ -1,12 +1,12 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.zip
+import kotlinx.coroutines.flow.scan
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
@@ -14,9 +14,11 @@ import kotlin.reflect.KProperty
 
 internal class ManagedPropertyProvider<OWNER, VM: ManageableViewModel?>(
     private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     private val initialChild: VM,
     private val publishedChanges: Boolean,
 ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, VM>> {
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, VM> {
         val child = owner.getPropertyObserver(property, initialChild)
 
@@ -38,12 +40,15 @@ internal class ManagedPropertyProvider<OWNER, VM: ManageableViewModel?>(
 
         if (publishedChanges) {
             owner.lifecycle.whileAttached {
-                child.flatMapLatest { it?.observeObjectWillChange ?: emptyFlow() }.collect {
-                    owner.internalNotifyObjectWillChange()
-                }
+                child
+                    .scan(null as CancellationToken?) { accumulator, value ->
+                        accumulator?.cancel()
+                        value?.objectWillChange?.addListener(objectWillChangeTrigger)
+                    }
+                    .collect()
             }
         }
 
-        return MutableStateFlowBackedProperty(owner, child)
+        return MutableStateFlowBackedProperty(objectWillChangeTrigger, child)
     }
 }

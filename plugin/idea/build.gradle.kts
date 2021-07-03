@@ -20,11 +20,11 @@ tasks.jar {
 
 intellij {
     pluginName.set("hyperdrive")
-    version.set("2020.3.2")
+    version.set("2021.1.3")
 
     this.plugins.addAll(
         "gradle",
-        "org.jetbrains.kotlin:203-1.4.21-release-IJ6682.9",
+        "org.jetbrains.kotlin:211-1.5.10-release-909-IJ7142.45",
         "com.intellij.java",
     )
 
@@ -32,9 +32,9 @@ intellij {
 }
 
 tasks.runPluginVerifier {
-    this.ideVersions.set(
+    ideVersions.set(
         listOf(
-            "IU-203.8084.24"
+            "IU-211.7142"
         )
     )
 }

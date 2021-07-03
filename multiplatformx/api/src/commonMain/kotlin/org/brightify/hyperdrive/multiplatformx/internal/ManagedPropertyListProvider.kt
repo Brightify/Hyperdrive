@@ -1,12 +1,11 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.zip
+import kotlinx.coroutines.flow.scan
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
@@ -14,9 +13,11 @@ import kotlin.reflect.KProperty
 
 internal class ManagedPropertyListProvider<OWNER, VM: ManageableViewModel?>(
     private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     private val initialChild: List<VM>,
     private val publishedChanges: Boolean,
 ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<VM>>> {
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, List<VM>> {
         val childList = owner.getPropertyObserver(property, initialChild)
 
@@ -42,16 +43,17 @@ internal class ManagedPropertyListProvider<OWNER, VM: ManageableViewModel?>(
         if (publishedChanges) {
             owner.lifecycle.whileAttached {
                 childList
-                    .flatMapLatest {
-                        it.mapNotNull { child -> child?.observeObjectWillChange }.merge()
+                    .scan(emptyList<CancellationToken>()) { accumulator, children ->
+                        accumulator.forEach { it.cancel() }
+                        children.mapNotNull { child ->
+                            child?.objectWillChange?.addListener(objectWillChangeTrigger)
+                        }
                     }
-                    .collect {
-                        owner.internalNotifyObjectWillChange()
-                    }
+                    .collect()
             }
         }
 
-        return MutableStateFlowBackedProperty(owner, childList)
+        return MutableStateFlowBackedProperty(objectWillChangeTrigger, childList)
     }
 }
 

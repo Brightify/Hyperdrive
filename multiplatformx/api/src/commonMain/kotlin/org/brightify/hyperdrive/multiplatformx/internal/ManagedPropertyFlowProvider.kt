@@ -1,11 +1,13 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.onEmpty
+import kotlinx.coroutines.flow.scan
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
@@ -13,10 +15,12 @@ import kotlin.reflect.KProperty
 
 internal class ManagedPropertyFlowProvider<OWNER, VM: ManageableViewModel?>(
     private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     private val initialChild: VM,
     private val viewModelFlow: Flow<VM>,
     private val publishedChanges: Boolean,
 ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadOnlyProperty<OWNER, VM> {
         val child = owner.getPropertyObserver(property, initialChild)
 
@@ -37,7 +41,7 @@ internal class ManagedPropertyFlowProvider<OWNER, VM: ManageableViewModel?>(
             replaceChild(child.value)
             viewModelFlow.collect { newChild ->
                 replaceChild(newChild) {
-                    owner.internalNotifyObjectWillChange()
+                    objectWillChangeTrigger.notifyObjectWillChange()
                     child.value = newChild
                 }
             }
@@ -45,12 +49,15 @@ internal class ManagedPropertyFlowProvider<OWNER, VM: ManageableViewModel?>(
 
         if (publishedChanges) {
             owner.lifecycle.whileAttached {
-                child.flatMapLatest { it?.observeObjectWillChange ?: emptyFlow() }.collect {
-                    owner.internalNotifyObjectWillChange()
-                }
+                child
+                    .scan(null as CancellationToken?) { accumulator, value ->
+                        accumulator?.cancel()
+                        value?.objectWillChange?.addListener(objectWillChangeTrigger)
+                    }
+                    .collect()
             }
         }
 
-        return MutableStateFlowBackedProperty(owner, child)
+        return MutableStateFlowBackedProperty(objectWillChangeTrigger, child)
     }
 }

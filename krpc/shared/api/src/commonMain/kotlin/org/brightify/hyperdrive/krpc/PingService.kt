@@ -9,20 +9,20 @@ import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
 
 // Intentionally not marked as @EnableKRPC as we need to implement client and server in separate modules.
-interface PingService {
-    suspend fun ping()
+public interface PingService {
+    public suspend fun ping()
 
-    class Client(private val transport: RPCTransport): PingService {
-        override suspend fun ping() {
+    public class Client(private val transport: RPCTransport): PingService {
+        public override suspend fun ping() {
             return transport.singleCall(Descriptor.Call.ping, RPCDataWrapper0())
         }
     }
 
-    object Descriptor: ServiceDescriptor<PingService> {
-        val serviceIdentifier = "builtin:hyperdrive.PingService"
+    public object Descriptor: ServiceDescriptor<PingService> {
+        public val serviceIdentifier = "builtin:hyperdrive.PingService"
 
-        object Call {
-            val ping = SingleCallDescription(
+        public object Call {
+            public val ping = SingleCallDescription(
                 ServiceCallIdentifier(serviceIdentifier, "ping"),
                 Unit.serializer(),
                 Unit.serializer(),
@@ -30,7 +30,7 @@ interface PingService {
             )
         }
 
-        override fun describe(service: PingService): ServiceDescription {
+        public override fun describe(service: PingService): ServiceDescription {
             return ServiceDescription(
                 serviceIdentifier,
                 listOf(

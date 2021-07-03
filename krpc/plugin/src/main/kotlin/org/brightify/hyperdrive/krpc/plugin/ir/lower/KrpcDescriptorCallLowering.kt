@@ -73,11 +73,11 @@ class KrpcDescriptorCallLowering(
                             rpcCall.descriptorName.asClass().typeWith(descriptorTypeParameters)
                         ).also { call ->
                             call.putValueArgument(0,
-                                irCallConstructor(KnownType.API.serviceCallIdentifier.primaryConstructor, emptyList()).also { call ->
-                                    call.putValueArgument(0, irCall(serviceIdentifier.getter!!).also {
+                                irCallConstructor(KnownType.API.serviceCallIdentifier.primaryConstructor, emptyList()).also { serviceCallIdentifierConstructor ->
+                                    serviceCallIdentifierConstructor.putValueArgument(0, irCall(serviceIdentifier.getter!!).also {
                                         it.dispatchReceiver = irGetObject(descriptorClass.symbol)
                                     })
-                                    call.putValueArgument(1, irString(property.name.asString()))
+                                    serviceCallIdentifierConstructor.putValueArgument(1, irString(property.name.asString()))
                                 })
 
                             descriptorTypeParameters.forEachIndexed { index, type ->
@@ -98,8 +98,8 @@ class KrpcDescriptorCallLowering(
                             }
                             call.putValueArgument(arguments.count() + 1,
                                 irConstructorCall(
-                                    irCall(KnownType.API.rpcErrorSerializer.primaryConstructor).also { call ->
-                                        appendExpectedErrorSerializers(call, rpcCall, property, serializerResolver)
+                                    irCall(KnownType.API.rpcErrorSerializer.primaryConstructor).also { rpcErrorSerializerConstructor ->
+                                        appendExpectedErrorSerializers(rpcErrorSerializerConstructor, rpcCall, property, serializerResolver)
                                     },
                                     KnownType.API.rpcErrorSerializer.primaryConstructor
                                 )

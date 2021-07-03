@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.krpc.impl
 
 import io.kotest.core.spec.style.BehaviorSpec
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineExceptionHandler
 import kotlinx.coroutines.test.TestCoroutineScope
@@ -15,6 +16,7 @@ import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SessionNodeExtensionTest: BehaviorSpec({
 
     val testScope = TestCoroutineScope(TestCoroutineExceptionHandler())

@@ -1,14 +1,14 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
-import org.brightify.hyperdrive.multiplatformx.BaseViewModel
 import org.brightify.hyperdrive.multiplatformx.InterfaceLock
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 internal class BoundPropertyProvider<OWNER, T>(
-    private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     private val lock: InterfaceLock,
     private val getterProvider: PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>>,
     private val setter: suspend (T) -> Unit,
@@ -24,7 +24,7 @@ internal class BoundPropertyProvider<OWNER, T>(
                 if (lock.isLocked) {
                     return
                 }
-                owner.internalNotifyObjectWillChange()
+                objectWillChangeTrigger.notifyObjectWillChange()
                 temporaryValue = value
 
                 lock.runExclusively {

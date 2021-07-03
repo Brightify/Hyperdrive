@@ -2,8 +2,6 @@
 
 package org.brightify.hyperdrive.multiplatformx
 
-import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import org.brightify.hyperdrive.multiplatformx.internal.BoundPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.CollectedPropertyProvider
@@ -20,7 +18,7 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
 import co.touchlab.stately.ensureNeverFrozen
-import kotlin.jvm.JvmName
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 /**
  * Common behavior for all view models.
@@ -87,13 +85,12 @@ import kotlin.jvm.JvmName
  *   child view models.
  * - Include required Swift code as a template in resources allowing for an easy import.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 public abstract class BaseViewModel: ManageableViewModel {
     private val propertyObservers = mutableMapOf<String, MutableStateFlow<*>>()
 
-    private val objectWillChangeTrigger = BroadcastChannel<Unit>(Channel.CONFLATED)
-    public final override val observeObjectWillChange: Flow<Unit> = objectWillChangeTrigger.asFlow()
-    @Suppress("unused")
-    public val observeObjectWillChangeWrapper: NonNullFlowWrapper<Unit> = NonNullFlowWrapper(observeObjectWillChange)
+    private val objectWillChangeTrigger = ManageableViewModel.ObjectWillChangeTrigger()
+    public final override val objectWillChange: ManageableViewModel.ObjectWillChange = objectWillChangeTrigger
 
     public final override val lifecycle: Lifecycle = Lifecycle()
 
@@ -140,7 +137,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      * Use with any property that is mutable and its mutation invalidates the view model.
      */
     protected fun <OWNER, T> published(initialValue: T): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
-        return PublishedPropertyProvider(this, initialValue)
+        return PublishedPropertyProvider(this, objectWillChangeTrigger, initialValue)
     }
 
     /**
@@ -158,7 +155,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      * Do **NOT** rely on the second behavior as it is a subject to change.
      */
     protected fun <OWNER, T> published(initialValue: MutableList<T>): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, MutableList<T>>> {
-        return PublishedMutableListPropertyProvider(this, initialValue)
+        return PublishedMutableListPropertyProvider(this, objectWillChangeTrigger, initialValue)
     }
 
     /**
@@ -170,7 +167,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      */
     protected fun <OWNER, T> collected(stateFlow: StateFlow<T>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>> {
         return withNonRepeatingStateFlow(stateFlow) { initialValue, autoFilteredFlow ->
-            CollectedPropertyProvider(this, initialValue, autoFilteredFlow)
+            CollectedPropertyProvider(this, objectWillChangeTrigger, initialValue, autoFilteredFlow)
         }
     }
 
@@ -181,7 +178,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      */
     protected fun <OWNER, T, U> collected(stateFlow: StateFlow<T>, mapping: (T) -> U): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
         return withNonRepeatingStateFlow(stateFlow) { initialValue, autoFilteredFlow ->
-            CollectedPropertyProvider(this, mapping(initialValue), autoFilteredFlow.map { mapping(it) })
+            CollectedPropertyProvider(this, objectWillChangeTrigger, mapping(initialValue), autoFilteredFlow.map { mapping(it) })
         }
     }
 
@@ -191,7 +188,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      * @see collected
      */
     protected fun <OWNER, T, U> collectedFlatMap(stateFlow: StateFlow<T>, flatMapping: (T) -> StateFlow<U>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
-        return CollectedPropertyProvider(this, flatMapping(stateFlow.value).value, stateFlow.withIndex().flatMapLatest { (index, value) ->
+        return CollectedPropertyProvider(this, objectWillChangeTrigger, flatMapping(stateFlow.value).value, stateFlow.withIndex().flatMapLatest { (index, value) ->
             if (index == 0) {
                 // FIXME: This might be dropping a value we don't want to be dropped.
                 flatMapping(value).drop(1)
@@ -210,7 +207,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      * @see collected
      */
     protected fun <OWNER, T> collected(initialValue: T, flow: Flow<T>): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>> {
-        return CollectedPropertyProvider(this, initialValue, flow)
+        return CollectedPropertyProvider(this, objectWillChangeTrigger, initialValue, flow)
     }
 
     /**
@@ -225,7 +222,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      * @see collected
      */
     protected fun <OWNER, T, U> collected(initialValue: T, flow: Flow<T>, mapping: (T) -> U): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
-        return CollectedPropertyProvider(this, mapping(initialValue), flow.map { mapping(it) })
+        return CollectedPropertyProvider(this, objectWillChangeTrigger, mapping(initialValue), flow.map { mapping(it) })
     }
 
     /**
@@ -240,7 +237,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         childModel: VM,
         published: Boolean = false
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, VM>> {
-        return ManagedPropertyProvider(this, childModel, published)
+        return ManagedPropertyProvider(this, objectWillChangeTrigger, childModel, published)
     }
 
     protected fun <OWNER, VM: ManageableViewModel?> managed(
@@ -248,7 +245,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return withNonRepeatingStateFlow(childStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyFlowProvider(this, initialValue, autoFilteredFlow, published)
+            ManagedPropertyFlowProvider(this, objectWillChangeTrigger, initialValue, autoFilteredFlow, published)
         }
     }
 
@@ -258,7 +255,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         mapping: (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyFlowProvider(this, mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published)
+            ManagedPropertyFlowProvider(this, objectWillChangeTrigger, mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published)
         }
     }
 
@@ -268,7 +265,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         mapping: suspend (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyFlowProvider(this, initialChild, valueFlow.map { mapping(it) }, published)
+        return ManagedPropertyFlowProvider(this, objectWillChangeTrigger, initialChild, valueFlow.map { mapping(it) }, published)
     }
 
     protected fun <OWNER, VM: ManageableViewModel?> managed(
@@ -276,14 +273,14 @@ public abstract class BaseViewModel: ManageableViewModel {
         childFlow: Flow<VM>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyFlowProvider(this, initialChild, childFlow, published)
+        return ManagedPropertyFlowProvider(this, objectWillChangeTrigger, initialChild, childFlow, published)
     }
 
     protected fun <OWNER, VM: ManageableViewModel> managedList(
         childModels: List<VM>,
         published: Boolean = false
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<VM>>> {
-        return ManagedPropertyListProvider(this, childModels, published)
+        return ManagedPropertyListProvider(this, objectWillChangeTrigger, childModels, published)
     }
 
     protected fun <OWNER, VM: ManageableViewModel?> managedList(
@@ -291,7 +288,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return withNonRepeatingStateFlow(childStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyFlowListProvider(this, initialValue, autoFilteredFlow, published)
+            ManagedPropertyFlowListProvider(this, objectWillChangeTrigger, initialValue, autoFilteredFlow, published)
         }
     }
 
@@ -301,7 +298,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         mapping: (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyFlowListProvider(this, mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published)
+            ManagedPropertyFlowListProvider(this, objectWillChangeTrigger, mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published)
         }
     }
 
@@ -311,7 +308,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         mapping: suspend (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
-        return ManagedPropertyFlowListProvider(this, initialChild, valueFlow.map { mapping(it) }, published)
+        return ManagedPropertyFlowListProvider(this, objectWillChangeTrigger, initialChild, valueFlow.map { mapping(it) }, published)
     }
 
     protected fun <OWNER, VM: ManageableViewModel?> managedList(
@@ -319,7 +316,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         childFlow: Flow<List<VM>>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
-        return ManagedPropertyFlowListProvider(this, initialChild, childFlow, published)
+        return ManagedPropertyFlowListProvider(this, objectWillChangeTrigger, initialChild, childFlow, published)
     }
 
     protected fun <OWNER, T> binding(
@@ -327,7 +324,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         stateFlow: StateFlow<T>,
         set: suspend (T) -> Unit,
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
-        return BoundPropertyProvider(this, lock, collected(stateFlow), set)
+        return BoundPropertyProvider(objectWillChangeTrigger, lock, collected(stateFlow), set)
     }
 
     protected fun <OWNER, T, U> binding(
@@ -336,7 +333,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         mapping: (T) -> U,
         set: suspend (U) -> Unit,
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, U>> {
-        return BoundPropertyProvider(this, lock, collected(stateFlow, mapping), set)
+        return BoundPropertyProvider(objectWillChangeTrigger, lock, collected(stateFlow, mapping), set)
     }
 
     protected fun createLock(group: InterfaceLock.Group? = null): InterfaceLock = locks.createLock(group)
@@ -360,13 +357,7 @@ public abstract class BaseViewModel: ManageableViewModel {
      * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.notifyObjectWillChange
      */
     protected fun notifyObjectWillChange() {
-        objectWillChangeTrigger.offer(Unit)
-    }
-
-    // Workaround to allow PropertyDelegate classes to trigger a change.
-    // TODO: We could probably do without this just passing in a closure.
-    internal fun internalNotifyObjectWillChange() {
-        objectWillChangeTrigger.offer(Unit)
+        objectWillChangeTrigger.notifyObjectWillChange()
     }
 
     internal fun <T> getPropertyObserver(property: KProperty<*>, initialValue: T): MutableStateFlow<T> {

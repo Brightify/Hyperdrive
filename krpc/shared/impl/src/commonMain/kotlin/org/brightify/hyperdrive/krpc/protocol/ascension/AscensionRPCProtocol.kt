@@ -45,7 +45,7 @@ interface RPCHandshakePerformer {
         val selectedFrameSerializer: TransportFrameSerializer,
         val selectedProtocolFactory: RPCProtocol.Factory,
     ): RPCHandshakePerformer {
-        override suspend fun performHandshake(connection: RPCConnection): RPCHandshakePerformer.HandshakeResult {
+        override suspend fun performHandshake(connection: RPCConnection): HandshakeResult {
             return HandshakeResult.Success(selectedFrameSerializer, selectedProtocolFactory)
         }
     }
@@ -346,6 +346,7 @@ class AscensionRPCProtocol(
         val pendingCaller = pendingCallers[frame.callReference] ?: return run {
             sendUnknownReferenceError(frame.callReference)
         }
+        @Suppress("UNCHECKED_CAST")
         (pendingCaller as PendingRPC.Caller<T, *>).accept(frame)
     }
 
@@ -435,6 +436,7 @@ class AscensionRPCProtocol(
             }
         }
 
+        @Suppress("UNCHECKED_CAST")
         (pendingCallee as PendingRPC.Callee<T, *>).accept(frame)
     }
 

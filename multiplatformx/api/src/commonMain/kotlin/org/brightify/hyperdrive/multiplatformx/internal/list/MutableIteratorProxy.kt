@@ -1,13 +1,13 @@
 package org.brightify.hyperdrive.multiplatformx.internal.list
 
-import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 
 internal class MutableIteratorProxy<T>(
-    private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     private val iterator: MutableIterator<T>,
 ): MutableIterator<T>, Iterator<T> by iterator {
     override fun remove() {
-        owner.internalNotifyObjectWillChange()
+        objectWillChangeTrigger.notifyObjectWillChange()
         iterator.remove()
     }
 }

@@ -32,6 +32,7 @@ class ExampleServiceTest {
     val logger = Logger<ExampleServiceTest>()
     fun runYieldingBlocking(block: suspend CoroutineScope.() -> Unit) {
         var finished = false
+        @Suppress("DEPRECATION")
         MultiplatformGlobalScope.launch { block() }
         while (!finished) {
             logger.trace { "Will run main" }

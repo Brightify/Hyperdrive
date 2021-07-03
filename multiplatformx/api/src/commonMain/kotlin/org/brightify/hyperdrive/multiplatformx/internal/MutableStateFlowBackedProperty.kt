@@ -1,12 +1,12 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 internal open class MutableStateFlowBackedProperty<OWNER, T>(
-    private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     private val stateFlow: MutableStateFlow<T>
 ): ReadWriteProperty<OWNER, T> {
 
@@ -15,7 +15,7 @@ internal open class MutableStateFlowBackedProperty<OWNER, T>(
     }
 
     override fun setValue(thisRef: OWNER, property: KProperty<*>, value: T) {
-        owner.internalNotifyObjectWillChange()
+        objectWillChangeTrigger.notifyObjectWillChange()
         stateFlow.value = value
     }
 }

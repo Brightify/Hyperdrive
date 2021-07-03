@@ -4,6 +4,7 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -37,6 +38,7 @@ import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class KRPCNodeTest: BehaviorSpec({
     val testScope = TestCoroutineScope(TestCoroutineExceptionHandler())
 

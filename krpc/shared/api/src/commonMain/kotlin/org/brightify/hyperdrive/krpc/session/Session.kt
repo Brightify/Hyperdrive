@@ -11,7 +11,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
-suspend inline fun <T> withSession(block: suspend Session.() -> T): T {
+suspend inline fun <T> withSession(block: Session.() -> T): T {
     return coroutineContext.rpcSession.block()
 }
 
@@ -38,15 +38,17 @@ interface Session: CoroutineContext.Element {
         @PublishedApi
         internal val data: MutableMap<Key<*>, Item<*>>,
     ) {
+        @Suppress("UNCHECKED_CAST")
         operator fun <VALUE: Any> get(key: Key<VALUE>): Item<VALUE>? = data[key] as? Item<VALUE>
 
         operator fun <VALUE: Any> set(key: Key<VALUE>, item: Item<VALUE>) {
             data[key] = item
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun <VALUE: Any> remove(key: Key<VALUE>): Item<VALUE>? = data.remove(key) as? Item<VALUE>
 
-        public inline operator fun iterator(): Iterator<Item<*>> = data.values.iterator()
+        public operator fun iterator(): Iterator<Item<*>> = data.values.iterator()
 
         fun copy(): Context {
             return Context(
@@ -91,6 +93,7 @@ interface Session: CoroutineContext.Element {
 
             public operator fun <VALUE: Any> get(key: Key<VALUE>): VALUE? {
                 val oldItem = oldContext[key]
+                @Suppress("UNCHECKED_CAST")
                 if (!modifications.containsKey(key as Key<Any>)) {
                     modifications[key] = Action.Required(oldItem)
                 }
@@ -101,9 +104,11 @@ interface Session: CoroutineContext.Element {
                 val oldItem = oldContext[key]
                 val newRevision = oldItem?.let { it.revision + 1 } ?: Int.MIN_VALUE
 
+                @Suppress("UNCHECKED_CAST")
                 modifications[key as Key<Any>] = Action.Set(oldItem, Item(key, newRevision, newValue))
             }
 
+            @Suppress("UNCHECKED_CAST")
             public fun <VALUE: Any> remove(key: Key<VALUE>) {
                 val oldItem = oldContext[key]
                 if (oldItem != null) {

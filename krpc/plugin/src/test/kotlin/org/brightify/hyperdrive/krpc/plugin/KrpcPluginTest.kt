@@ -1,9 +1,12 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package org.brightify.hyperdrive.krpc.plugin
 
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import io.github.classgraph.ClassGraph
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
@@ -34,6 +37,7 @@ import kotlin.reflect.full.declaredFunctions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class KrpcPluginTest {
 
     private val testScope = TestCoroutineScope()

@@ -3,12 +3,14 @@ package org.brightify.hyperdrive.multiplatformx.internal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 internal class CollectedPropertyProvider<OWNER, T>(
     private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     private val initialValue: T,
     private val flow: Flow<T>,
 ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>> {
@@ -18,12 +20,12 @@ internal class CollectedPropertyProvider<OWNER, T>(
         owner.lifecycle.whileAttached {
             flow.collect { newValue ->
                 if (newValue != observer.value) {
-                    owner.internalNotifyObjectWillChange()
+                    objectWillChangeTrigger.notifyObjectWillChange()
                     observer.value = newValue
                 }
             }
         }
 
-        return MutableStateFlowBackedProperty(owner, observer)
+        return MutableStateFlowBackedProperty(objectWillChangeTrigger, observer)
     }
 }

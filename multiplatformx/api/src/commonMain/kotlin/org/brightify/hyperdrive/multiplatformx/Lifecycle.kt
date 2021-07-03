@@ -26,6 +26,7 @@ public fun <T: Any> NonNullFlowWrapper<T>.collectWhileAttached(lifecycle: Lifecy
  */
 @Deprecated("Use attachToMainScope instead.", replaceWith = ReplaceWith("attachToMainScope", "org.brightify.hyperdrive.multiplatformx.attachToMainScope"))
 public fun Lifecycle.attachToMultiplatformGlobalScope() {
+    @Suppress("DEPRECATION")
     attach(MultiplatformGlobalScope)
 }
 

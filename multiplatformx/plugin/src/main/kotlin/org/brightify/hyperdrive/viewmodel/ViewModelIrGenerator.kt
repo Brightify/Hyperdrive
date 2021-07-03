@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.typeUtil.createProjection
+import java.util.*
 
 class ViewModelIrGenerator(
     private val pluginContext: IrPluginContext
@@ -43,11 +44,14 @@ class ViewModelIrGenerator(
         val observe = irClass.functions.singleOrNull { it.name == Name.identifier("observe") } ?: return
 
         for (property in irClass.properties) {
-            if (!property.name.identifier.startsWith("observe")) { continue }
+            val referencedPropertyName = NamingHelper.getReferencedPropertyName(property.name.identifier) ?: continue
+
             val propertyGetter = property.getter ?: continue
             if (propertyGetter.body != null) { continue }
 
-            val referencedProperty = irClass.properties.singleOrNull { property.name.identifier == "observe${it.name.identifier.capitalize()}" } ?: continue
+            val referencedProperty = irClass.properties.singleOrNull { classProperty ->
+                classProperty.name.identifier == referencedPropertyName
+            } ?: continue
 
             propertyGetter.body = DeclarationIrBuilder(pluginContext, propertyGetter.symbol).irBlockBody {
                 +irReturn(

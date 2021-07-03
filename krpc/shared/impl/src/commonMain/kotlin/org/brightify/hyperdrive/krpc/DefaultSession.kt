@@ -205,7 +205,7 @@ class SessionNodeExtension(
             block(mutator)
 
             val request = ContextUpdateRequest(
-                modifications.mapValues { (key, action) ->
+                modifications.mapValues { (_, action) ->
                     when (action) {
                         is Session.Context.Mutator.Action.Required -> ContextUpdateRequest.Modification.Required(action.oldItem?.revision)
                         is Session.Context.Mutator.Action.Set -> ContextUpdateRequest.Modification.Set(
@@ -248,6 +248,7 @@ class SessionNodeExtension(
                             Do exhaustive when (action) {
                                 is Session.Context.Mutator.Action.Required -> continue
                                 is Session.Context.Mutator.Action.Set -> {
+                                    @Suppress("UNCHECKED_CAST")
                                     context[key] = action.newItem as Session.Context.Item<Any>
                                     modifiedKeys.add(key)
                                 }

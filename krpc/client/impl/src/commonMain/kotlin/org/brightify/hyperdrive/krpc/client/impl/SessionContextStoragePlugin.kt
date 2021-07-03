@@ -22,7 +22,7 @@ class SessionContextSnapshotPlugin: SessionNodeExtension.Plugin {
     private val listeners = mutableListOf<Listener<*>>()
     private var latestContextSnapshot: Session.Context? = null
 
-    fun <VALUE: Any> observe(key: Session.Context.Key<VALUE>, includeInitialValue: Boolean = false): Flow<VALUE?> = flow {
+    fun <VALUE: Any> observe(key: Session.Context.Key<VALUE>/*, includeInitialValue: Boolean = false*/): Flow<VALUE?> = flow {
         val channel = Channel<VALUE?>()
 
         val listener = FlowListener(key, channel)

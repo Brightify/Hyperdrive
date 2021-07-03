@@ -1,30 +1,30 @@
 package org.brightify.hyperdrive.multiplatformx.internal.list
 
-import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 
 internal class MutableListProxy<T>(
-    private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     val mutableList: MutableList<T>
 ): MutableList<T>, List<T> by mutableList {
     private inline fun <T> notifying(perform: () -> T): T {
-        owner.internalNotifyObjectWillChange()
+        objectWillChangeTrigger.notifyObjectWillChange()
         return perform()
     }
 
     override fun iterator(): MutableIterator<T> {
-        return MutableIteratorProxy(owner, mutableList.iterator())
+        return MutableIteratorProxy(objectWillChangeTrigger, mutableList.iterator())
     }
 
     override fun listIterator(): MutableListIterator<T> {
-        return MutableListIteratorProxy(owner, mutableList.listIterator())
+        return MutableListIteratorProxy(objectWillChangeTrigger, mutableList.listIterator())
     }
 
     override fun listIterator(index: Int): MutableListIterator<T> {
-        return MutableListIteratorProxy(owner, mutableList.listIterator(index))
+        return MutableListIteratorProxy(objectWillChangeTrigger, mutableList.listIterator(index))
     }
 
     override fun subList(fromIndex: Int, toIndex: Int): MutableList<T> {
-        return MutableListProxy(owner, mutableList.subList(fromIndex, toIndex))
+        return MutableListProxy(objectWillChangeTrigger, mutableList.subList(fromIndex, toIndex))
     }
 
     override fun add(element: T): Boolean = notifying {

@@ -24,44 +24,45 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
-interface RPCConnection: CoroutineScope {
-    suspend fun close()
+public interface RPCConnection: CoroutineScope {
+    public suspend fun close()
 
-    suspend fun receive(): SerializedFrame
+    public suspend fun receive(): SerializedFrame
 
-    suspend fun send(frame: SerializedFrame)
+    public suspend fun send(frame: SerializedFrame)
 }
 
-sealed class SerializedFrame {
-    class Binary(val binary: ByteArray): SerializedFrame() {
-        override fun toString(): String {
+public sealed class SerializedFrame {
+    public class Binary(val binary: ByteArray): SerializedFrame() {
+        @OptIn(ExperimentalUnsignedTypes::class)
+        public override fun toString(): String {
             return binary.asUByteArray().joinToString("") { it.toString(16).padStart(2, '0') }
         }
     }
-    class Text(val text: String): SerializedFrame() {
-        override fun toString(): String {
+    public class Text(val text: String): SerializedFrame() {
+        public override fun toString(): String {
             return "SerializedFrame.Text($text)"
         }
     }
 }
 
 @Serializable(with = SerializablePayloadSerializer::class)
-sealed class SerializedPayload {
-    abstract val format: SerializationFormat
+public sealed class SerializedPayload {
+    public abstract val format: SerializationFormat
 
-    class Binary(val binary: ByteArray, override val format: SerializationFormat.Binary): SerializedPayload()
-    class Text(val text: String, override val format: SerializationFormat.Text): SerializedPayload()
+    public class Binary(val binary: ByteArray, override val format: SerializationFormat.Binary): SerializedPayload()
+    public class Text(val text: String, override val format: SerializationFormat.Text): SerializedPayload()
 }
 
-class SerializablePayloadSerializer: KSerializer<SerializedPayload> {
+public class SerializablePayloadSerializer: KSerializer<SerializedPayload> {
     private val binarySerializer = ByteArraySerializer()
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("builtin:SerializablePayload") {
+    public override val descriptor: SerialDescriptor = buildClassSerialDescriptor("builtin:SerializablePayload") {
         element("format", String.serializer().descriptor)
         element("payload", ContextualSerializer(Any::class).descriptor)
     }
 
-    override fun serialize(encoder: Encoder, value: SerializedPayload) {
+    public override fun serialize(encoder: Encoder, value: SerializedPayload) {
         if (encoder is JsonEncoder) {
             val payloadElement = when (value) {
                 is SerializedPayload.Binary -> encoder.json.encodeToJsonElement(binarySerializer, value.binary)
@@ -89,7 +90,7 @@ class SerializablePayloadSerializer: KSerializer<SerializedPayload> {
         }
     }
 
-    override fun deserialize(decoder: Decoder): SerializedPayload {
+    public override fun deserialize(decoder: Decoder): SerializedPayload {
         return if (decoder is JsonDecoder) {
             val element = decoder.decodeJsonElement().jsonObject
             val formatIdentifier = element.getValue("format").jsonPrimitive.content
@@ -135,22 +136,22 @@ class SerializablePayloadSerializer: KSerializer<SerializedPayload> {
     }
 }
 
-sealed class SerializationFormat {
-    abstract val readableIdentifier: String
-    abstract val identifier: Byte
+public sealed class SerializationFormat {
+    public abstract val readableIdentifier: String
+    public abstract val identifier: Byte
 
-    sealed class Binary(override val identifier: Byte, override val readableIdentifier: String): SerializationFormat() {
+    public sealed class Binary(override val identifier: Byte, override val readableIdentifier: String): SerializationFormat() {
         object Protobuf: Binary(-1, "proto")
         object Cbor: Binary(-2, "cbor")
     }
 
-    sealed class Text(override val identifier: Byte, override val readableIdentifier: String): SerializationFormat() {
+    public sealed class Text(override val identifier: Byte, override val readableIdentifier: String): SerializationFormat() {
         object Json: Text(1, "json")
         object Properties: Text(2, "properties")
         object Hocon: Text(3, "hocon")
     }
 
-    companion object {
+    public companion object {
         private val allFormats by lazy {
             listOf(
                 Binary.Protobuf,
@@ -163,11 +164,11 @@ sealed class SerializationFormat {
         private val identifiedFormats: Map<Byte, SerializationFormat> by lazy { allFormats.associateBy { it.identifier } }
         private val readableIdentifiedFormats: Map<String, SerializationFormat> by lazy { allFormats.associateBy { it.readableIdentifier } }
 
-        operator fun invoke(identifier: Byte): SerializationFormat? {
+        public operator fun invoke(identifier: Byte): SerializationFormat? {
             return identifiedFormats[identifier]
         }
 
-        operator fun invoke(readableIdentifier: String): SerializationFormat? {
+        public operator fun invoke(readableIdentifier: String): SerializationFormat? {
             return readableIdentifiedFormats[readableIdentifier]
         }
     }

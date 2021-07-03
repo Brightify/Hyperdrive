@@ -6,6 +6,7 @@ import io.kotest.data.row
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.property.checkAll
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -31,6 +32,7 @@ import org.brightify.hyperdrive.krpc.server.impl.KRPCServer
 import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 
+@OptIn(ObsoleteCoroutinesApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GeneratedServiceTest: BehaviorSpec({
     val serviceImpl = object: BasicTestService {
         override suspend fun multiplyByTwo(source: Int): Int {

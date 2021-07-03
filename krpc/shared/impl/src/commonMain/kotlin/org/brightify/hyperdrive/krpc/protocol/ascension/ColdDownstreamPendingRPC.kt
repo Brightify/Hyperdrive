@@ -3,6 +3,7 @@ package org.brightify.hyperdrive.krpc.protocol.ascension
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -134,6 +135,7 @@ object ColdDownstreamPendingRPC {
             responseDeferred.await()
         }
 
+        @OptIn(ExperimentalCoroutinesApi::class)
         override suspend fun handle(frame: AscensionRPCFrame.ColdDownstream.Downstream) {
             Do exhaustive when (frame) {
                 is AscensionRPCFrame.ColdDownstream.Downstream.Opened -> {

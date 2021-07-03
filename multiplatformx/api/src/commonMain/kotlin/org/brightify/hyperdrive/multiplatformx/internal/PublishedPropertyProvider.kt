@@ -1,12 +1,14 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 internal class PublishedPropertyProvider<OWNER, T>(
     private val owner: BaseViewModel,
+    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
     private val initialValue: T,
 ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
     override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, T> {
@@ -18,7 +20,7 @@ internal class PublishedPropertyProvider<OWNER, T>(
             }
 
             override fun setValue(thisRef: OWNER, property: KProperty<*>, value: T) {
-                owner.internalNotifyObjectWillChange()
+                objectWillChangeTrigger.notifyObjectWillChange()
 
                 observer.value = value
             }

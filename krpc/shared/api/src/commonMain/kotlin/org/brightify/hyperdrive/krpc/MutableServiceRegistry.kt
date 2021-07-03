@@ -2,6 +2,6 @@ package org.brightify.hyperdrive.krpc
 
 import org.brightify.hyperdrive.krpc.description.ServiceDescription
 
-interface MutableServiceRegistry: ServiceRegistry {
-    fun register(description: ServiceDescription)
+public interface MutableServiceRegistry: ServiceRegistry {
+    public fun register(description: ServiceDescription)
 }

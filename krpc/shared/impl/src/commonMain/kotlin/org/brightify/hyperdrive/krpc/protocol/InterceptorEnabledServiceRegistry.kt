@@ -10,6 +10,7 @@ class InterceptorEnabledServiceRegistry(
     private val interceptor: RPCIncomingInterceptor,
 ): ServiceRegistry {
     override fun <T: RunnableCallDescription<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T? {
+        @Suppress("UNCHECKED_CAST")
         return when (val originalDescription = serviceRegistry.getCallById(id, type)) {
             is RunnableCallDescription.Single<*, *> -> originalDescription.interceptedWith(interceptor) as T
             is RunnableCallDescription.ColdUpstream<*, *, *> -> originalDescription.interceptedWith(interceptor) as T

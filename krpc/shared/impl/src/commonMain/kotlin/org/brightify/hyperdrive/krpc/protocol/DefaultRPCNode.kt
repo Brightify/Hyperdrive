@@ -54,6 +54,7 @@ class DefaultRPCNode(
     }
 
     fun <E: RPCNodeExtension> getExtension(identifier: RPCNodeExtension.Identifier<E>): E? {
+        @Suppress("UNCHECKED_CAST")
         return contract.extensions[identifier] as? E
     }
 
@@ -134,6 +135,7 @@ class DefaultRPCImplementationRegistry(
 ): RPCImplementationRegistry {
     override fun <T: RPC.Implementation> callImplementation(id: ServiceCallIdentifier, type: KClass<T>): T {
         val runnableCall = serviceRegistry.getCallById(id, RunnableCallDescription::class)
+        @Suppress("UNCHECKED_CAST")
         return when (runnableCall) {
             is RunnableCallDescription.Single<*, *> -> SingleCallRunner.Callee(payloadSerializer, runnableCall) as T
             is RunnableCallDescription.ColdUpstream<*, *, *> -> ColdUpstreamRunner.Callee(payloadSerializer, runnableCall) as T

@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     `maven-publish`
@@ -14,7 +15,7 @@ buildscript {
     }
 
     dependencies {
-        classpath(gradleKotlinDsl())
+        // classpath(gradleKotlinDsl())
         classpath("com.android.tools.build:gradle:4.1.0")
     }
 }
@@ -30,13 +31,28 @@ allprojects {
 
     group = "org.brightify.hyperdrive"
 
-    tasks.withType(KotlinCompile::class).all {
+    tasks.withType(KotlinJvmCompile::class).all {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+
+    tasks.withType<KotlinCompile> {
         kotlinOptions {
             jvmTarget = "1.8"
             freeCompilerArgs += listOf(
-                // TODO: Find out why this doesn't work.
-                // "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi"
+                "-Xopt-in=kotlin.RequiresOptIn",
+                "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi",
             )
+        }
+    }
+
+    afterEvaluate {
+        extensions.findByType(org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension::class)?.sourceSets?.all {
+            languageSettings {
+                useExperimentalAnnotation("kotlin.RequiresOptIn")
+                useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
+            }
         }
     }
 
