@@ -1,55 +1,24 @@
 package org.brightify.hyperdrive.krpc.plugin
 
+import org.brightify.hyperdrive.krpc.plugin.ir.util.PluginContextExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.IrTypeArgument
-import org.jetbrains.kotlin.ir.types.isSubtypeOf
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
-import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlinx.serialization.compiler.backend.ir.IrBuilderExtension
 import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationPluginContext
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
-
-interface PluginContextExtension {
-    val pluginContext: IrPluginContext
-
-    val FqName.primaryConstructor: IrConstructorSymbol
-        get() = pluginContext.referenceConstructors(this).single { it.owner.isPrimary }
-
-    fun FqName.asClass(): IrClassSymbol = pluginContext.referenceClass(this)!!
-
-    fun FqName.asFunction(filter: (IrSimpleFunctionSymbol) -> Boolean) = pluginContext.referenceFunctions(this).single(filter)
-
-    fun FqName.asFunctions(): Collection<IrFunctionSymbol> = pluginContext.referenceFunctions(this)
-}
-
-fun IrClass.property(name: Name): IrProperty =
-    properties.single { it.name == name }
-
-val IrClassSymbol.primaryConstructor: IrConstructorSymbol
-    get() = constructors.first { it.owner.isPrimary }
-
 
 abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), IrBuilderExtension, PluginContextExtension {
 
@@ -61,7 +30,7 @@ abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), IrB
 
     protected val flowType by lazy { pluginContext.referenceClass(KnownType.Coroutines.flow)!! }
 
-    protected fun getCalls(irClass: IrClass): Map<Name, KrpcCall_> {
+    protected fun getCalls(irClass: IrClass): Map<Name, KrpcCall> {
         return irClass.functions.mapNotNull { function ->
             if (!function.isSuspend) {
                 messageCollector.report(CompilerMessageSeverity.ERROR, "Only suspending methods are supported!")
@@ -80,49 +49,43 @@ abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), IrB
 
             function.name to when {
                 clientStreamingFlow != null && isFlow(returnType) -> {
-                    KrpcCall_(
+                    KrpcCall(
                         function,
                         Name.identifier("biStream"),
                         KnownType.API.coldBistreamCallDescription,
                         expectedErrors,
                         clientRequestParameters.map { it.type },
-                        KrpcCall_.FlowType(clientStreamingFlow),
-                        KrpcCall_.FlowType(returnType),
+                        KrpcCall.FlowType(clientStreamingFlow),
+                        KrpcCall.FlowType(returnType),
                         returnType,
                     )
-
-                    // KrpcCall.BiStream(function, expectedErrors, clientRequestParameters, clientStreamingFlow, returnType.arguments.single().typeOrNull!!)
                 }
                 clientStreamingFlow != null -> {
-                    KrpcCall_(
+                    KrpcCall(
                         function,
                         Name.identifier("clientStream"),
                         KnownType.API.coldUpstreamCallDescription,
                         expectedErrors,
                         clientRequestParameters.map { it.type },
-                        KrpcCall_.FlowType(clientStreamingFlow),
+                        KrpcCall.FlowType(clientStreamingFlow),
                         null,
                         returnType
                     )
-
-                    // KrpcCall.ClientStream(function, expectedErrors, clientRequestParameters, clientStreamingFlow, function.returnType)
                 }
                 isFlow(returnType) -> {
-                    KrpcCall_(
+                    KrpcCall(
                         function,
                         Name.identifier("serverStream"),
                         KnownType.API.coldDownstreamCallDescription,
                         expectedErrors,
                         clientRequestParameters.map { it.type },
                         null,
-                        KrpcCall_.FlowType(returnType),
+                        KrpcCall.FlowType(returnType),
                         returnType
                     )
-
-                    // KrpcCall.ServerStream(function, expectedErrors, clientRequestParameters, returnType.arguments.single().typeOrNull!!)
                 }
                 else -> {
-                    KrpcCall_(
+                    KrpcCall(
                         function,
                         Name.identifier("singleCall"),
                         KnownType.API.singleCallDescription,
@@ -132,8 +95,6 @@ abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), IrB
                         null,
                         returnType
                     )
-
-                    // KrpcCall.SingleCall(function, expectedErrors, clientRequestParameters, function.returnType)
                 }
             }
         }.toMap()

@@ -1,4 +1,4 @@
-package org.brightify.hyperdrive.krpc.plugin
+package org.brightify.hyperdrive.krpc.plugin.ir.lower
 
 import org.jetbrains.kotlin.backend.common.ClassLoweringPass
 import org.jetbrains.kotlin.ir.declarations.IrClass

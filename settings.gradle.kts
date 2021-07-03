@@ -2,21 +2,19 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         google()
-        jcenter()
         mavenCentral()
     }
 
     val kotlinVersion: String by settings
     plugins {
-        id("org.jetbrains.dokka") version "1.4.30"
-        id("com.github.johnrengelman.shadow") version "6.1.0"
-        id("com.github.gmazzo.buildconfig") version "2.0.2"
+        id("org.jetbrains.dokka") version "1.4.32"
+        id("com.github.johnrengelman.shadow") version "7.0.0"
         kotlin("plugin.serialization") version kotlinVersion
         kotlin("multiplatform") version kotlinVersion
         kotlin("jvm") version kotlinVersion
         id("com.chromaticnoise.multiplatform-swiftpackage") version "2.0.3"
-        id("com.github.gmazzo.buildconfig") version "2.0.2"
-        id("org.jetbrains.intellij") version "0.7.3"
+        id("com.github.gmazzo.buildconfig") version "3.0.1"
+        id("org.jetbrains.intellij") version "1.1.2"
     }
     resolutionStrategy {
         eachPlugin {
@@ -28,7 +26,7 @@ pluginManagement {
 }
 
 plugins {
-    id("io.alcide.gradle-semantic-build-versioning") version "4.2.1"
+    id("io.alcide.gradle-semantic-build-versioning") version "4.2.2"
 }
 
 enableFeaturePreview("VERSION_CATALOGS")

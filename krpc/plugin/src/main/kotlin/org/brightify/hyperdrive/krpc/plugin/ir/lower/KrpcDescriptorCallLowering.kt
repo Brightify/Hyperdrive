@@ -1,6 +1,11 @@
-package org.brightify.hyperdrive.krpc.plugin
+package org.brightify.hyperdrive.krpc.plugin.ir.lower
 
+import org.brightify.hyperdrive.krpc.plugin.KnownType
+import org.brightify.hyperdrive.krpc.plugin.KrpcCall
+import org.brightify.hyperdrive.krpc.plugin.KrpcIrElementTransformerVoidBase
 import org.brightify.hyperdrive.krpc.plugin.ir.util.SerializerResolver
+import org.brightify.hyperdrive.krpc.plugin.util.isKrpcDescriptorCall
+import org.brightify.hyperdrive.krpc.plugin.ir.util.property
 import org.jetbrains.kotlin.backend.common.ClassLoweringPass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -109,52 +114,52 @@ class KrpcDescriptorCallLowering(
 
     private fun appendExpectedErrorSerializers(
         call: IrConstructorCall,
-        rpcCall: KrpcCall_,
+        rpcCall: KrpcCall,
         property: IrProperty,
         serializerResolver: SerializerResolver,
     ) {
-        if (rpcCall.expectedErrors.isNotEmpty()) {
-            val polymorphicModuleBuilder = KnownType.Serialization.polymorphicModuleBuilder.asClass()
-            val polymorphicModuleBuilderType =
-                polymorphicModuleBuilder.typeWith(KnownType.API.rpcError.asClass().defaultType)
-            val expectedErrorBuilder = pluginContext.irFactory.buildFun {
-                this.name = Name.special("<anonymous>")
-                origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-                returnType = pluginContext.irBuiltIns.unitType
-                visibility = DescriptorVisibilities.LOCAL
-                startOffset = SYNTHETIC_OFFSET
-                endOffset = SYNTHETIC_OFFSET
-            }.also {
-                it.parent = property.getter!!
-                val builder = it.addExtensionReceiver(polymorphicModuleBuilderType)
-                it.body = DeclarationIrBuilder(pluginContext,
-                    it.symbol,
-                    startOffset = SYNTHETIC_OFFSET,
-                    endOffset = SYNTHETIC_OFFSET).irBlockBody {
-                    for (error in rpcCall.expectedErrors) {
-                        +irCall(polymorphicModuleBuilder.getSimpleFunction("subclass")!!).also { call ->
-                            call.dispatchReceiver = irGet(builder)
-                            call.putTypeArgument(0, error)
-                            call.putValueArgument(0,
-                                IrClassReferenceImpl(startOffset,
-                                    endOffset,
-                                    context.irBuiltIns.kClassClass.starProjectedType,
-                                    error.classifier,
-                                    error))
-                            call.putValueArgument(1, serializerResolver.resolveSerializer(this, error))
-                        }
+        if (rpcCall.expectedErrors.isEmpty()) { return }
+
+        val polymorphicModuleBuilder = KnownType.Serialization.polymorphicModuleBuilder.asClass()
+        val polymorphicModuleBuilderType =
+            polymorphicModuleBuilder.typeWith(KnownType.API.rpcError.asClass().defaultType)
+        val expectedErrorBuilder = pluginContext.irFactory.buildFun {
+            this.name = Name.special("<anonymous>")
+            origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+            returnType = pluginContext.irBuiltIns.unitType
+            visibility = DescriptorVisibilities.LOCAL
+            startOffset = SYNTHETIC_OFFSET
+            endOffset = SYNTHETIC_OFFSET
+        }.also {
+            it.parent = property.getter!!
+            val builder = it.addExtensionReceiver(polymorphicModuleBuilderType)
+            it.body = DeclarationIrBuilder(pluginContext,
+                it.symbol,
+                startOffset = SYNTHETIC_OFFSET,
+                endOffset = SYNTHETIC_OFFSET).irBlockBody {
+                for (error in rpcCall.expectedErrors) {
+                    +irCall(polymorphicModuleBuilder.getSimpleFunction("subclass")!!).also { call ->
+                        call.dispatchReceiver = irGet(builder)
+                        call.putTypeArgument(0, error)
+                        call.putValueArgument(0,
+                            IrClassReferenceImpl(startOffset,
+                                endOffset,
+                                context.irBuiltIns.kClassClass.starProjectedType,
+                                error.classifier,
+                                error))
+                        call.putValueArgument(1, serializerResolver.resolveSerializer(this, error))
                     }
                 }
             }
-
-            call.putValueArgument(0, IrFunctionExpressionImpl(
-                call.startOffset,
-                call.endOffset,
-                pluginContext.referenceClass(FqName("kotlin.Function1"))!!
-                    .typeWith(polymorphicModuleBuilderType, pluginContext.irBuiltIns.unitType),
-                expectedErrorBuilder,
-                IrStatementOrigin.LAMBDA
-            ))
         }
+
+        call.putValueArgument(0, IrFunctionExpressionImpl(
+            call.startOffset,
+            call.endOffset,
+            pluginContext.referenceClass(FqName("kotlin.Function1"))!!
+                .typeWith(polymorphicModuleBuilderType, pluginContext.irBuiltIns.unitType),
+            expectedErrorBuilder,
+            IrStatementOrigin.LAMBDA
+        ))
     }
 }

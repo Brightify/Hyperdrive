@@ -1,5 +1,11 @@
 package org.brightify.hyperdrive.krpc.plugin
 
+import org.brightify.hyperdrive.krpc.plugin.util.containingClass
+import org.brightify.hyperdrive.krpc.plugin.util.isContainingClassKrpcEnabled
+import org.brightify.hyperdrive.krpc.plugin.util.isKrpcClient
+import org.brightify.hyperdrive.krpc.plugin.util.isKrpcDescriptor
+import org.brightify.hyperdrive.krpc.plugin.util.isKrpcDescriptorCall
+import org.brightify.hyperdrive.krpc.plugin.util.isKrpcEnabled
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptorWithResolutionScopes
@@ -17,9 +23,6 @@ import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.PropertyGetterDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.parentClassOrNull
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -40,39 +43,6 @@ import org.jetbrains.kotlin.types.typeUtil.createProjection
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.types.typeUtil.replaceArgumentsWithStarProjections
 import java.util.*
-
-val ClassDescriptor.containingClass: ClassDescriptor?
-    get() = containingDeclaration as? ClassDescriptor
-
-val ClassDescriptor.isContainingClassKrpcEnabled: Boolean
-    get() = containingClass?.isKrpcEnabled ?: false
-
-val ClassDescriptor.isKrpcEnabled: Boolean
-    get() = annotations.hasAnnotation(KnownType.Annotation.enableKrpc)
-
-val ClassDescriptor.isKrpcClient: Boolean
-    get() = name == KnownType.Nested.client && isContainingClassKrpcEnabled
-
-val ClassDescriptor.isKrpcDescriptor: Boolean
-    get() = name == KnownType.Nested.descriptor && isContainingClassKrpcEnabled
-
-val ClassDescriptor.isKrpcDescriptorCall: Boolean
-    get() = name == KnownType.Nested.call && containingClass?.isKrpcDescriptor ?: false
-
-val IrClass.isParentKrpcEnabled: Boolean
-    get() = parentClassOrNull?.isKrpcEnabled ?: false
-
-val IrClass.isKrpcEnabled: Boolean
-    get() = annotations.hasAnnotation(KnownType.Annotation.enableKrpc)
-
-val IrClass.isKrpcClient: Boolean
-    get() = name == KnownType.Nested.client && isParentKrpcEnabled
-
-val IrClass.isKrpcDescriptor: Boolean
-    get() = name == KnownType.Nested.descriptor && isParentKrpcEnabled
-
-val IrClass.isKrpcDescriptorCall: Boolean
-    get() = name == KnownType.Nested.call && parentClassOrNull?.isKrpcDescriptor ?: false
 
 open class KrpcResolveExtension: SyntheticResolveExtension {
     companion object {
@@ -126,8 +96,6 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
         super.addSyntheticSupertypes(thisDescriptor, supertypes)
 
         if (thisDescriptor.isContainingClassKrpcEnabled) {
-            // supertypes.add(thisDescriptor.module.builtIns.anyType)
-
             when {
                 thisDescriptor.isKrpcClient ->
                     supertypes.add(thisDescriptor.containingClass?.defaultType ?: return)

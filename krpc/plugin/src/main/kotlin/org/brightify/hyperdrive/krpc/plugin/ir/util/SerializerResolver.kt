@@ -1,8 +1,6 @@
 package org.brightify.hyperdrive.krpc.plugin.ir.util
 
 import org.brightify.hyperdrive.krpc.plugin.KnownType
-import org.brightify.hyperdrive.krpc.plugin.PluginContextExtension
-import org.brightify.hyperdrive.krpc.plugin.primaryConstructor
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

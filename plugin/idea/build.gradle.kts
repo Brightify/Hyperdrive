@@ -19,15 +19,20 @@ tasks.jar {
 }
 
 intellij {
-    pluginName = "hyperdrive"
-    version = "2020.3.2"
-    setPlugins("gradle", "org.jetbrains.kotlin:203-1.4.21-release-IJ6682.9", "com.intellij.java")
+    pluginName.set("hyperdrive")
+    version.set("2020.3.2")
 
-    updateSinceUntilBuild = false
+    this.plugins.addAll(
+        "gradle",
+        "org.jetbrains.kotlin:203-1.4.21-release-IJ6682.9",
+        "com.intellij.java",
+    )
+
+    updateSinceUntilBuild.set(false)
 }
 
 tasks.runPluginVerifier {
-    ideVersions(
+    this.ideVersions.set(
         listOf(
             "IU-203.8084.24"
         )
@@ -35,8 +40,8 @@ tasks.runPluginVerifier {
 }
 
 tasks.publishPlugin {
-    token(System.getenv("ORG_GRADLE_PROJECT_intellijPublishToken") ?: "")
-    channels(System.getenv("ORG_GRADLE_PROJECT_intellijChannels") ?: "default")
+    token.set(System.getenv("ORG_GRADLE_PROJECT_intellijPublishToken") ?: "")
+    channels.set(listOf(System.getenv("ORG_GRADLE_PROJECT_intellijChannels") ?: "default"))
 }
 
 tasks.buildSearchableOptions {

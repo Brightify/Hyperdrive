@@ -24,6 +24,7 @@ class WebSocketSessionConnection(val webSocketSession: WebSocketSession): RPCCon
                     continue
                 }
                 is Frame.Pong -> continue
+                else -> continue
             }
         }
     }

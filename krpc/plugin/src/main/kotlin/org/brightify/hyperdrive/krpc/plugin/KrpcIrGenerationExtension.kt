@@ -1,8 +1,11 @@
 package org.brightify.hyperdrive.krpc.plugin
 
+import org.brightify.hyperdrive.krpc.plugin.ir.lower.KrpcClientLowering
+import org.brightify.hyperdrive.krpc.plugin.ir.lower.KrpcDebugPrintingLowering
+import org.brightify.hyperdrive.krpc.plugin.ir.lower.KrpcDescriptorCallLowering
+import org.brightify.hyperdrive.krpc.plugin.ir.lower.KrpcDescriptorLowering
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.phaser.transform
 import org.jetbrains.kotlin.backend.common.runOnFilePostfix
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment

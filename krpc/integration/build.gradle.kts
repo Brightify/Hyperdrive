@@ -30,7 +30,7 @@ kotlin {
 
                 implementation(libs.coroutines.core)
 
-                implementation(kotlin("test"))
+                implementation(kotlin("test-common"))
                 implementation(libs.bundles.kotest.common)
 
                 implementation(libs.bundles.serialization)
@@ -42,7 +42,6 @@ kotlin {
             dependencies {
                 implementation(project(":krpc-server-impl-ktor"))
 
-                implementation(kotlin("test-junit5"))
                 implementation(libs.junit.jupiter)
                 implementation(libs.coroutines.test)
                 implementation(libs.bundles.kotest.jvm)
@@ -73,8 +72,6 @@ tasks.withType<KotlinJvmCompile> {
     dependsOn(krpcPluginJar)
 
     kotlinOptions {
-        useIR = true
-
         freeCompilerArgs += listOf(
             "-Xplugin=${krpcPluginJar.archiveFile.get().asFile.absolutePath}",
             "-P", "plugin:org.brightify.hyperdrive.krpc:enabled=true"

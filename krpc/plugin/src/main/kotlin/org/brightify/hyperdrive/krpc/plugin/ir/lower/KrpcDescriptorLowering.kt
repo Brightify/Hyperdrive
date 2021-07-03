@@ -1,5 +1,9 @@
-package org.brightify.hyperdrive.krpc.plugin
+package org.brightify.hyperdrive.krpc.plugin.ir.lower
 
+import org.brightify.hyperdrive.krpc.plugin.KnownType
+import org.brightify.hyperdrive.krpc.plugin.KrpcIrElementTransformerVoidBase
+import org.brightify.hyperdrive.krpc.plugin.util.isKrpcDescriptor
+import org.brightify.hyperdrive.krpc.plugin.ir.util.property
 import org.jetbrains.kotlin.backend.common.ClassLoweringPass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
