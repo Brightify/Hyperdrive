@@ -238,7 +238,7 @@ class FactoryClassDescriptor(
     private lateinit var constructorReference: ClassConstructorDescriptor
     private val _unsubstitutedPrimaryConstructor = context.storageManager.createLazyValue({
         createUnsubstitutedPrimaryConstructor(autoFactoryParentDeclaration.visibility)
-    }, onRecursiveCall = { isFirstCall ->
+    }, onRecursiveCall = { _ ->
         constructorReference
     })
 

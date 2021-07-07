@@ -277,8 +277,6 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
                 funDescriptor
             }
             thisDescriptor.isKrpcDescriptorCall -> {
-                val krpcEnabledClass = thisDescriptor.containingClass?.containingClass as? LazyClassDescriptor ?: return
-
                 return
             }
             else -> return

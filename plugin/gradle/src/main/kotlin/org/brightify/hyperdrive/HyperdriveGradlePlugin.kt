@@ -7,8 +7,12 @@ import org.gradle.kotlin.dsl.create
 
 class HyperdriveGradlePlugin: Plugin<Project> {
     override fun apply(project: Project) {
-        val extension = project.extensions.create<HyperdriveExtension>("hyperdrive")
+        project.extensions.create<HyperdriveExtension>(EXTENSION_NAME)
         project.apply<KrpcGradleSubplugin>()
         project.apply<MultiplatformXGradleSubplugin>()
+    }
+
+    companion object {
+        const val EXTENSION_NAME = "hyperdrive"
     }
 }

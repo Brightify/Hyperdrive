@@ -95,10 +95,10 @@ class KrpcClientLowering(
                                 irCall(
                                     requestWrapperConstructor,
                                     requestWrapper.typeWith(rpcCall.requestType)
-                                ).also { call ->
+                                ).also { requestWrapperConstructor ->
                                     for (index in rpcCall.requestType.indices) {
-                                        call.putTypeArgument(index, function.valueParameters[index].type)
-                                        call.putValueArgument(index, irGet(function.valueParameters[index]))
+                                        requestWrapperConstructor.putTypeArgument(index, function.valueParameters[index].type)
+                                        requestWrapperConstructor.putValueArgument(index, irGet(function.valueParameters[index]))
                                     }
                                 },
                                 requestWrapperConstructor

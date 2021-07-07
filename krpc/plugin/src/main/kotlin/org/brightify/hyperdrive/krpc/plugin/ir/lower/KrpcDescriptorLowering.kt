@@ -114,8 +114,8 @@ class KrpcDescriptorLowering(
                                                             call.putValueArgument(index, irCall(
                                                                 requestWrapperClass.functions.single { it.owner.name == Name.identifier("component${index + 1}") },
                                                                 type
-                                                            ).also { call ->
-                                                                call.dispatchReceiver = irGet(request)
+                                                            ).also { componentCall ->
+                                                                componentCall.dispatchReceiver = irGet(request)
                                                             })
                                                         }
 

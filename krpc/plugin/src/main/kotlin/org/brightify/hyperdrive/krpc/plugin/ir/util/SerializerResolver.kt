@@ -51,6 +51,7 @@ class SerializerResolver(
             val annotation = AnnotationsUtils.getContainingFileAnnotations(pluginContext.bindingContext, declarationInFile)
                 .find { it.fqName == annotationFqName } ?: return emptyList()
 
+            @Suppress("UNCHECKED_CAST")
             val typeList: List<KClassValue> = annotation.firstArgument()?.value as? List<KClassValue> ?: return emptyList()
             return typeList.map { it.getArgumentType(declarationInFile.module) }
         }
