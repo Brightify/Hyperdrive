@@ -64,6 +64,7 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
             return
         }
         val stateFlow = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.Coroutines.stateFlowClassId) ?: return
+        val mutableStateFlow = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.Coroutines.mutableStateFlowClassId) ?: return
 
         val referencedPropertyIdentifier = NamingHelper.getReferencedPropertyName(name.identifier) ?: return
 
@@ -93,7 +94,7 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
                 ).apply {
                     val type = KotlinTypeFactory.simpleNotNullType(
                         Annotations.EMPTY,
-                        stateFlow,
+                        if (realDescriptor.isVar) mutableStateFlow else stateFlow,
                         listOf(createProjection(realDescriptor.returnTypeOrNothing, Variance.INVARIANT, null))
                     )
 

@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive.viewmodel
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
 import org.jetbrains.kotlin.name.ClassId
@@ -15,6 +16,9 @@ object ViewModelNames {
     object Coroutines {
         val stateFlowClassId = classIdOf(StateFlow::class)
         val stateFlow = stateFlowClassId.asSingleFqName()
+
+        val mutableStateFlowClassId = classIdOf(MutableStateFlow::class)
+        val mutableStateFlow = mutableStateFlowClassId.asSingleFqName()
     }
 
     object API {
