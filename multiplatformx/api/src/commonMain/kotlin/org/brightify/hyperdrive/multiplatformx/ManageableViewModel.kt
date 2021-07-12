@@ -1,9 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
-import kotlinx.coroutines.MainScope
-
 public interface ManageableViewModel {
-    public val objectWillChange: ObjectWillChange
+    public val willChange: ObjectWillChange
 
     public val lifecycle: Lifecycle?
 

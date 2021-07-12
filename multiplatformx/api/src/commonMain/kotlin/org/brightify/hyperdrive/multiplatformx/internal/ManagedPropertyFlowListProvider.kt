@@ -1,10 +1,8 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
-import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.scan
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
@@ -57,7 +55,7 @@ internal class ManagedPropertyFlowListProvider<OWNER, VM: ManageableViewModel?>(
                     .scan(emptyList<CancellationToken>()) { accumulator, children ->
                         accumulator.forEach { it.cancel() }
                         children.mapNotNull { child ->
-                            child?.objectWillChange?.addListener(objectWillChangeTrigger)
+                            child?.willChange?.addListener(objectWillChangeTrigger)
                         }
                     }
                     .collect()

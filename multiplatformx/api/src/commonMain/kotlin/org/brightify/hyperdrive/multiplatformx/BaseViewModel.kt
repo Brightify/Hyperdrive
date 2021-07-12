@@ -90,7 +90,7 @@ public abstract class BaseViewModel: ManageableViewModel {
     private val propertyObservers = mutableMapOf<String, MutableStateFlow<*>>()
 
     private val objectWillChangeTrigger = ManageableViewModel.ObjectWillChangeTrigger()
-    public final override val objectWillChange: ManageableViewModel.ObjectWillChange = objectWillChangeTrigger
+    public final override val willChange: ManageableViewModel.ObjectWillChange = objectWillChangeTrigger
 
     public final override val lifecycle: Lifecycle = Lifecycle()
 

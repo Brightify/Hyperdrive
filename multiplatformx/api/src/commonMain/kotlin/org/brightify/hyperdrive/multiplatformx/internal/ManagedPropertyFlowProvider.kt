@@ -3,8 +3,6 @@ package org.brightify.hyperdrive.multiplatformx.internal
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.scan
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
@@ -52,7 +50,7 @@ internal class ManagedPropertyFlowProvider<OWNER, VM: ManageableViewModel?>(
                 child
                     .scan(null as CancellationToken?) { accumulator, value ->
                         accumulator?.cancel()
-                        value?.objectWillChange?.addListener(objectWillChangeTrigger)
+                        value?.willChange?.addListener(objectWillChangeTrigger)
                     }
                     .collect()
             }
