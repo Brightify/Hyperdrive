@@ -1,5 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
+import co.touchlab.stately.ensureNeverFrozen
+
 public interface ManageableViewModel {
     public val willChange: ObjectWillChange
 
@@ -19,6 +21,11 @@ public interface ManageableViewModel {
 
     public class ObjectWillChangeTrigger: ObjectWillChange, ObjectWillChange.Listener {
         private val listeners = mutableSetOf<ObjectWillChange.Listener>()
+
+        init {
+            ensureNeverFrozen()
+            listeners.ensureNeverFrozen()
+        }
 
         public override fun addListener(listener: ObjectWillChange.Listener): CancellationToken {
             listeners.add(listener)
