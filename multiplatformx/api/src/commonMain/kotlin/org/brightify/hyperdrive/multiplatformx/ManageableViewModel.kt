@@ -8,6 +8,8 @@ public interface ManageableViewModel {
     public interface ObjectWillChange {
         public fun addListener(listener: Listener): CancellationToken
 
+        public fun addObserver(observer: () -> Unit): CancellationToken = addListener(observer)
+
         public fun removeListener(listener: Listener)
 
         public fun interface Listener {
