@@ -3,6 +3,7 @@ package org.brightify.hyperdrive.viewmodel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -11,6 +12,7 @@ import kotlin.reflect.KClass
 object ViewModelNames {
     object Annotation {
         val viewModel = FqName("org.brightify.hyperdrive.multiplatformx.ViewModel")
+        val noAutoObserve = FqName("org.brightify.hyperdrive.multiplatformx.compose.NoAutoObserve")
     }
 
     object Coroutines {
@@ -23,8 +25,14 @@ object ViewModelNames {
 
     object API {
         val baseViewModel = classIdOf(BaseViewModel::class)
+        val manageableViewModel = classIdOf(ManageableViewModel::class)
+    }
 
-
+    object Compose {
+        val composable = FqName("androidx.compose.runtime.Composable")
+        val state = FqName("androidx.compose.runtime.State")
+        val stateValue = "value"
+        val observeAsState = FqName("observeAsState")
     }
 
     object Kotlin {

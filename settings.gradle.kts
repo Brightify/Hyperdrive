@@ -19,7 +19,7 @@ pluginManagement {
     resolutionStrategy {
         eachPlugin {
             if (requested.id.namespace == "com.android" || requested.id.name == "kotlin-android-extensions") {
-                useModule("com.android.tools.build:gradle:4.1.0")
+                useModule("com.android.tools.build:gradle:7.0.0-beta05")
             }
         }
     }
@@ -28,6 +28,11 @@ pluginManagement {
 plugins {
     id("io.alcide.gradle-semantic-build-versioning") version "4.2.2"
 }
+
+val isProbablySupportingJetpackCompose: Boolean
+    get() = extra.properties.getOrDefault("android.injected.studio.version", "").toString().toLowerCase().contains("canary") ||
+        extra.properties.getOrDefault("android.injected.studio.version", "").toString().toLowerCase().contains("beta") ||
+        extra.properties.getOrDefault("enableCompose", "false").toString().toBoolean()
 
 enableFeaturePreview("VERSION_CATALOGS")
 
@@ -96,7 +101,7 @@ val multiplatformXModules = listOf(
     "api",
     "core",
     "plugin"
-)
+) + if (isProbablySupportingJetpackCompose) listOf("compose") else emptyList()
 
 val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" }
 

@@ -45,6 +45,7 @@ open class HyperdriveExtension {
     class MultiplatformxSettings {
         var isAutoFactoryEnabled: Boolean = true
         var isViewModelEnabled: Boolean = true
+        var isAutoObserveEnabled: Boolean = true
     }
 
     class KrpcSettings {

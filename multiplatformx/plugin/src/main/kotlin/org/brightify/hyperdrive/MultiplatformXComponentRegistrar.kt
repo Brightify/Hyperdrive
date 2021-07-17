@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
@@ -24,6 +25,7 @@ object MultiplatformXConfigurationKeys {
 
     object ViewModel {
         val isEnabled = CompilerConfigurationKey<Boolean>("viewmodel.enabled")
+        val isAutoObserveEnabled = CompilerConfigurationKey<Boolean>("viewmodel.autoobserve.enabled")
     }
 }
 
@@ -43,7 +45,11 @@ class MultiplatformXComponentRegistrar: ComponentRegistrar {
         }
 
         if (configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isEnabled)) {
-            registerViewModelExtensions(project)
+            registerViewModelExtensions(
+                project,
+                messageCollector,
+                configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isAutoObserveEnabled),
+            )
         }
     }
 
@@ -52,8 +58,18 @@ class MultiplatformXComponentRegistrar: ComponentRegistrar {
         IrGenerationExtension.registerExtension(project, AutoFactoryIrGenerationExtension())
     }
 
-    private fun registerViewModelExtensions(project: MockProject) {
+    private fun registerViewModelExtensions(
+        project: MockProject,
+        messageCollector: MessageCollector,
+        isAutoObserveEnabled: Boolean,
+    ) {
         SyntheticResolveExtension.registerExtension(project, ViewModelResolveExtension())
-        IrGenerationExtension.registerExtension(project, ViewModelIrGenerationExtension())
+        val irGenerationExtension = ViewModelIrGenerationExtension(
+            messageCollector,
+            isAutoObserveEnabled,
+        )
+        @Suppress("UnstableApiUsage")
+        project.extensionArea.getExtensionPoint(IrGenerationExtension.extensionPointName)
+            .registerExtension(irGenerationExtension, LoadingOrder.FIRST, project)
     }
 }

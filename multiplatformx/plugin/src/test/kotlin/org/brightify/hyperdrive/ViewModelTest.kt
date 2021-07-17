@@ -15,18 +15,30 @@ internal class ViewModelTest {
             import org.brightify.hyperdrive.multiplatformx.ViewModel
             import org.brightify.hyperdrive.multiplatformx.BaseViewModel
             import kotlinx.coroutines.flow.StateFlow
-            
+            import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
+               
+            interface State<T> {
+                val value: T
+            }
+
+            fun <T: ManageableViewModel> T.observeAsState(): State<T> {
+                TODO()
+            }
+
             @ViewModel
             class TestViewModel: BaseViewModel() {
-               
-                var x: String? by published(null)
-                
-//                val observeX: StateFlow<String?> by observe(this::x)
-                
-                init {
-                    println(observeX)
-                }
+              
+                val name: String = "hello"
             }
+                
+            annotation class Composable
+
+            @Composable
+            fun hello(test: TestViewModel, test2: TestViewModel) {
+                println(test.name)
+                println(test2.name)
+            }
+
         """.trimIndent())
 
 
