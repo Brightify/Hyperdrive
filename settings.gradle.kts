@@ -12,6 +12,7 @@ pluginManagement {
         kotlin("plugin.serialization") version kotlinVersion
         kotlin("multiplatform") version kotlinVersion
         kotlin("jvm") version kotlinVersion
+        kotlin("android") version kotlinVersion
         id("com.chromaticnoise.multiplatform-swiftpackage") version "2.0.3"
         id("com.github.gmazzo.buildconfig") version "3.0.1"
         id("org.jetbrains.intellij") version "1.1.2"

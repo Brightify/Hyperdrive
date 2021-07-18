@@ -4,7 +4,7 @@ import androidx.compose.runtime.*
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 
 @Composable
-fun <T: ManageableViewModel> T.observeAsState(): State<T> {
+fun ManageableViewModel.observeAsState(): State<ManageableViewModel> {
     val result = remember { mutableStateOf(this, neverEqualPolicy()) }
     DisposableEffect(this) {
         val token = this@observeAsState.willChange.addListener {

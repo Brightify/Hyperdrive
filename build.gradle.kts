@@ -8,15 +8,10 @@ plugins {
     kotlin("jvm") apply false
 }
 
-buildscript {
-    repositories {
-        mavenCentral()
-        google()
-    }
 
+buildscript {
     dependencies {
-        // classpath(gradleKotlinDsl())
-        classpath("com.android.tools.build:gradle:4.1.0")
+        classpath("com.android.tools.build:gradle:7.0.0-beta05")
     }
 }
 

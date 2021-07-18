@@ -1,8 +1,7 @@
 plugins {
-    kotlin("multiplatform")
-    kotlin("kapt")
-    kotlin("plugin.serialization")
     id("com.android.library")
+    kotlin("android")
+    `maven-publish`
 }
 
 repositories {
@@ -10,40 +9,47 @@ repositories {
     google()
 }
 
+val kotlinVersion: String by project
+
 android {
     compileSdkVersion(30)
 
     defaultConfig {
-        minSdkVersion(16)
+        minSdkVersion(21)
     }
-
-    sourceSets {
-        val main by getting
-        main.manifest.srcFile("src/androidMain/AndroidManifest.xml")
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
-}
-
-
-kotlin {
-    android()
-
-    sourceSets {
-        val androidMain by getting {
-            dependencies {
-                implementation(project(":multiplatformx-api"))
-                implementation(libs.compose.runtime)
-            }
-        }
-
-        val androidTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.junit.jupiter)
-            }
-        }
+    kotlinOptions {
+        jvmTarget = "1.8"
+        useIR = true
+    }
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerVersion = kotlinVersion
+        kotlinCompilerExtensionVersion = libs.versions.compose.get()
     }
 }
 
-kapt {
-    includeCompileClasspath = true
+dependencies {
+    implementation(project(":multiplatformx-api"))
+    implementation(libs.compose.runtime)
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["release"])
+            }
+            create<MavenPublication>("debug") {
+                from(components["debug"])
+
+                artifactId = project.name + "-debug"
+            }
+        }
+    }
 }

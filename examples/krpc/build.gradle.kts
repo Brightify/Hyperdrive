@@ -3,8 +3,9 @@ import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.tasks.FatFrameworkTask
 import org.jetbrains.kotlin.gradle.plugin.mpp.Framework.BitcodeEmbeddingMode
 
+
 plugins {
-    id("com.android.library")
+//    id("com.android.library")
     kotlin("multiplatform")
     id("com.chromaticnoise.multiplatform-swiftpackage")
     kotlin("plugin.serialization")
@@ -26,30 +27,30 @@ dependencies {
     NATIVE_COMPILER_PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":plugin-impl-native"))
 }
 
-android {
-    compileSdkVersion(30)
-
-    dexOptions {
-        javaMaxHeapSize = "2g"
-    }
-
-    defaultConfig {
-        minSdkVersion(16)
-    }
-
-    sourceSets {
-        val main by getting
-        main.manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-}
+//android {
+//    compileSdkVersion(30)
+//
+//    dexOptions {
+//        javaMaxHeapSize = "2g"
+//    }
+//
+//    defaultConfig {
+//        minSdkVersion(16)
+//    }
+//
+//    sourceSets {
+//        val main by getting
+//        main.manifest.srcFile("src/androidMain/AndroidManifest.xml")
+//    }
+//    compileOptions {
+//        sourceCompatibility = JavaVersion.VERSION_1_8
+//        targetCompatibility = JavaVersion.VERSION_1_8
+//    }
+//}
 
 kotlin {
     jvm()
-    android()
+//    android()
     ios {
         binaries {
             framework {
@@ -82,8 +83,6 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
             }
         }
-        val androidMain by getting
-        val androidTest by getting
 
         val iosMain by getting
         val iosTest by getting
