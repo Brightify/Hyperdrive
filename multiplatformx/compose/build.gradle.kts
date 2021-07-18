@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
+
 plugins {
     id("com.android.library")
     kotlin("android")
@@ -24,6 +26,12 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
         useIR = true
+        freeCompilerArgs += listOf(
+            "-P", "plugin:org.brightify.hyperdrive.multiplatformx:enabled=true",
+            "-P", "plugin:org.brightify.hyperdrive.multiplatformx:viewmodel.enabled=true",
+            "-P", "plugin:org.brightify.hyperdrive.multiplatformx:viewmodel.autoobserve.enabled=true",
+            "-P", "plugin:org.brightify.hyperdrive.multiplatformx:autofactory.enabled=true"
+        )
     }
     buildFeatures {
         compose = true
@@ -37,6 +45,10 @@ android {
 dependencies {
     implementation(project(":multiplatformx-api"))
     implementation(libs.compose.runtime)
+
+    androidTestImplementation(libs.compose.material)
+
+    PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":multiplatformx-plugin"))
 }
 
 afterEvaluate {

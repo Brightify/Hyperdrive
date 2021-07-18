@@ -51,7 +51,6 @@ class ComposeViewIrGenerator(
     override fun lower(irBody: IrBody, container: IrDeclaration) {
         // We're only interested in compose functions.
         if (container !is IrFunction) { return }
-
         // Only process functions with the `@Composable` annotation.
         if (!container.hasAnnotation(ViewModelNames.Compose.composable)) { return }
         // Disable processing of this function if annotated with `@NoAutoObserve`.
@@ -81,7 +80,7 @@ class ComposeViewIrGenerator(
         irBody.transformChildrenVoid(object: IrElementTransformerVoid() {
             override fun visitValueAccess(expression: IrValueAccessExpression): IrExpression {
                 val delegate = observedBackingVariables[expression.symbol.owner] ?: return super.visitValueAccess(expression)
-                return declarationBuilder.irGet(delegate.type, declarationBuilder.irGet(delegate), types.stateValue)
+                return declarationBuilder.irGet(expression.type, declarationBuilder.irGet(delegate), types.stateValue)
             }
         })
 

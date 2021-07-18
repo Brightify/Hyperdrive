@@ -32,7 +32,7 @@ object ViewModelNames {
         val composable = FqName("androidx.compose.runtime.Composable")
         val state = FqName("androidx.compose.runtime.State")
         val stateValue = "value"
-        val observeAsState = FqName("observeAsState")
+        val observeAsState = FqName("org.brightify.hyperdrive.multiplatformx.compose.observeAsState")
     }
 
     object Kotlin {
