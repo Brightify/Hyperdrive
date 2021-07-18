@@ -30,10 +30,8 @@ plugins {
     id("io.alcide.gradle-semantic-build-versioning") version "4.2.2"
 }
 
-val isProbablySupportingJetpackCompose: Boolean
-    get() = extra.properties.getOrDefault("android.injected.studio.version", "").toString().toLowerCase().contains("canary") ||
-        extra.properties.getOrDefault("android.injected.studio.version", "").toString().toLowerCase().contains("beta") ||
-        extra.properties.getOrDefault("enableCompose", "false").toString().toBoolean()
+apply(from = "compose-check.gradle.kts")
+val enableCompose: Boolean by extra
 
 enableFeaturePreview("VERSION_CATALOGS")
 
@@ -102,7 +100,7 @@ val multiplatformXModules = listOf(
     "api",
     "core",
     "plugin"
-) + if (isProbablySupportingJetpackCompose) listOf("compose") else emptyList()
+) + if (enableCompose) listOf("compose") else emptyList()
 
 val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" }
 

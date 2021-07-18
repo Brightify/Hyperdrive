@@ -10,8 +10,13 @@ plugins {
 
 
 buildscript {
-    dependencies {
-        classpath("com.android.tools.build:gradle:7.0.0-beta05")
+    apply(from = "compose-check.gradle.kts")
+
+    val enableCompose: Boolean by extra
+    if (enableCompose) {
+        dependencies {
+            classpath("com.android.tools.build:gradle:7.0.0-beta05")
+        }
     }
 }
 
