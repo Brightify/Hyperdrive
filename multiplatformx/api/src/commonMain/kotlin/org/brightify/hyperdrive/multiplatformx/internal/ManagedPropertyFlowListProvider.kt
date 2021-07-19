@@ -39,6 +39,8 @@ internal class ManagedPropertyFlowListProvider<OWNER, VM: ManageableViewModel?>(
         }
 
         owner.lifecycle.whileAttached {
+            // The `child` could've changed while the lifecycle was detached so we need to check and
+            // replace the old one.
             replaceChild(childList.value)
 
             viewModelFlow.collect { newChildList ->
