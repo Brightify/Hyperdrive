@@ -48,6 +48,9 @@ public class Lifecycle(private val owner: Any) {
     public val isAttached: Boolean
         get() = state is State.Attached
 
+    public val debugDescription: String
+        get() = "$owner (Lifecycle@${hashCode().toUInt().toString(16)})"
+
     private val listeners = mutableMapOf<ListenerRegistration.Kind, MutableSet<ListenerRegistration>>()
     private val whileAttachedRunners = mutableSetOf<suspend CoroutineScope.() -> Unit>()
 
@@ -66,7 +69,7 @@ public class Lifecycle(private val owner: Any) {
      */
     public fun attach(scope: CoroutineScope) {
         if (isAttached) {
-            throw IllegalStateException("Trying to attach a lifecycle that's already attached to a different scope!")
+            throw IllegalStateException("Trying to attach $debugDescription that's already attached to a different scope!")
         }
 
         // TODO: Subscribe scope.onCancel to detach
@@ -90,7 +93,7 @@ public class Lifecycle(private val owner: Any) {
      */
     public fun detach() {
         if (!isAttached) {
-            throw IllegalStateException("Trying to detach a lifecycle that is not attached!")
+            throw IllegalStateException("Trying to detach $debugDescription is not attached!")
         }
 
         notifyListeners(ListenerRegistration.Kind.WillDetach)
@@ -218,8 +221,7 @@ public class Lifecycle(private val owner: Any) {
 
     private fun dumpTreeLines(): List<String> {
         val lastChildIndex = children.count() - 1
-        val thisDescription = "$owner (Lifecycle@${hashCode().toUInt().toString(16)})"
-        return listOf(thisDescription) + children.flatMapIndexed { childIndex, child ->
+        return listOf(debugDescription) + children.flatMapIndexed { childIndex, child ->
             val childTreeLines = child.dumpTreeLines()
             childTreeLines.mapIndexed { lineIndex, line ->
                 if (lineIndex == 0) {
