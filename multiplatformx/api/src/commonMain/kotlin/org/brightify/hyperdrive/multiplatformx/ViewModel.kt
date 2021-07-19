@@ -15,3 +15,18 @@ package org.brightify.hyperdrive.multiplatformx
 public annotation class ViewModel(
     // val observableDelegates = listOf("collected", "published")
 )
+
+
+
+
+
+
+
+
+
+public annotation class Managed
+public annotation class Model {
+    public annotation class Id
+}
+public annotation class ComputedObservable
+public annotation class Published

@@ -92,7 +92,7 @@ public abstract class BaseViewModel: ManageableViewModel {
     private val objectWillChangeTrigger = ManageableViewModel.ObjectWillChangeTrigger()
     public final override val willChange: ManageableViewModel.ObjectWillChange = objectWillChangeTrigger
 
-    public final override val lifecycle: Lifecycle = Lifecycle()
+    public final override val lifecycle: Lifecycle = Lifecycle(this)
 
     private val locks = LockRegistry()
 
@@ -103,6 +103,11 @@ public abstract class BaseViewModel: ManageableViewModel {
         lifecycle.whileAttached {
             whileAttached()
         }
+    }
+
+    override fun toString(): String {
+        val simpleName = this::class.simpleName ?: return super.toString()
+        return "$simpleName@${hashCode().toUInt().toString(16)}"
     }
 
     /**

@@ -40,7 +40,7 @@ public fun Lifecycle.attachToMainScope() {
 /**
  * This class is **NOT** thread-safe. Attaching and detaching from scopes should be performed from the main thread.
  */
-public class Lifecycle {
+public class Lifecycle(private val owner: Any) {
     private val children = mutableSetOf<Lifecycle>()
     private val childrenProviders = mutableSetOf<Flow<Lifecycle>>()
     private var state: State = State.Detached
@@ -212,6 +212,31 @@ public class Lifecycle {
      */
     public fun onDidDetach(validity: ListenerValidity = ListenerValidity.Infinite, listener: () -> Unit) {
         addListener(ListenerRegistration.Kind.DidDetach, validity, listener)
+    }
+
+    public fun dumpTree(): String = dumpTreeLines().joinToString("\n")
+
+    private fun dumpTreeLines(): List<String> {
+        val lastChildIndex = children.count() - 1
+        val thisDescription = "$owner (Lifecycle@${hashCode().toUInt().toString(16)})"
+        return listOf(thisDescription) + children.flatMapIndexed { childIndex, child ->
+            val childTreeLines = child.dumpTreeLines()
+            childTreeLines.mapIndexed { lineIndex, line ->
+                if (lineIndex == 0) {
+                    if (childIndex < lastChildIndex) {
+                        "├───"
+                    } else {
+                        "└───"
+                    }
+                } else {
+                    if (childIndex < lastChildIndex) {
+                        "│   "
+                    } else {
+                        "    "
+                    }
+                } + " $line"
+            }
+        }
     }
 
     private fun addListener(kind: ListenerRegistration.Kind, validity: ListenerValidity, listener: () -> Unit) {
