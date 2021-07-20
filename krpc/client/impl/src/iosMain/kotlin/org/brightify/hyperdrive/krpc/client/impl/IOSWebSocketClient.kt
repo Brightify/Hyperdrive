@@ -25,6 +25,7 @@ import platform.Foundation.NSURLSessionWebSocketTask
 import platform.Foundation.create
 import platform.darwin.NSObject
 import platform.posix.memcpy
+import kotlin.native.concurrent.freeze
 
 private fun NSData.toByteArray(): ByteArray = ByteArray(length.toInt()).apply {
     usePinned {
@@ -135,7 +136,7 @@ class IOSWebSocketClient(
             val message = when (frame) {
                 is SerializedFrame.Binary -> NSURLSessionWebSocketMessage(data = frame.binary.toNSData())
                 is SerializedFrame.Text -> NSURLSessionWebSocketMessage(string = frame.text)
-            }
+            }.freeze()
             websocket.sendMessage(message) { error ->
                 if (error != null) {
                     result.completeExceptionally(NSErrorThrowable(error))
