@@ -6,7 +6,7 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 internal open class MutableStateFlowBackedProperty<OWNER, T>(
-    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
+    private val objectWillChangeTrigger: ManageableViewModel.ChangeTrackingTrigger,
     private val stateFlow: MutableStateFlow<T>
 ): ReadWriteProperty<OWNER, T> {
 

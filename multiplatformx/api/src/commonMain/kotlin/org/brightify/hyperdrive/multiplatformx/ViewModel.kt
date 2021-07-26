@@ -13,7 +13,8 @@ package org.brightify.hyperdrive.multiplatformx
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
 public annotation class ViewModel(
-    // val observableDelegates = listOf("collected", "published")
+    // We can't use the `[...]` shorthand because it's not supported in JavaScript sourceSet.
+    val observableDelegates: Array<String> = arrayOf("published", "collected", "collectedFlatMap", "binding", "managed", "managedList"),
 )
 
 

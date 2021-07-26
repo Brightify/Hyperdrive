@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
+import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.MutableViewModelProperty
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -26,6 +28,8 @@ object ViewModelNames {
     object API {
         val baseViewModel = classIdOf(BaseViewModel::class)
         val manageableViewModel = classIdOf(ManageableViewModel::class)
+        val viewModelProperty = classIdOf(ViewModelProperty::class)
+        val mutableViewModelProperty = classIdOf(MutableViewModelProperty::class)
     }
 
     object Compose {

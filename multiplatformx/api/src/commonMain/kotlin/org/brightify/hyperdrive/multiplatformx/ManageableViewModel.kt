@@ -3,38 +3,50 @@ package org.brightify.hyperdrive.multiplatformx
 import co.touchlab.stately.ensureNeverFrozen
 
 public interface ManageableViewModel {
-    public val willChange: ObjectWillChange
+    public val changeTracking: ChangeTracking
 
     public val lifecycle: Lifecycle?
 
-    public interface ObjectWillChange {
+    public interface ChangeTracking {
         public fun addListener(listener: Listener): CancellationToken
 
-        public fun addObserver(observer: () -> Unit): CancellationToken = addListener(observer)
+        public fun addWillChangeObserver(observer: () -> Unit): CancellationToken = addListener(object: Listener {
+            override fun onObjectWillChange() {
+                observer()
+            }
+        })
+
+        public fun addDidChangeObserver(observer: () -> Unit): CancellationToken = addListener(object: Listener {
+            override fun onObjectDidChange() {
+                observer()
+            }
+        })
 
         public fun removeListener(listener: Listener)
 
-        public fun interface Listener {
-            public fun onObjectWillChange()
+        public interface Listener {
+            public fun onObjectWillChange() { }
+
+            public fun onObjectDidChange() { }
         }
     }
 
-    public class ObjectWillChangeTrigger: ObjectWillChange, ObjectWillChange.Listener {
-        private val listeners = mutableSetOf<ObjectWillChange.Listener>()
+    public class ChangeTrackingTrigger: ChangeTracking, ChangeTracking.Listener {
+        private val listeners = mutableSetOf<ChangeTracking.Listener>()
 
         init {
             ensureNeverFrozen()
             listeners.ensureNeverFrozen()
         }
 
-        public override fun addListener(listener: ObjectWillChange.Listener): CancellationToken {
+        public override fun addListener(listener: ChangeTracking.Listener): CancellationToken {
             listeners.add(listener)
             return CancellationToken {
                 removeListener(listener)
             }
         }
 
-        public override fun removeListener(listener: ObjectWillChange.Listener) {
+        public override fun removeListener(listener: ChangeTracking.Listener) {
             listeners.remove(listener)
         }
 
@@ -42,8 +54,16 @@ public interface ManageableViewModel {
             listeners.forEach { it.onObjectWillChange() }
         }
 
+        public fun notifyObjectDidChange() {
+            listeners.forEach { it.onObjectDidChange() }
+        }
+
         override fun onObjectWillChange() {
             notifyObjectWillChange()
+        }
+
+        override fun onObjectDidChange() {
+            notifyObjectDidChange()
         }
     }
 }

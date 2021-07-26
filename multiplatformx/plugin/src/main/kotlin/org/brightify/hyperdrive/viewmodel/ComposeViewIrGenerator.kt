@@ -62,19 +62,24 @@ class ComposeViewIrGenerator(
             .filter {
                 it.type.isSubtypeOfClass(types.manageableViewModel)
             }
-            .associateWith {
-                val stateType = types.state.typeWith(it.type)
+            .associateWith { parameter ->
+                val stateType = types.state.typeWith(parameter.type)
                 IrVariableImpl(
                     startOffset = UNDEFINED_OFFSET,
                     endOffset = UNDEFINED_OFFSET,
                     origin = IrDeclarationOrigin.IR_TEMPORARY_VARIABLE,
-                    name = Name.identifier("state$" + it.name.identifier),
+                    name = Name.identifier("state$" + parameter.name.identifier),
                     symbol = IrVariableSymbolImpl(),
                     type = stateType,
                     isVar = false,
                     isConst = false,
                     isLateinit = false,
-                ).also { it.parent = container }
+                ).also {
+                    it.parent = container
+                    it.initializer = declarationBuilder.irCall(types.observeAsState, it.type, listOf(parameter.type)).apply {
+                        extensionReceiver = declarationBuilder.irGet(parameter)
+                    }
+                }
             }
 
         irBody.transformChildrenVoid(object: IrElementTransformerVoid() {
@@ -84,25 +89,14 @@ class ComposeViewIrGenerator(
             }
         })
 
-        val delegateInitialization = observedBackingVariables.map { (valueParameter, delegate) ->
-            declarationBuilder.irSet(delegate.symbol,
-                declarationBuilder.irCall(types.observeAsState, delegate.type, listOf(valueParameter.type)).apply {
-                    extensionReceiver = declarationBuilder.irGet(valueParameter)
-                },
-            )
-        }
-
         container.body = when (irBody) {
             is IrBlockBody -> {
-                irBody.statements.addAll(0, observedBackingVariables.values + delegateInitialization)
+                irBody.statements.addAll(0, observedBackingVariables.values)
                 irBody
             }
             is IrExpressionBody -> {
                 declarationBuilder.irBlockBody {
                     observedBackingVariables.values.forEach {
-                        +it
-                    }
-                    delegateInitialization.forEach {
                         +it
                     }
                     +irBody.expression
@@ -116,5 +110,7 @@ class ComposeViewIrGenerator(
                 return
             }
         }
+
+        messageCollector.report(CompilerMessageSeverity.LOGGING, container.dumpKotlinLike())
     }
 }

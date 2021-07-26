@@ -17,28 +17,16 @@ internal class ViewModelTest {
             import kotlinx.coroutines.flow.StateFlow
             import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
                
-            interface State<T> {
-                val value: T
-            }
-
-            fun <T: ManageableViewModel> T.observeAsState(): State<T> {
-                TODO()
-            }
-
             @ViewModel
             class TestViewModel: BaseViewModel() {
-              
-                val name: String = "hello"
+                var name: String by published("hello")
+                val _observeName by observe(::name)
+            
+                fun test() {
+                    println(name)
+                    println(observeName.value)
+                }
             }
-                
-            annotation class Composable
-
-            @Composable
-            fun hello(test: TestViewModel, test2: TestViewModel) {
-                println(test.name)
-                println(test2.name)
-            }
-
         """.trimIndent())
 
 
@@ -72,6 +60,7 @@ internal class ViewModelTest {
         val ctor = viewModelClass.getDeclaredConstructor()
         val viewModel = ctor.newInstance()
         println(viewModel)
+        viewModelClass.methods.single { it.name == "test" }.invoke(viewModel)
     }
 
 }

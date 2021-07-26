@@ -1,29 +1,20 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
-import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
+import org.brightify.hyperdrive.multiplatformx.property.impl.ValueViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.toKotlinMutableProperty
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-internal class PublishedPropertyProvider<OWNER, T>(
-    private val owner: BaseViewModel,
-    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
+internal class PublishedPropertyProvider<OWNER: BaseViewModel, T>(
     private val initialValue: T,
+    private val equalityPolicy: ViewModelProperty.EqualityPolicy<T>,
 ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
     override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, T> {
-        val observer = owner.getPropertyObserver(property, initialValue)
-
-        return object: ReadWriteProperty<OWNER, T> {
-            override fun getValue(thisRef: OWNER, property: KProperty<*>): T {
-                return observer.value
-            }
-
-            override fun setValue(thisRef: OWNER, property: KProperty<*>, value: T) {
-                objectWillChangeTrigger.notifyObjectWillChange()
-
-                observer.value = value
-            }
-        }
+        return ValueViewModelProperty(initialValue, equalityPolicy)
+            .also { thisRef.registerViewModelProperty(property, it) }
+            .toKotlinMutableProperty()
     }
 }

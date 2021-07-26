@@ -1,31 +1,22 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
-import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
+import org.brightify.hyperdrive.multiplatformx.property.impl.CollectedViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.toKotlinProperty
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-internal class CollectedPropertyProvider<OWNER, T>(
-    private val owner: BaseViewModel,
-    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
+internal class CollectedPropertyProvider<OWNER: BaseViewModel, T>(
     private val initialValue: T,
     private val flow: Flow<T>,
+    private val equalityPolicy: ViewModelProperty.EqualityPolicy<T>,
 ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>> {
     override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadOnlyProperty<OWNER, T> {
-        val observer = owner.getPropertyObserver(property, initialValue)
-
-        owner.lifecycle.whileAttached {
-            flow.collect { newValue ->
-                if (newValue != observer.value) {
-                    objectWillChangeTrigger.notifyObjectWillChange()
-                    observer.value = newValue
-                }
-            }
-        }
-
-        return MutableStateFlowBackedProperty(objectWillChangeTrigger, observer)
+        return CollectedViewModelProperty(flow, thisRef.lifecycle, equalityPolicy, initialValue)
+            .also { thisRef.registerViewModelProperty(property, it) }
+            .toKotlinProperty()
     }
 }

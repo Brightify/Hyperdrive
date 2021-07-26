@@ -3,7 +3,7 @@ package org.brightify.hyperdrive.multiplatformx.internal.list
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 
 internal class MutableListProxy<T>(
-    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
+    private val objectWillChangeTrigger: ManageableViewModel.ChangeTrackingTrigger,
     val mutableList: MutableList<T>
 ): MutableList<T>, List<T> by mutableList {
     private inline fun <T> notifying(perform: () -> T): T {

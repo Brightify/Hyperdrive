@@ -9,7 +9,7 @@ import kotlin.reflect.KProperty
 
 internal class PublishedMutableListPropertyProvider<OWNER, T>(
     private val owner: BaseViewModel,
-    private val objectWillChangeTrigger: ManageableViewModel.ObjectWillChangeTrigger,
+    private val objectWillChangeTrigger: ManageableViewModel.ChangeTrackingTrigger,
     private val initialValue: MutableList<T>,
 ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, MutableList<T>>> {
     override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, MutableList<T>> {

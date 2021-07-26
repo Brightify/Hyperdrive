@@ -1,9 +1,12 @@
 package org.brightify.hyperdrive.viewmodel
 
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
@@ -13,6 +16,7 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
@@ -20,9 +24,9 @@ import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.typeUtil.createProjection
 
-open class ViewModelResolveExtension: SyntheticResolveExtension {
+open class ViewModelResolveExtension(private val messageCollector: MessageCollector = MessageCollector.NONE): SyntheticResolveExtension {
     private companion object {
-        val observableDelegates = listOf(
+        val observableDelegates = arrayOf(
             "published",
             "collected",
             "collectedFlatMap",
@@ -59,12 +63,14 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
     ) {
         super.generateSyntheticProperties(thisDescriptor, name, bindingContext, fromSupertypes, result)
 
-        if (!thisDescriptor.annotations.hasAnnotation(ViewModelNames.Annotation.viewModel)) { return }
+        val viewModelAnnotation = thisDescriptor.annotations.findAnnotation(ViewModelNames.Annotation.viewModel) ?: return
         if (result.isNotEmpty() || fromSupertypes.isNotEmpty()) {
             return
         }
-        val stateFlow = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.Coroutines.stateFlowClassId) ?: return
-        val mutableStateFlow = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.Coroutines.mutableStateFlowClassId) ?: return
+        val observableDelegates = viewModelAnnotation.observableDelegates
+
+        val viewModelProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.viewModelProperty) ?: return
+        val mutableViewModelProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.mutableViewModelProperty) ?: return
 
         val referencedPropertyIdentifier = NamingHelper.getReferencedPropertyName(name.identifier) ?: return
 
@@ -90,11 +96,11 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
                     false,
                     false,
                     false,
-                    false
+                    true,
                 ).apply {
                     val type = KotlinTypeFactory.simpleNotNullType(
                         Annotations.EMPTY,
-                        if (realDescriptor.isVar) mutableStateFlow else stateFlow,
+                        if (realDescriptor.isVar) mutableViewModelProperty else viewModelProperty,
                         listOf(createProjection(realDescriptor.returnTypeOrNothing, Variance.INVARIANT, null))
                     )
 
@@ -121,6 +127,8 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
     }
 
     override fun getSyntheticPropertiesNames(thisDescriptor: ClassDescriptor): List<Name> {
+        val viewModelAnnotation = thisDescriptor.annotations.findAnnotation(ViewModelNames.Annotation.viewModel) ?: return emptyList()
+        val observableDelegates = viewModelAnnotation.observableDelegates
         return thisDescriptor.unsubstitutedMemberScope.getClassifierNames()?.filter {
             val realDescriptor =
                 thisDescriptor.unsubstitutedMemberScope.getContributedVariables(it, NoLookupLocation.FROM_SYNTHETIC_SCOPE)
@@ -135,4 +143,10 @@ open class ViewModelResolveExtension: SyntheticResolveExtension {
     override fun getSyntheticCompanionObjectNameIfNeeded(thisDescriptor: ClassDescriptor): Name? {
         return null
     }
+
+    private val AnnotationDescriptor.observableDelegates: Array<String>
+        get() = (argumentValue("observableDelegates")?.value as? Array<String>) ?: run {
+            messageCollector.report(CompilerMessageSeverity.WARNING, "Could not get argument value `@ViewModel.observableDelegates`. This is a bug in Hyperdrive, please report it.")
+            Companion.observableDelegates
+        }
 }

@@ -2,15 +2,14 @@
 
 package org.brightify.hyperdrive.multiplatformx
 
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
+import org.brightify.hyperdrive.multiplatformx.util.bridge.NonNullFlowWrapper
 import kotlin.coroutines.cancellation.CancellationException
 
 public fun <T: Any> NonNullFlowWrapper<T>.collectWhileAttached(lifecycle: Lifecycle, collection: (T) -> Unit) {
@@ -37,6 +36,8 @@ public fun Lifecycle.attachToMainScope() {
     attach(MainScope())
 }
 
+private typealias RunnerId = ULong
+
 /**
  * This class is **NOT** thread-safe. Attaching and detaching from scopes should be performed from the main thread.
  */
@@ -52,7 +53,9 @@ public class Lifecycle(private val owner: Any) {
         get() = "$owner (Lifecycle@${hashCode().toUInt().toString(16)})"
 
     private val listeners = mutableMapOf<ListenerRegistration.Kind, MutableSet<ListenerRegistration>>()
-    private val whileAttachedRunners = mutableSetOf<suspend CoroutineScope.() -> Unit>()
+
+    private var runnerIdSequence: RunnerId = 0u
+    private val whileAttachedRunners = mutableMapOf<RunnerId, suspend CoroutineScope.() -> Unit>()
 
     private val attachedScope: CoroutineScope?
         get() = when(val state = state) {
@@ -60,7 +63,7 @@ public class Lifecycle(private val owner: Any) {
             is State.Attached -> state.scope
         }
 
-    private var activeJobs = mutableSetOf<Job>()
+    private var activeJobs = mutableMapOf<RunnerId, Job>()
 
     /**
      * Attach this lifecycle instance to a coroutine scope.
@@ -75,7 +78,7 @@ public class Lifecycle(private val owner: Any) {
         // TODO: Subscribe scope.onCancel to detach
         notifyListeners(ListenerRegistration.Kind.WillAttach)
 
-        activeJobs.addAll(whileAttachedRunners.map { runner ->
+        activeJobs.putAll(whileAttachedRunners.mapValues { (_, runner) ->
             scope.launchDetachingOnCancellation(runner)
         })
 
@@ -102,7 +105,7 @@ public class Lifecycle(private val owner: Any) {
 
         children.forEach { it.detach() }
 
-        for (job in activeJobs) {
+        for (job in activeJobs.values) {
             if (job.isActive) {
                 job.cancel("Lifecycle has been detached.")
             }
@@ -155,23 +158,28 @@ public class Lifecycle(private val owner: Any) {
      */
     public fun runOnceIfAttached(runner: suspend CoroutineScope.() -> Unit): Boolean {
         val scope = attachedScope ?: return false
-        activeJobs.add(
-            scope.launchDetachingOnCancellation(runner)
-        )
+        activeJobs[nextRunnerId()] = scope.launchDetachingOnCancellation(runner)
         return true
     }
 
     /**
      * Registers [runner] to be launched each time this lifecycle is attached to a scope and cancelled once detached.
      */
-    public fun whileAttached(runner: suspend CoroutineScope.() -> Unit) {
-        whileAttachedRunners.add(runner)
+    public fun whileAttached(runner: suspend CoroutineScope.() -> Unit): CancellationToken {
+        val id = nextRunnerId()
+        val cancellation = CancellationToken {
+            whileAttachedRunners.remove(id)
+            activeJobs.remove(id)?.cancel("whileAttached() registration has been cancelled.")
+        }
 
-        val scope = attachedScope ?: return
-        activeJobs.add(
-            scope.launchDetachingOnCancellation(runner)
-        )
+        whileAttachedRunners[id] = runner
+
+        val scope = attachedScope ?: return cancellation
+        activeJobs[id] = scope.launchDetachingOnCancellation(runner)
+        return cancellation
     }
+
+    private fun nextRunnerId(): RunnerId = runnerIdSequence++
 
     /**
      * Registers [listener] for the [WillAttach][ListenerRegistration.Kind.WillAttach] event.
