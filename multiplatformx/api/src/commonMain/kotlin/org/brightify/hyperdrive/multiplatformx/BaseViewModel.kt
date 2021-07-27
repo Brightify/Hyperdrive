@@ -197,8 +197,8 @@ public abstract class BaseViewModel: ManageableViewModel {
      */
     protected fun <OWNER: BaseViewModel, T, U> collected(
         stateFlow: StateFlow<T>,
-        mapping: (T) -> U,
         equalityPolicy: ViewModelProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+        mapping: (T) -> U,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
         return withNonRepeatingStateFlow(stateFlow) { initialValue, autoFilteredFlow ->
             CollectedPropertyProvider(mapping(initialValue), autoFilteredFlow.map { mapping(it) }, equalityPolicy)
@@ -212,8 +212,8 @@ public abstract class BaseViewModel: ManageableViewModel {
      */
     protected fun <OWNER: BaseViewModel, T, U> collectedFlatMap(
         stateFlow: StateFlow<T>,
-        flatMapping: (T) -> StateFlow<U>,
         equalityPolicy: ViewModelProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+        flatMapping: (T) -> StateFlow<U>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
         return CollectedPropertyProvider(
             flatMapping(stateFlow.value).value,
@@ -259,8 +259,8 @@ public abstract class BaseViewModel: ManageableViewModel {
     protected fun <OWNER: BaseViewModel, T, U> collected(
         initialValue: T,
         flow: Flow<T>,
-        mapping: (T) -> U,
         equalityPolicy: ViewModelProperty.EqualityPolicy<U>,
+        mapping: (T) -> U,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
         return CollectedPropertyProvider(mapping(initialValue), flow.map { mapping(it) }, equalityPolicy)
     }
@@ -294,8 +294,8 @@ public abstract class BaseViewModel: ManageableViewModel {
     protected fun <OWNER: BaseViewModel, T, VM: ManageableViewModel?> managed(
         valueStateFlow: StateFlow<T>,
         published: Boolean = false,
-        mapping: (T) -> VM,
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
+        mapping: (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
             ManagedPropertyFlowProvider(mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published, equalityPolicy)
@@ -306,8 +306,8 @@ public abstract class BaseViewModel: ManageableViewModel {
         initialChild: VM,
         valueFlow: Flow<T>,
         published: Boolean = false,
-        mapping: suspend (T) -> VM,
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
+        mapping: suspend (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return ManagedPropertyFlowProvider(initialChild, valueFlow.map { mapping(it) }, published, equalityPolicy)
     }
@@ -342,8 +342,8 @@ public abstract class BaseViewModel: ManageableViewModel {
     protected fun <OWNER: BaseViewModel, T, VM: ManageableViewModel?> managedList(
         valueStateFlow: StateFlow<T>,
         published: Boolean = false,
-        mapping: (T) -> List<VM>,
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
+        mapping: (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
             ManagedPropertyFlowListProvider(mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published, equalityPolicy)
@@ -354,8 +354,8 @@ public abstract class BaseViewModel: ManageableViewModel {
         initialChild: List<VM>,
         valueFlow: Flow<T>,
         published: Boolean = false,
-        mapping: suspend (T) -> List<VM>,
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
+        mapping: suspend (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return ManagedPropertyFlowListProvider(initialChild, valueFlow.map { mapping(it) }, published, equalityPolicy)
     }
