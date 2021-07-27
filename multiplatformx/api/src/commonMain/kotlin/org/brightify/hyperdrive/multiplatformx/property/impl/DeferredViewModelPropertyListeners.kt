@@ -1,14 +1,14 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
-import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.DeferredViewModelProperty
 
-internal class ViewModelPropertyListeners<T>(private val backing: ViewModelProperty<T>) {
+internal class DeferredViewModelPropertyListeners<T>(private val backing: DeferredViewModelProperty<T>) {
 
-    private val listeners = mutableSetOf<ViewModelProperty.ValueChangeListener<T>>()
+    private val listeners = mutableSetOf<DeferredViewModelProperty.ValueChangeListener<T>>()
 
     fun <U> runNotifyingListeners(newValue: T, block: (T) -> U): U {
-        val oldValue = backing.value
+        val oldValue = backing.latestValue
         notifyValueWillChange(newValue)
         val result = block(newValue)
         notifyValueDidChange(oldValue)
@@ -19,19 +19,18 @@ internal class ViewModelPropertyListeners<T>(private val backing: ViewModelPrope
         listeners.forEach { it.valueWillChange(newValue) }
     }
 
-    fun notifyValueDidChange(oldValue: T) {
+    fun notifyValueDidChange(oldValue: T?) {
         listeners.forEach { it.valueDidChange(oldValue) }
     }
 
-    fun addListener(listener: ViewModelProperty.ValueChangeListener<T>): CancellationToken {
+    fun addListener(listener: DeferredViewModelProperty.ValueChangeListener<T>): CancellationToken {
         listeners.add(listener)
         return CancellationToken {
             removeListener(listener)
         }
     }
 
-    fun removeListener(listener: ViewModelProperty.ValueChangeListener<T>): Boolean {
+    fun removeListener(listener: DeferredViewModelProperty.ValueChangeListener<T>): Boolean {
         return listeners.remove(listener)
     }
 }
-

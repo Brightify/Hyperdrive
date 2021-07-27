@@ -1,6 +1,12 @@
 package org.brightify.hyperdrive.multiplatformx.property
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.consumeAsFlow
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
+import org.brightify.hyperdrive.multiplatformx.property.impl.DeferredFilteringViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.FilteringViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.MappingViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.SwitchMappingViewModelProperty
 import kotlin.properties.ReadOnlyProperty
@@ -52,6 +58,36 @@ public fun <T, U> ViewModelProperty<T>.switchMap(
     return SwitchMappingViewModelProperty(this, transform, equalityPolicy)
 }
 
+public fun <T> ViewModelProperty<T>.filter(
+    equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+    predicate: (T) -> Boolean,
+): DeferredViewModelProperty<T> {
+    return DeferredFilteringViewModelProperty(this, predicate, equalityPolicy)
+}
+
+public fun <T> ViewModelProperty<T>.filter(
+    initialValue: T,
+    equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+    predicate: (T) -> Boolean,
+): ViewModelProperty<T> {
+    return FilteringViewModelProperty(this, initialValue, predicate, equalityPolicy)
+}
+
+public suspend fun <T> ViewModelProperty<T>.nextValue(): T {
+    val completable = CompletableDeferred<T>()
+    val listener = object: ViewModelProperty.ValueChangeListener<T> {
+        override fun valueDidChange(oldValue: T) {
+            completable.complete(oldValue)
+            removeListener(this)
+        }
+    }
+    addListener(listener)
+    completable.invokeOnCompletion {
+        removeListener(listener)
+    }
+    return completable.await()
+}
+
 internal fun <OWNER, T> ViewModelProperty<T>.toKotlinProperty(): ReadOnlyProperty<OWNER, T> = ReadOnlyProperty { _, _ ->
     this@toKotlinProperty.value
 }
@@ -65,3 +101,21 @@ internal fun <OWNER, T> MutableViewModelProperty<T>.toKotlinMutableProperty(): R
         }
     }
 
+
+public fun <T> ViewModelProperty<T>.asChannel(): Channel<T> {
+    val channel = Channel<T>(Channel.CONFLATED)
+    val listener = object: ViewModelProperty.ValueChangeListener<T> {
+        override fun valueDidChange(oldValue: T) {
+            channel.trySend(value)
+        }
+    }
+    addListener(listener)
+    channel.invokeOnClose {
+        removeListener(listener)
+    }
+    return channel
+}
+
+public fun <T> ViewModelProperty<T>.asFlow(): Flow<T> {
+    return asChannel().consumeAsFlow()
+}

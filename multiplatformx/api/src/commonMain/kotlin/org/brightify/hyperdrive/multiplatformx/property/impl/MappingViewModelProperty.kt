@@ -36,3 +36,4 @@ internal class MappingViewModelProperty<T, U>(
 
     override fun removeListener(listener: ViewModelProperty.ValueChangeListener<U>): Boolean = listeners.removeListener(listener)
 }
+
