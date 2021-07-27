@@ -373,7 +373,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         stateFlow: MutableStateFlow<T>,
         equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
-        return BoundPropertyProvider(stateFlow, { it }, { it }, equalityPolicy)
+        return BoundPropertyProvider(stateFlow.value, stateFlow, { it }, { stateFlow.value = it }, equalityPolicy)
     }
 
     protected fun <OWNER: BaseViewModel, T, U> binding(
@@ -382,7 +382,24 @@ public abstract class BaseViewModel: ManageableViewModel {
         writeMapping: (T) -> U,
         equalityPolicy: ViewModelProperty.EqualityPolicy<T>,
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
-        return BoundPropertyProvider(stateFlow, readMapping, writeMapping, equalityPolicy)
+        return BoundPropertyProvider(readMapping(stateFlow.value), stateFlow, readMapping, { stateFlow.value = writeMapping(it) }, equalityPolicy)
+    }
+
+    protected fun <OWNER: BaseViewModel, T> binding(
+        stateFlow: StateFlow<T>,
+        equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+        set: (T) -> Unit,
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
+        return BoundPropertyProvider(stateFlow.value, stateFlow, { it }, set, equalityPolicy)
+    }
+
+    protected fun <OWNER: BaseViewModel, T, U> binding(
+        stateFlow: StateFlow<U>,
+        mapping: (U) -> T,
+        set: (T) -> Unit,
+        equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
+        return BoundPropertyProvider(mapping(stateFlow.value), stateFlow, mapping, set, equalityPolicy)
     }
 
     // MARK:- Locks
