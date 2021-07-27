@@ -18,11 +18,16 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.brightify.hyperdrive.multiplatformx.internal.ManagedListPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.MutableManagedListPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.MutableManagedPropertyProvider
+import org.brightify.hyperdrive.multiplatformx.internal.ViewModelPropertyProvider
+import org.brightify.hyperdrive.multiplatformx.property.MutableViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
 import org.brightify.hyperdrive.multiplatformx.property.impl.CollectedViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.ValueViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.map
+import org.brightify.hyperdrive.multiplatformx.property.flatMapLatest
+import org.brightify.hyperdrive.multiplatformx.property.toKotlinMutableProperty
+import org.brightify.hyperdrive.multiplatformx.property.toKotlinProperty
 
 /**
  * Common behavior for all view models.
@@ -91,7 +96,6 @@ import org.brightify.hyperdrive.multiplatformx.property.map
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 public abstract class BaseViewModel: ManageableViewModel {
-    private val propertyObservers = mutableMapOf<String, MutableStateFlow<*>>()
     private val properties = mutableMapOf<String, ViewModelProperty<*>>()
 
     internal val changeTrackingTrigger = ManageableViewModel.ChangeTrackingTrigger()
@@ -157,27 +161,6 @@ public abstract class BaseViewModel: ManageableViewModel {
     }
 
     /**
-     * Property delegate used for property mutation tracking for the [MutableList] type.
-     *
-     * Use with any property that is mutable and its mutation invalidates the view model.
-     *
-     * **IMPORTANT**: Since [MutableList] in Kotlin is a reference type, this property delegate automatically wraps the stored [MutableList] instance into
-     * a proxy that's used to track modifications to the list itself (adding items, removing items etc.). Due to this you need to keep in mind
-     * the two following scenarios:
-     * 1. Mutating the instance of a [MutableList] set to a property using this delegate will not trigger the [observeObjectWillChange].
-     * 2. Mutating an instance of a [MutableList] retrieved from this property will trigger [observeObjectWillChange] even when the property
-     *    is set to a new value.
-     *
-     * Do **NOT** rely on the second behavior as it is a subject to change.
-     */
-    // TODO: Decide on its fate, probably removing it.
-    // protected fun <OWNER: BaseViewModel, T> published(
-    //     initialValue: MutableList<T>
-    // ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, MutableList<T>>> {
-    //     return PublishedMutableListPropertyProvider(this, changeTrackingTrigger, initialValue)
-    // }
-
-    /**
      * Property delegate used to mirror an instance of [StateFlow].
      *
      * The property using this delegate will keep its value synchronized with the [StateFlow] as long as the [Lifecycle] of this view model
@@ -208,28 +191,12 @@ public abstract class BaseViewModel: ManageableViewModel {
         }
     }
 
-    /**
-     * Property delegate used to mirror an instance of [StateFlow], flat-mapping its value.
-     *
-     * @see collected
-     */
-    protected fun <OWNER: BaseViewModel, T, U> collectedFlatMap(
-        stateFlow: StateFlow<T>,
+    protected fun <OWNER: BaseViewModel, T, U> collected(
+        property: ViewModelProperty<T>,
         equalityPolicy: ViewModelProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
-        flatMapping: (T) -> StateFlow<U>,
-    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
-        return CollectedPropertyProvider(
-            flatMapping(stateFlow.value).value,
-            stateFlow.withIndex().flatMapLatest { (index, value) ->
-                if (index == 0) {
-                    // FIXME: This might be dropping a value we don't want to be dropped.
-                    flatMapping(value).drop(1)
-                } else {
-                    flatMapping(value)
-                }
-            },
-            equalityPolicy,
-        )
+        mapping: (T) -> U,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> = ViewModelPropertyProvider {
+        property.map(equalityPolicy, mapping)
     }
 
     /**
@@ -268,6 +235,58 @@ public abstract class BaseViewModel: ManageableViewModel {
         return CollectedPropertyProvider(mapping(initialValue), flow.map { mapping(it) }, equalityPolicy)
     }
 
+    @Deprecated(message = "This behaves as FlatMapLatest, do not use.", replaceWith = ReplaceWith("collectedFlatMapLatest"))
+    protected fun <OWNER: BaseViewModel, T, U> collectedFlatMap(
+        stateFlow: StateFlow<T>,
+        equalityPolicy: ViewModelProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+        flatMapping: (T) -> StateFlow<U>,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> = collectedFlatMapLatest(stateFlow, equalityPolicy, flatMapping)
+
+    /**
+     * Property delegate used to mirror an instance of [StateFlow], flat-mapping its value and only observing the latest's StateFlow's changes.
+     *
+     * @see collected
+     */
+    protected fun <OWNER: BaseViewModel, T, U> collectedFlatMapLatest(
+        stateFlow: StateFlow<T>,
+        equalityPolicy: ViewModelProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+        flatMapping: (T) -> StateFlow<U>,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
+        return CollectedPropertyProvider(
+            flatMapping(stateFlow.value).value,
+            stateFlow.withIndex().flatMapLatest { (index, value) ->
+                if (index == 0) {
+                    // FIXME: This might be dropping a value we don't want to be dropped.
+                    flatMapping(value).drop(1)
+                } else {
+                    flatMapping(value)
+                }
+            },
+            equalityPolicy,
+        )
+    }
+
+    @Deprecated(message = "This behaves as FlatMapLatest, do not use.", replaceWith = ReplaceWith("collectedFlatMapLatest"))
+    protected fun <OWNER: BaseViewModel, T, U> collectedFlatMap(
+        property: ViewModelProperty<T>,
+        equalityPolicy: ViewModelProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+        flatMapping: (T) -> StateFlow<U>,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> = collectedFlatMapLatest(property, equalityPolicy, flatMapping)
+
+    protected fun <OWNER: BaseViewModel, T, U> collectedFlatMapLatest(
+        property: ViewModelProperty<T>,
+        equalityPolicy: ViewModelProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+        flatMapping: (T) -> StateFlow<U>,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> {
+        return ViewModelPropertyProvider { owner ->
+            property.flatMapLatest { value ->
+                withNonRepeatingStateFlow(flatMapping(value)) { initialValue, autoFilteredFlow ->
+                    CollectedViewModelProperty(autoFilteredFlow, owner.lifecycle, equalityPolicy, initialValue)
+                }
+            }
+        }
+    }
+
     /**
      * Property delegate used for view model composition.
      *
@@ -280,8 +299,8 @@ public abstract class BaseViewModel: ManageableViewModel {
         childModel: VM,
         published: Boolean = false,
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
-    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, VM>> {
-        return MutableManagedPropertyProvider(ValueViewModelProperty(childModel, equalityPolicy), published)
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, VM>> = MutableManagedPropertyProvider(published) {
+        ValueViewModelProperty(childModel, equalityPolicy)
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managed(
@@ -290,7 +309,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return withNonRepeatingStateFlow(childStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyProvider(CollectedViewModelProperty(autoFilteredFlow, lifecycle, equalityPolicy, initialValue), published)
+            ManagedPropertyProvider(published) { owner ->
+                CollectedViewModelProperty(autoFilteredFlow, owner.lifecycle, equalityPolicy, initialValue)
+            }
         }
     }
 
@@ -301,10 +322,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         mapping: (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyProvider(
-                CollectedViewModelProperty(autoFilteredFlow.map { mapping(it) }, lifecycle, equalityPolicy, mapping(initialValue)),
-                published,
-            )
+            ManagedPropertyProvider(published) { owner ->
+                CollectedViewModelProperty(autoFilteredFlow.map { mapping(it) }, owner.lifecycle, equalityPolicy, mapping(initialValue))
+            }
         }
     }
 
@@ -314,7 +334,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
         mapping: (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyProvider(property.map(equalityPolicy, mapping), published)
+        return ManagedPropertyProvider(published) {
+            property.map(equalityPolicy, mapping)
+        }
     }
 
     protected fun <OWNER: BaseViewModel, T, VM: ManageableViewModel?> managed(
@@ -324,10 +346,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
         mapping: suspend (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyProvider(
-            CollectedViewModelProperty(valueFlow.map { mapping(it) }, lifecycle, equalityPolicy, initialChild),
-            published,
-        )
+        return ManagedPropertyProvider(published) { owner ->
+            CollectedViewModelProperty(valueFlow.map { mapping(it) }, owner.lifecycle, equalityPolicy, initialChild)
+        }
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managed(
@@ -336,7 +357,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyProvider(CollectedViewModelProperty(childFlow, lifecycle, equalityPolicy, initialChild), published)
+        return ManagedPropertyProvider(published) { owner ->
+            CollectedViewModelProperty(childFlow, owner.lifecycle, equalityPolicy, initialChild)
+        }
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel> managedList(
@@ -344,7 +367,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<VM>>> {
-        return MutableManagedListPropertyProvider(ValueViewModelProperty(childModels, equalityPolicy), published)
+        return MutableManagedListPropertyProvider(published) {
+            ValueViewModelProperty(childModels, equalityPolicy)
+        }
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managedList(
@@ -353,7 +378,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return withNonRepeatingStateFlow(childStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedListPropertyProvider(CollectedViewModelProperty(autoFilteredFlow, lifecycle, equalityPolicy, initialValue), published)
+            ManagedListPropertyProvider(published) { owner ->
+                CollectedViewModelProperty(autoFilteredFlow, owner.lifecycle, equalityPolicy, initialValue)
+            }
         }
     }
 
@@ -364,10 +391,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         mapping: (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedListPropertyProvider(
-                CollectedViewModelProperty(autoFilteredFlow.map { mapping(it) }, lifecycle, equalityPolicy, mapping(initialValue)),
-                published,
-            )
+            ManagedListPropertyProvider(published) { owner ->
+                CollectedViewModelProperty(autoFilteredFlow.map { mapping(it) }, owner.lifecycle, equalityPolicy, mapping(initialValue))
+            }
         }
     }
 
@@ -378,10 +404,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
         mapping: suspend (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
-        return ManagedListPropertyProvider(
-            CollectedViewModelProperty(valueFlow.map { mapping(it) }, lifecycle, equalityPolicy, initialChild),
-            published,
-        )
+        return ManagedListPropertyProvider(published) { owner ->
+            CollectedViewModelProperty(valueFlow.map { mapping(it) }, owner.lifecycle, equalityPolicy, initialChild)
+        }
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managedList(
@@ -390,10 +415,9 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
-        return ManagedListPropertyProvider(
-            CollectedViewModelProperty(childFlow, lifecycle, equalityPolicy, initialChild),
-            published,
-        )
+        return ManagedListPropertyProvider(published) { owner ->
+            CollectedViewModelProperty(childFlow, owner.lifecycle, equalityPolicy, initialChild)
+        }
     }
 
     protected fun <OWNER: BaseViewModel, T> binding(
@@ -455,6 +479,16 @@ public abstract class BaseViewModel: ManageableViewModel {
         changeTrackingTrigger.notifyObjectWillChange()
     }
 
+    protected operator fun <OWNER: BaseViewModel, T> ViewModelProperty<T>.provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadOnlyProperty<OWNER, T> {
+        registerViewModelProperty(property, this)
+        return toKotlinProperty()
+    }
+
+    protected operator fun <OWNER: BaseViewModel, T> MutableViewModelProperty<T>.provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, T> {
+        registerViewModelProperty(property, this)
+        return toKotlinMutableProperty()
+    }
+
     internal fun <T> registerViewModelProperty(property: KProperty<*>, viewModelProperty: ViewModelProperty<T>) {
         check(!properties.containsKey(property.name)) {
             "ViewModelProperty for name ${property.name} (property: $property) already registered!"
@@ -469,14 +503,6 @@ public abstract class BaseViewModel: ManageableViewModel {
                 changeTrackingTrigger.notifyObjectDidChange()
             }
         })
-    }
-
-    internal fun <T> getPropertyObserver(property: KProperty<*>, initialValue: T): MutableStateFlow<T> {
-        // We assume this method is never called with a property named the same but with a different type.
-        @Suppress("UNCHECKED_CAST")
-        return propertyObservers.getOrPut(property.name) {
-            MutableStateFlow(initialValue)
-        } as MutableStateFlow<T>
     }
 
     private fun <T, RESULT> withNonRepeatingStateFlow(stateFlow: StateFlow<T>, block: (initialValue: T, autoFilteredFlow: Flow<T>) -> RESULT): RESULT {

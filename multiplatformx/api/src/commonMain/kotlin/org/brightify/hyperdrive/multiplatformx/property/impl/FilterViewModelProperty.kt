@@ -3,7 +3,7 @@ package org.brightify.hyperdrive.multiplatformx.property.impl
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
 
-internal class FilteringViewModelProperty<T>(
+internal class FilterViewModelProperty<T>(
     private val filtered: ViewModelProperty<T>,
     initialValue: T,
     private val predicate: (T) -> Boolean,

@@ -8,7 +8,7 @@ import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.DeferredViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
 
-internal class DeferredFilteringViewModelProperty<T>(
+internal class DeferredFilterViewModelProperty<T>(
     private val filtered: ViewModelProperty<T>,
     private val predicate: (T) -> Boolean,
     private val equalityPolicy: ViewModelProperty.EqualityPolicy<T>,

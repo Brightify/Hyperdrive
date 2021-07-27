@@ -4,7 +4,6 @@ import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
 
 internal class ViewModelPropertyListeners<T>(private val backing: ViewModelProperty<T>) {
-
     private val listeners = mutableSetOf<ViewModelProperty.ValueChangeListener<T>>()
 
     fun <U> runNotifyingListeners(newValue: T, block: (T) -> U): U {

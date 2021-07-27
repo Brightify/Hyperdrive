@@ -5,12 +5,12 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
-import org.brightify.hyperdrive.multiplatformx.property.impl.DeferredFilteringViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.DeferredFilterViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.DeferredToImmediateViewModelPropertyWrapper
-import org.brightify.hyperdrive.multiplatformx.property.impl.FilteringViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.FilterViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.ImmediateToDeferredViewModelPropertyWrapper
-import org.brightify.hyperdrive.multiplatformx.property.impl.MappingViewModelProperty
-import org.brightify.hyperdrive.multiplatformx.property.impl.SwitchMappingViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.MapViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.FlatMapLatestViewModelProperty
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -21,8 +21,6 @@ public interface ViewModelProperty<T> {
     public fun addListener(listener: ValueChangeListener<T>): CancellationToken
 
     public fun removeListener(listener: ValueChangeListener<T>): Boolean
-
-    public operator fun <OWNER> getValue(thisRef: OWNER, property: KProperty<*>): T = value
 
     public interface ValueChangeListener<T> {
         public fun valueWillChange(newValue: T) { }
@@ -51,20 +49,20 @@ public fun <T, U> ViewModelProperty<T>.map(
     equalityPolicy: ViewModelProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
     transform: (T) -> U
 ): ViewModelProperty<U> {
-    return MappingViewModelProperty(this, transform, equalityPolicy)
+    return MapViewModelProperty(this, transform, equalityPolicy)
 }
-public fun <T, U> ViewModelProperty<T>.switchMap(
+public fun <T, U> ViewModelProperty<T>.flatMapLatest(
     equalityPolicy: ViewModelProperty.EqualityPolicy<ViewModelProperty<U>> = identityEqualityPolicy(),
     transform: (T) -> ViewModelProperty<U>,
 ): ViewModelProperty<U> {
-    return SwitchMappingViewModelProperty(this, transform, equalityPolicy)
+    return FlatMapLatestViewModelProperty(this, transform, equalityPolicy)
 }
 
 public fun <T> ViewModelProperty<T>.filter(
     equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     predicate: (T) -> Boolean,
 ): DeferredViewModelProperty<T> {
-    return DeferredFilteringViewModelProperty(this, predicate, equalityPolicy)
+    return DeferredFilterViewModelProperty(this, predicate, equalityPolicy)
 }
 
 public fun <T> ViewModelProperty<T>.filter(
@@ -72,7 +70,7 @@ public fun <T> ViewModelProperty<T>.filter(
     equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     predicate: (T) -> Boolean,
 ): ViewModelProperty<T> {
-    return FilteringViewModelProperty(this, initialValue, predicate, equalityPolicy)
+    return FilterViewModelProperty(this, initialValue, predicate, equalityPolicy)
 }
 
 public suspend fun <T> ViewModelProperty<T>.nextValue(): T {
@@ -125,6 +123,6 @@ public fun <T> ViewModelProperty<T>.deferred(): DeferredViewModelProperty<T> {
     return ImmediateToDeferredViewModelPropertyWrapper(this)
 }
 
-public fun <T> DeferredViewModelProperty<T>.immediate(initialValue: T): ViewModelProperty<T> {
+public fun <T> DeferredViewModelProperty<T>.startWith(initialValue: T): ViewModelProperty<T> {
     return DeferredToImmediateViewModelPropertyWrapper(initialValue, this)
 }

@@ -3,7 +3,7 @@ package org.brightify.hyperdrive.multiplatformx.property.impl
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
 
-internal class MappingViewModelProperty<T, U>(
+internal class MapViewModelProperty<T, U>(
     private val mapped: ViewModelProperty<T>,
     private val transform: (T) -> U,
     private val equalityPolicy: ViewModelProperty.EqualityPolicy<U>,

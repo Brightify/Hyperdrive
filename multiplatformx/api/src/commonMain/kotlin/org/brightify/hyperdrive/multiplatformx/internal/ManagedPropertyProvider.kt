@@ -9,14 +9,11 @@ import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 internal class ManagedPropertyProvider<OWNER: BaseViewModel, VM: ManageableViewModel?>(
-    private val managedProperty: ViewModelProperty<VM>,
     private val publishedChanges: Boolean,
-): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-
-    override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadOnlyProperty<OWNER, VM> {
-        return managedProperty
-            .also { thisRef.registerViewModelProperty(property, it) }
-            .also { ManagedPropertyHandler(thisRef, it, publishedChanges) }
-            .toKotlinProperty()
+    private val managedPropertyFactory: (owner: OWNER) -> ViewModelProperty<VM>,
+): ViewModelPropertyProvider<OWNER, VM>(
+    viewModelPropertyFactory = { owner ->
+        managedPropertyFactory(owner)
+            .also { ManagedPropertyHandler(owner, it, publishedChanges) }
     }
-}
+)
