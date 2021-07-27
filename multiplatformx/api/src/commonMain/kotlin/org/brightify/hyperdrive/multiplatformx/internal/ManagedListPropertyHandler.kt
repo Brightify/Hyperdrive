@@ -7,7 +7,7 @@ import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.concat
 
-internal class ManagedPropertyListHandler<VM: ManageableViewModel?>(
+internal class ManagedListPropertyHandler<VM: ManageableViewModel?>(
     private val owner: BaseViewModel,
     private val property: ViewModelProperty<List<VM>>,
     private val publishedChanges: Boolean,

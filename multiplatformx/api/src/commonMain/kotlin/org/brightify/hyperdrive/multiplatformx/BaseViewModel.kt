@@ -5,9 +5,6 @@ package org.brightify.hyperdrive.multiplatformx
 import kotlinx.coroutines.flow.*
 import org.brightify.hyperdrive.multiplatformx.internal.BoundPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.CollectedPropertyProvider
-import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyFlowListProvider
-import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyFlowProvider
-import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyListProvider
 import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.PublishedPropertyProvider
 import kotlin.properties.PropertyDelegateProvider
@@ -18,8 +15,14 @@ import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
 import co.touchlab.stately.ensureNeverFrozen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.brightify.hyperdrive.multiplatformx.internal.ManagedListPropertyProvider
+import org.brightify.hyperdrive.multiplatformx.internal.MutableManagedListPropertyProvider
+import org.brightify.hyperdrive.multiplatformx.internal.MutableManagedPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
+import org.brightify.hyperdrive.multiplatformx.property.impl.CollectedViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.ValueViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.map
 
 /**
  * Common behavior for all view models.
@@ -278,7 +281,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, VM>> {
-        return ManagedPropertyProvider(childModel, published, equalityPolicy)
+        return MutableManagedPropertyProvider(ValueViewModelProperty(childModel, equalityPolicy), published)
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managed(
@@ -287,7 +290,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return withNonRepeatingStateFlow(childStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyFlowProvider(initialValue, autoFilteredFlow, published, equalityPolicy)
+            ManagedPropertyProvider(CollectedViewModelProperty(autoFilteredFlow, lifecycle, equalityPolicy, initialValue), published)
         }
     }
 
@@ -298,8 +301,20 @@ public abstract class BaseViewModel: ManageableViewModel {
         mapping: (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
         return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyFlowProvider(mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published, equalityPolicy)
+            ManagedPropertyProvider(
+                CollectedViewModelProperty(autoFilteredFlow.map { mapping(it) }, lifecycle, equalityPolicy, mapping(initialValue)),
+                published,
+            )
         }
+    }
+
+    protected fun <OWNER: BaseViewModel, T, VM: ManageableViewModel> managed(
+        property: ViewModelProperty<T>,
+        published: Boolean,
+        equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
+        mapping: (T) -> VM,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
+        return ManagedPropertyProvider(property.map(equalityPolicy, mapping), published)
     }
 
     protected fun <OWNER: BaseViewModel, T, VM: ManageableViewModel?> managed(
@@ -309,7 +324,10 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
         mapping: suspend (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyFlowProvider(initialChild, valueFlow.map { mapping(it) }, published, equalityPolicy)
+        return ManagedPropertyProvider(
+            CollectedViewModelProperty(valueFlow.map { mapping(it) }, lifecycle, equalityPolicy, initialChild),
+            published,
+        )
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managed(
@@ -318,7 +336,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         equalityPolicy: ViewModelProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> {
-        return ManagedPropertyFlowProvider(initialChild, childFlow, published, equalityPolicy)
+        return ManagedPropertyProvider(CollectedViewModelProperty(childFlow, lifecycle, equalityPolicy, initialChild), published)
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel> managedList(
@@ -326,7 +344,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, List<VM>>> {
-        return ManagedPropertyListProvider(changeTrackingTrigger, childModels, published, equalityPolicy)
+        return MutableManagedListPropertyProvider(ValueViewModelProperty(childModels, equalityPolicy), published)
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managedList(
@@ -335,7 +353,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return withNonRepeatingStateFlow(childStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyFlowListProvider(initialValue, autoFilteredFlow, published, equalityPolicy)
+            ManagedListPropertyProvider(CollectedViewModelProperty(autoFilteredFlow, lifecycle, equalityPolicy, initialValue), published)
         }
     }
 
@@ -346,7 +364,10 @@ public abstract class BaseViewModel: ManageableViewModel {
         mapping: (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
         return withNonRepeatingStateFlow(valueStateFlow) { initialValue, autoFilteredFlow ->
-            ManagedPropertyFlowListProvider(mapping(initialValue), autoFilteredFlow.map { mapping(it) }, published, equalityPolicy)
+            ManagedListPropertyProvider(
+                CollectedViewModelProperty(autoFilteredFlow.map { mapping(it) }, lifecycle, equalityPolicy, mapping(initialValue)),
+                published,
+            )
         }
     }
 
@@ -357,7 +378,10 @@ public abstract class BaseViewModel: ManageableViewModel {
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
         mapping: suspend (T) -> List<VM>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
-        return ManagedPropertyFlowListProvider(initialChild, valueFlow.map { mapping(it) }, published, equalityPolicy)
+        return ManagedListPropertyProvider(
+            CollectedViewModelProperty(valueFlow.map { mapping(it) }, lifecycle, equalityPolicy, initialChild),
+            published,
+        )
     }
 
     protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managedList(
@@ -366,7 +390,10 @@ public abstract class BaseViewModel: ManageableViewModel {
         published: Boolean = false,
         equalityPolicy: ViewModelProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
-        return ManagedPropertyFlowListProvider(initialChild, childFlow, published, equalityPolicy)
+        return ManagedListPropertyProvider(
+            CollectedViewModelProperty(childFlow, lifecycle, equalityPolicy, initialChild),
+            published,
+        )
     }
 
     protected fun <OWNER: BaseViewModel, T> binding(
