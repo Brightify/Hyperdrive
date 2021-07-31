@@ -102,7 +102,10 @@ val multiplatformXModules = listOf(
     "plugin"
 ) + if (enableCompose) listOf("compose") else emptyList()
 
-val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" }
+val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" } + listOf(
+    "multiplatformx-keyvalue" to "multiplatformx/keyvalue",
+    "multiplatformx-keyvalue-insecure-settings" to "multiplatformx/keyvalue/insecure/settings",
+)
 
 val exampleModules = listOf(
     "krpc",
