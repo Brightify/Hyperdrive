@@ -14,89 +14,90 @@ import org.brightify.hyperdrive.multiplatformx.keyvalue.impl.BaseKeyValueStorage
 
 @OptIn(ExperimentalSettingsApi::class, ExperimentalCoroutinesApi::class)
 public class MultiplatformSettingsKeyValueStorage(private val settings: ObservableSettings): BaseKeyValueStorage() {
+    override val storageSecurity: KeyValueStorage.StorageSecurity = KeyValueStorage.StorageSecurity.Insecure
 
     private val json = Json {
         classDiscriminator = "_type"
     }
     private val flowSettings = settings.toFlowSettings()
 
-    override fun <T: Any> contains(storageKey: KeyValueStorage.StorageKey<T>): Boolean = settings.contains(storageKey.key)
+    override fun <T: Any> contains(key: KeyValueStorage.Key<T>): Boolean = settings.contains(key.key)
 
     override fun purge(): Unit = settings.clear()
 
-    override fun <T: Any> getSerializable(storageKey: KeyValueStorage.StorageKey<T>): T? {
-        val serializableJson = settings.getStringOrNull(storageKey.key) ?: return null
-        return json.decodeFromString(storageKey.serializer, serializableJson)
+    override fun <T: Any> getSerializable(key: KeyValueStorage.Key<T>): T? {
+        val serializableJson = settings.getStringOrNull(key.key) ?: return null
+        return json.decodeFromString(key.serializer, serializableJson)
     }
 
-    override fun getBoolean(storageKey: KeyValueStorage.StorageKey<Boolean>): Boolean? = settings.getBooleanOrNull(storageKey.key)
-    override fun getDouble(storageKey: KeyValueStorage.StorageKey<Double>): Double? = settings.getDoubleOrNull(storageKey.key)
-    override fun getFloat(storageKey: KeyValueStorage.StorageKey<Float>): Float? = settings.getFloatOrNull(storageKey.key)
-    override fun getInt(storageKey: KeyValueStorage.StorageKey<Int>): Int? = settings.getIntOrNull(storageKey.key)
-    override fun getLong(storageKey: KeyValueStorage.StorageKey<Long>): Long? = settings.getLongOrNull(storageKey.key)
-    override fun getString(storageKey: KeyValueStorage.StorageKey<String>): String? = settings.getStringOrNull(storageKey.key)
+    override fun getBoolean(key: KeyValueStorage.Key<Boolean>): Boolean? = settings.getBooleanOrNull(key.key)
+    override fun getDouble(key: KeyValueStorage.Key<Double>): Double? = settings.getDoubleOrNull(key.key)
+    override fun getFloat(key: KeyValueStorage.Key<Float>): Float? = settings.getFloatOrNull(key.key)
+    override fun getInt(key: KeyValueStorage.Key<Int>): Int? = settings.getIntOrNull(key.key)
+    override fun getLong(key: KeyValueStorage.Key<Long>): Long? = settings.getLongOrNull(key.key)
+    override fun getString(key: KeyValueStorage.Key<String>): String? = settings.getStringOrNull(key.key)
 
-    override fun <T: Any> getSerializableFlow(storageKey: KeyValueStorage.StorageKey<T>): Flow<T?> =
-        flowSettings.getStringOrNullFlow(storageKey.key).map {
-            it?.let { json.decodeFromString(storageKey.serializer, it) }
+    override fun <T: Any> observeSerializable(key: KeyValueStorage.Key<T>): Flow<T?> =
+        flowSettings.getStringOrNullFlow(key.key).map {
+            it?.let { json.decodeFromString(key.serializer, it) }
         }
 
-    override fun getBooleanFlow(storageKey: KeyValueStorage.StorageKey<Boolean>): Flow<Boolean?> =
-        flowSettings.getBooleanOrNullFlow(storageKey.key)
+    override fun observeBoolean(key: KeyValueStorage.Key<Boolean>): Flow<Boolean?> =
+        flowSettings.getBooleanOrNullFlow(key.key)
 
-    override fun getDoubleFlow(storageKey: KeyValueStorage.StorageKey<Double>): Flow<Double?> =
-        flowSettings.getDoubleOrNullFlow(storageKey.key)
+    override fun observeDouble(key: KeyValueStorage.Key<Double>): Flow<Double?> =
+        flowSettings.getDoubleOrNullFlow(key.key)
 
-    override fun getFloatFlow(storageKey: KeyValueStorage.StorageKey<Float>): Flow<Float?> =
-        flowSettings.getFloatOrNullFlow(storageKey.key)
+    override fun observeFloat(key: KeyValueStorage.Key<Float>): Flow<Float?> =
+        flowSettings.getFloatOrNullFlow(key.key)
 
-    override fun getIntFlow(storageKey: KeyValueStorage.StorageKey<Int>): Flow<Int?> =
-        flowSettings.getIntOrNullFlow(storageKey.key)
+    override fun observeInt(key: KeyValueStorage.Key<Int>): Flow<Int?> =
+        flowSettings.getIntOrNullFlow(key.key)
 
-    override fun getLongFlow(storageKey: KeyValueStorage.StorageKey<Long>): Flow<Long?> =
-        flowSettings.getLongOrNullFlow(storageKey.key)
+    override fun observeLong(key: KeyValueStorage.Key<Long>): Flow<Long?> =
+        flowSettings.getLongOrNullFlow(key.key)
 
-    override fun getStringFlow(storageKey: KeyValueStorage.StorageKey<String>): Flow<String?> =
-        flowSettings.getStringOrNullFlow(storageKey.key)
+    override fun observeString(key: KeyValueStorage.Key<String>): Flow<String?> =
+        flowSettings.getStringOrNullFlow(key.key)
 
-    override fun <T: Any> setSerializable(storageKey: KeyValueStorage.StorageKey<T>, value: T?) {
+    override fun <T: Any> setSerializable(key: KeyValueStorage.Key<T>, value: T?) {
         if (value != null) {
-            val serializedJson = json.encodeToString(storageKey.serializer, value)
-            settings[storageKey.key] = serializedJson
+            val serializedJson = json.encodeToString(key.serializer, value)
+            settings[key.key] = serializedJson
         } else {
-            settings.remove(storageKey.key)
+            settings.remove(key.key)
         }
     }
 
-    override fun setBoolean(storageKey: KeyValueStorage.StorageKey<Boolean>, value: Boolean?): Unit = setOrRemove(storageKey, value) {
-        settings[storageKey.key] = it
+    override fun setBoolean(key: KeyValueStorage.Key<Boolean>, value: Boolean?): Unit = setOrRemove(key, value) {
+        settings[key.key] = it
     }
 
-    override fun setDouble(storageKey: KeyValueStorage.StorageKey<Double>, value: Double?): Unit = setOrRemove(storageKey, value) {
-        settings[storageKey.key] = it
+    override fun setDouble(key: KeyValueStorage.Key<Double>, value: Double?): Unit = setOrRemove(key, value) {
+        settings[key.key] = it
     }
 
-    override fun setFloat(storageKey: KeyValueStorage.StorageKey<Float>, value: Float?): Unit = setOrRemove(storageKey, value) {
-        settings[storageKey.key] = it
+    override fun setFloat(key: KeyValueStorage.Key<Float>, value: Float?): Unit = setOrRemove(key, value) {
+        settings[key.key] = it
     }
 
-    override fun setInt(storageKey: KeyValueStorage.StorageKey<Int>, value: Int?): Unit = setOrRemove(storageKey, value) {
-        settings[storageKey.key] = it
+    override fun setInt(key: KeyValueStorage.Key<Int>, value: Int?): Unit = setOrRemove(key, value) {
+        settings[key.key] = it
     }
 
-    override fun setLong(storageKey: KeyValueStorage.StorageKey<Long>, value: Long?): Unit = setOrRemove(storageKey, value) {
-        settings[storageKey.key] = it
+    override fun setLong(key: KeyValueStorage.Key<Long>, value: Long?): Unit = setOrRemove(key, value) {
+        settings[key.key] = it
     }
 
-    override fun setString(storageKey: KeyValueStorage.StorageKey<String>, value: String?): Unit = setOrRemove(storageKey, value) {
-        settings[storageKey.key] = it
+    override fun setString(key: KeyValueStorage.Key<String>, value: String?): Unit = setOrRemove(key, value) {
+        settings[key.key] = it
     }
 
-    private inline fun <T: Any> setOrRemove(storageKey: KeyValueStorage.StorageKey<T>, value: T?, doSet: (T) -> Unit) {
+    private inline fun <T: Any> setOrRemove(key: KeyValueStorage.Key<T>, value: T?, doSet: (T) -> Unit) {
         if (value != null) {
             doSet(value)
         } else {
-            settings.remove(storageKey.key)
+            settings.remove(key.key)
         }
     }
 }
