@@ -398,6 +398,15 @@ public abstract class BaseViewModel: ManageableViewModel {
     }
 
     protected fun <OWNER: BaseViewModel, T, VM: ManageableViewModel?> managedList(
+        property: ViewModelProperty<List<VM>>,
+        published: Boolean = false,
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
+        return ManagedListPropertyProvider(published) { owner ->
+            property
+        }
+    }
+
+    protected fun <OWNER: BaseViewModel, T, VM: ManageableViewModel?> managedList(
         initialChild: List<VM>,
         valueFlow: Flow<T>,
         published: Boolean = false,
