@@ -3,12 +3,14 @@
 package org.brightify.hyperdrive.multiplatformx
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import org.brightify.hyperdrive.multiplatformx.util.getValue
-import org.brightify.hyperdrive.multiplatformx.util.setValue
+import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
+import org.brightify.hyperdrive.multiplatformx.property.impl.MutexValueViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.ValueViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.map
+
+/* TODO: Split all observing and operators from BaseViewModel to ObservableObject. It can then be used here in InterfaceLock and possibly in
+ other places */
 
 /**
  * Locking for user interface operations.
@@ -26,12 +28,15 @@ public class InterfaceLock(
     private val lifecycle: Lifecycle,
     private val group: Group = Group(),
 ) {
-    private val mutableState = MutableStateFlow<State>(State.Idle)
-    public val observeState: StateFlow<State> = mutableState
-    public var state: State by mutableState
-        private set
-    public val isLocked: Boolean
-        get() = state == State.Running
+    private val mutableState = ValueViewModelProperty<State>(State.Idle, defaultEqualityPolicy())
+    public val observeState: ViewModelProperty<State> = mutableState
+    public var state: State
+        get() = mutableState.value
+        private set(newState) {
+            mutableState.value = newState
+        }
+    public val isLocked: Boolean get() = observeIsLocked.value
+    public val observeIsLocked: ViewModelProperty<Boolean> = mutableState.map { it == State.Running }
 
     /**
      * While the supplied `work` is running, this lock is considered taken and all other invocations of this method will just return, doing nothing.
@@ -61,17 +66,18 @@ public class InterfaceLock(
     public fun resetFailedState(): Boolean {
         val currentState = mutableState.value
         return if (currentState is State.Failed) {
-            mutableState.compareAndSet(currentState, State.Idle)
+            mutableState.value = State.Idle
+            true
         } else {
             false
         }
     }
 
     public class Group {
-        private val mutableIsOperationRunning = MutableStateFlow(false)
-        public val observeIsOperationRunning: StateFlow<Boolean> = mutableIsOperationRunning
-        public var isOperationRunning: Boolean by mutableIsOperationRunning
-            private set
+        private val mutableIsOperationRunning = MutexValueViewModelProperty(false, defaultEqualityPolicy())
+        public val observeIsOperationRunning: ViewModelProperty<Boolean> = mutableIsOperationRunning
+        public val isOperationRunning: Boolean
+            get() = mutableIsOperationRunning.value
 
         public suspend fun runExclusively(work: suspend () -> Unit) {
             if (!mutableIsOperationRunning.compareAndSet(expect = false, update = true)) {
@@ -81,7 +87,7 @@ public class InterfaceLock(
             try {
                 work()
             } finally {
-                mutableIsOperationRunning.value = false
+                mutableIsOperationRunning.set(false)
             }
         }
     }

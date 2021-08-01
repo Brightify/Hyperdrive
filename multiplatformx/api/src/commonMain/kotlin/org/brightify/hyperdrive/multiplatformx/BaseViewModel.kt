@@ -397,7 +397,7 @@ public abstract class BaseViewModel: ManageableViewModel {
         }
     }
 
-    protected fun <OWNER: BaseViewModel, T, VM: ManageableViewModel?> managedList(
+    protected fun <OWNER: BaseViewModel, VM: ManageableViewModel?> managedList(
         property: ViewModelProperty<List<VM>>,
         published: Boolean = false,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, List<VM>>> {
