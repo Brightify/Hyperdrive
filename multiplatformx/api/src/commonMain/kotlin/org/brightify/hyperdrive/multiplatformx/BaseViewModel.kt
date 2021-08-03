@@ -26,6 +26,7 @@ import org.brightify.hyperdrive.multiplatformx.property.impl.CollectedViewModelP
 import org.brightify.hyperdrive.multiplatformx.property.impl.ValueViewModelProperty
 import org.brightify.hyperdrive.multiplatformx.property.map
 import org.brightify.hyperdrive.multiplatformx.property.flatMapLatest
+import org.brightify.hyperdrive.multiplatformx.property.neverEqualPolicy
 import org.brightify.hyperdrive.multiplatformx.property.toKotlinMutableProperty
 import org.brightify.hyperdrive.multiplatformx.property.toKotlinProperty
 
@@ -147,6 +148,10 @@ public abstract class BaseViewModel: ManageableViewModel {
      * @see Lifecycle.whileAttached
      */
     protected open suspend fun whileAttached() { }
+
+    protected fun <T> constant(value: T): ViewModelProperty<T> {
+        return ValueViewModelProperty(value, neverEqualPolicy())
+    }
 
     /**
      * Property delegate used for property mutation tracking.
