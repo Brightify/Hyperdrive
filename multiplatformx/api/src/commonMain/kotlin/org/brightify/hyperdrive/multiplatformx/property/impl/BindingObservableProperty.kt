@@ -4,18 +4,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.Lifecycle
-import org.brightify.hyperdrive.multiplatformx.property.MutableViewModelProperty
-import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.MutableObservableProperty
+import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
 
-internal class BindingViewModelProperty<T, U>(
+internal class BindingObservableProperty<T, U>(
     initialValue: T,
     private val boundFlow: Flow<U>,
     lifecycle: Lifecycle,
-    private val equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+    private val equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     private val readMapping: (U) -> T,
     private val setter: (T) -> Unit,
-): MutableViewModelProperty<T> {
+): MutableObservableProperty<T> {
 
     private var valueStorage: T = initialValue
     override var value: T
@@ -28,7 +28,7 @@ internal class BindingViewModelProperty<T, U>(
             }
         }
 
-    private val listeners = ViewModelPropertyListeners(this)
+    private val listeners = ObservablePropertyListeners(this)
 
     init {
         lifecycle.whileAttached {
@@ -43,7 +43,8 @@ internal class BindingViewModelProperty<T, U>(
         }
     }
 
-    override fun addListener(listener: ViewModelProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ViewModelProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
 }
+

@@ -3,12 +3,12 @@ package org.brightify.hyperdrive.multiplatformx.property.impl
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
-import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 
-internal class MutexValueViewModelProperty<T>(
+internal class MutexValueObservableProperty<T>(
     initialValue: T,
-    private val equalityPolicy: ViewModelProperty.EqualityPolicy<T>,
-): ViewModelProperty<T> {
+    private val equalityPolicy: ObservableProperty.EqualityPolicy<T>,
+): ObservableProperty<T> {
 
     override var value: T = initialValue
         private set(newValue) {
@@ -19,11 +19,11 @@ internal class MutexValueViewModelProperty<T>(
             }
         }
     private val mutationLock = Mutex()
-    private val listeners = ViewModelPropertyListeners(this)
+    private val listeners = ObservablePropertyListeners(this)
 
-    override fun addListener(listener: ViewModelProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ViewModelProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
 
     suspend fun set(newValue: T): Unit = mutationLock.withLock {
         value = newValue

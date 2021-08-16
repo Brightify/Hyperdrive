@@ -4,19 +4,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.Lifecycle
-import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
 
-internal class CollectedViewModelProperty<T>(
+internal class CollectedObservableProperty<T>(
     private val flow: Flow<T>,
     private val lifecycle: Lifecycle,
-    private val equalityPolicy: ViewModelProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+    private val equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     initialValue: T,
-): ViewModelProperty<T> {
+): ObservableProperty<T> {
     override var value: T = initialValue
         private set
 
-    private val listeners = ViewModelPropertyListeners(this)
+    private val listeners = ObservablePropertyListeners(this)
 
     init {
         lifecycle.whileAttached {
@@ -29,7 +29,7 @@ internal class CollectedViewModelProperty<T>(
         }
     }
 
-    override fun addListener(listener: ViewModelProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ViewModelProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
 }

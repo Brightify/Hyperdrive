@@ -1,15 +1,15 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
-import org.brightify.hyperdrive.multiplatformx.BaseViewModel
+import org.brightify.hyperdrive.multiplatformx.BaseObservableManageableObject
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
-import org.brightify.hyperdrive.multiplatformx.property.MutableViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.MutableObservableProperty
 
-internal class MutableManagedListPropertyProvider<OWNER: BaseViewModel, VM: ManageableViewModel?>(
+internal class MutableManagedListPropertyProvider<OWNER: BaseObservableManageableObject, VM: ManageableViewModel?>(
     private val publishedChanges: Boolean,
-    private val managedPropertyFactory: (owner: OWNER) -> MutableViewModelProperty<List<VM>>,
-): MutableViewModelPropertyProvider<OWNER, List<VM>>(
-    viewModelPropertyFactory = { owner ->
+    private val managedPropertyFactory: (owner: OWNER) -> MutableObservableProperty<List<VM>>,
+): MutableObservablePropertyProvider<OWNER, List<VM>>(
+    observablePropertyFactory = { owner ->
         managedPropertyFactory(owner)
             .also { ManagedListPropertyHandler(owner, it, publishedChanges) }
-    }
+    },
 )

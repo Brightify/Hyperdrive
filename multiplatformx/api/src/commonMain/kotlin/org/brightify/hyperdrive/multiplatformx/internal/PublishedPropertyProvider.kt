@@ -1,15 +1,15 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
-import org.brightify.hyperdrive.multiplatformx.BaseViewModel
-import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
-import org.brightify.hyperdrive.multiplatformx.property.impl.ValueViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.BaseObservableObject
+import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.ValueObservableProperty
 
-internal class PublishedPropertyProvider<OWNER: BaseViewModel, T>(
+internal class PublishedPropertyProvider<OWNER: BaseObservableObject, T>(
     initialValue: T,
-    equalityPolicy: ViewModelProperty.EqualityPolicy<T>,
-): MutableViewModelPropertyProvider<OWNER, T>(
-    viewModelPropertyFactory = { _ ->
-        ValueViewModelProperty(initialValue, equalityPolicy)
+    equalityPolicy: ObservableProperty.EqualityPolicy<T>,
+): MutableObservablePropertyProvider<OWNER, T>(
+    observablePropertyFactory = { _ ->
+        ValueObservableProperty(initialValue, equalityPolicy)
     }
 )
 

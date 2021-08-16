@@ -26,14 +26,11 @@ import org.jetbrains.kotlin.ir.util.irConstructorCall
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationPluginContext
 
 class KrpcClientLowering(
     override val pluginContext: IrPluginContext,
     override val messageCollector: MessageCollector,
 ): KrpcIrElementTransformerVoidBase(), ClassLoweringPass {
-
-    override val compilerContext: SerializationPluginContext = pluginContext
 
     override fun lower(irClass: IrClass) {
         if (!irClass.isKrpcClient) { return }

@@ -1,13 +1,13 @@
 [versions]
-kotlin-coroutines = "1.5.0-native-mt"
-kotlin-serialization = "1.2.1"
+kotlin-coroutines = "1.5.1-native-mt"
+kotlin-serialization = "1.2.2"
 stately = "1.1.7"
-ktor = "1.6.0"
+ktor = "1.6.2"
 auto-service = "1.0"
 kotlin-compile-testing = "1.4.2"
 jupiter = "5.7.2"
 kotest = "4.6.0"
-compose = "1.0.0-rc01"
+compose = "1.0.1"
 multiplatformSettings = "0.7.7"
 
 [libraries]
@@ -19,6 +19,7 @@ serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-jso
 serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlin-serialization" }
 
 stately-common = { module = "co.touchlab:stately-common", version.ref = "stately" }
+stately-concurrency = { module = "co.touchlab:stately-concurrency", version.ref = "stately" }
 
 ktor-client-websockets = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }

@@ -1,12 +1,12 @@
 package org.brightify.hyperdrive.multiplatformx.internal
 
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
+import org.brightify.hyperdrive.multiplatformx.ObservableObject
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 internal open class MutableStateFlowBackedProperty<OWNER, T>(
-    private val objectWillChangeTrigger: ManageableViewModel.ChangeTrackingTrigger,
+    private val objectWillChangeTrigger: ObservableObject.ChangeTrackingTrigger,
     private val stateFlow: MutableStateFlow<T>
 ): ReadWriteProperty<OWNER, T> {
 

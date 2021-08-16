@@ -15,18 +15,13 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlinx.serialization.compiler.backend.ir.IrBuilderExtension
-import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationPluginContext
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), IrBuilderExtension, PluginContextExtension {
+abstract class KrpcIrElementTransformerVoidBase: IrElementTransformerVoid(), PluginContextExtension {
 
     abstract override val pluginContext: IrPluginContext
     protected abstract val messageCollector: MessageCollector
-
-    override val compilerContext: SerializationPluginContext
-        get() = pluginContext
 
     protected val flowType by lazy { pluginContext.referenceClass(KnownType.Coroutines.flow)!! }
 

@@ -69,7 +69,7 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
         }
         val observableDelegates = viewModelAnnotation.observableDelegates
 
-        val viewModelProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.viewModelProperty) ?: return
+        val viewModelProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.observableProperty) ?: return
         val mutableViewModelProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.mutableViewModelProperty) ?: return
 
         val referencedPropertyIdentifier = NamingHelper.getReferencedPropertyName(name.identifier) ?: return

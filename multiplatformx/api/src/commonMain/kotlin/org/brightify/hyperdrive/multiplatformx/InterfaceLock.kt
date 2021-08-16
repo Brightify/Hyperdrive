@@ -3,10 +3,10 @@
 package org.brightify.hyperdrive.multiplatformx
 
 import kotlinx.coroutines.CancellationException
-import org.brightify.hyperdrive.multiplatformx.property.ViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
-import org.brightify.hyperdrive.multiplatformx.property.impl.MutexValueViewModelProperty
-import org.brightify.hyperdrive.multiplatformx.property.impl.ValueViewModelProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.MutexValueObservableProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.ValueObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.map
 
 /* TODO: Split all observing and operators from BaseViewModel to ObservableObject. It can then be used here in InterfaceLock and possibly in
@@ -28,15 +28,15 @@ public class InterfaceLock(
     private val lifecycle: Lifecycle,
     private val group: Group = Group(),
 ) {
-    private val mutableState = ValueViewModelProperty<State>(State.Idle, defaultEqualityPolicy())
-    public val observeState: ViewModelProperty<State> = mutableState
+    private val mutableState = ValueObservableProperty<State>(State.Idle, defaultEqualityPolicy())
+    public val observeState: ObservableProperty<State> = mutableState
     public var state: State
         get() = mutableState.value
         private set(newState) {
             mutableState.value = newState
         }
     public val isLocked: Boolean get() = observeIsLocked.value
-    public val observeIsLocked: ViewModelProperty<Boolean> = mutableState.map { it == State.Running }
+    public val observeIsLocked: ObservableProperty<Boolean> = mutableState.map { it == State.Running }
 
     /**
      * While the supplied `work` is running, this lock is considered taken and all other invocations of this method will just return, doing nothing.
@@ -74,8 +74,8 @@ public class InterfaceLock(
     }
 
     public class Group {
-        private val mutableIsOperationRunning = MutexValueViewModelProperty(false, defaultEqualityPolicy())
-        public val observeIsOperationRunning: ViewModelProperty<Boolean> = mutableIsOperationRunning
+        private val mutableIsOperationRunning = MutexValueObservableProperty(false, defaultEqualityPolicy())
+        public val observeIsOperationRunning: ObservableProperty<Boolean> = mutableIsOperationRunning
         public val isOperationRunning: Boolean
             get() = mutableIsOperationRunning.value
 
