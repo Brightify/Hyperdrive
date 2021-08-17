@@ -1,8 +1,13 @@
 buildscript {
-    val isProbablySupportingJetpackCompose: Boolean =
-        extra.properties.getOrDefault("android.injected.studio.version", "").toString().toLowerCase().contains("canary") ||
-                extra.properties.getOrDefault("android.injected.studio.version", "").toString().toLowerCase().contains("beta") ||
-                extra.properties.getOrDefault("enableCompose", "false").toString().toBoolean()
+    val androidStudioVersionSuffixes = listOf(
+        "canary",
+        "dev",
+        "beta",
+        "final",
+    )
+    val isProbablySupportingJetpackCompose: Boolean = androidStudioVersionSuffixes.any {
+        extra.properties.getOrDefault("android.injected.studio.version", "").toString().toLowerCase().contains(it)
+    } || extra.properties.getOrDefault("enableCompose", "false").toString().toBoolean()
 
     extra["enableCompose"] = isProbablySupportingJetpackCompose
 
