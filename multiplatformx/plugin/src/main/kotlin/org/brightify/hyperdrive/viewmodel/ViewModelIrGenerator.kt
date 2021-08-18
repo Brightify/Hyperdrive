@@ -20,7 +20,10 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.parent
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.addAll
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
 import org.jetbrains.kotlin.ir.declarations.lazy.IrLazyField
@@ -37,6 +40,7 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPropertyGetter
 import org.jetbrains.kotlin.ir.util.getSimpleFunction
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.Name
@@ -56,7 +60,9 @@ class ViewModelIrGenerator(
         val lazyValue = lazy.getPropertyGetter(ViewModelNames.Kotlin.Lazy.value.identifier) ?: return
         val observe = irClass.functions.singleOrNull { it.name == Name.identifier("observe") } ?: return
 
-        for (property in irClass.properties) {
+        val observePropertyIndices = mutableSetOf<Int>()
+        for ((index, declaration) in irClass.declarations.withIndex()) {
+            val property = declaration as? IrProperty ?: continue
             val referencedPropertyName = NamingHelper.getReferencedPropertyName(property.name.identifier) ?: continue
 
             val propertyGetter = property.getter ?: continue
@@ -110,6 +116,20 @@ class ViewModelIrGenerator(
                     }
                 )
             }
+            observePropertyIndices.add(index)
         }
+
+        val observableDeclarations = ArrayList<IrDeclaration>(observePropertyIndices.count())
+        val otherDeclarations = ArrayList<IrDeclaration>(irClass.declarations.count() - observePropertyIndices.count())
+        for ((index, declaration) in irClass.declarations.withIndex()) {
+            if (observePropertyIndices.contains(index)) {
+                observableDeclarations.add(declaration)
+            } else {
+                otherDeclarations.add(declaration)
+            }
+        }
+        irClass.declarations.clear()
+        irClass.addAll(observableDeclarations)
+        irClass.addAll(otherDeclarations)
     }
 }

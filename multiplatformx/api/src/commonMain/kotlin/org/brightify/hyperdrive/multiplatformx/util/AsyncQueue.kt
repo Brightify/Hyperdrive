@@ -11,9 +11,9 @@ import kotlinx.coroutines.isActive
 import org.brightify.hyperdrive.multiplatformx.Lifecycle
 
 public class AsyncQueue<T>(
-    private val action: suspend (T) -> Unit,
     private val overflowPolicy: OverflowPolicy,
     private val lifecycle: Lifecycle,
+    private val action: suspend (T) -> Unit,
 ) {
     private var runningJob: Job? = null
 

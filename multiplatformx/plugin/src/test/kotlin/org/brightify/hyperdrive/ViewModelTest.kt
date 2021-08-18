@@ -16,15 +16,18 @@ internal class ViewModelTest {
             import org.brightify.hyperdrive.multiplatformx.BaseViewModel
             import kotlinx.coroutines.flow.StateFlow
             import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
+            import org.brightify.hyperdrive.multiplatformx.property.map
                
             @ViewModel
             class TestViewModel: BaseViewModel() {
                 var name: String by published("hello")
                 val _observeName by observe(::name)
+                val mappedName by observeName.map { it.count() }
             
                 fun test() {
                     println(name)
                     println(observeName.value)
+                    // println(observeMappedName.value)
                 }
             }
         """.trimIndent())

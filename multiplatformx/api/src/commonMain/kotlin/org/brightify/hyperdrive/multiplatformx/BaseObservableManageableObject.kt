@@ -19,9 +19,11 @@ import org.brightify.hyperdrive.multiplatformx.internal.ManagedPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.MutableManagedListPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.MutableManagedPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.ObservablePropertyProvider
+import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
 import org.brightify.hyperdrive.multiplatformx.property.flatMapLatest
+import org.brightify.hyperdrive.multiplatformx.property.impl.AsyncMapDeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.CollectedObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.ValueObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.map
@@ -210,12 +212,18 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
 
     protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel> managed(
         property: ObservableProperty<T>,
-        published: Boolean,
+        published: Boolean = false,
         equalityPolicy: ObservableProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
         mapping: (T) -> VM,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> = ManagedPropertyProvider(published) {
         property.map(equalityPolicy, mapping)
     }
+
+    protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel> managed(
+        property: ObservableProperty<VM>,
+        published: Boolean = false,
+        equalityPolicy: ObservableProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
+    ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> = managed(property, published, equalityPolicy) { it }
 
     protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel?> managed(
         initialChild: VM,
@@ -338,6 +346,20 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         overflowPolicy: AsyncQueue.OverflowPolicy = AsyncQueue.OverflowPolicy.Conflate,
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> =
         AsyncBoundPropertyProvider(mapping(stateFlow.value), stateFlow, mapping, asyncSet, equalityPolicy, overflowPolicy)
+
+    protected fun <T> StateFlow<T>.asObservable(
+        equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+    ): ObservableProperty<T> {
+        return CollectedObservableProperty(this, lifecycle, equalityPolicy, value)
+    }
+
+    protected fun <T, U> ObservableProperty<T>.asyncMap(
+        equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+        overflowPolicy: AsyncQueue.OverflowPolicy = AsyncQueue.OverflowPolicy.Conflate,
+        block: suspend (T) -> U,
+    ): DeferredObservableProperty<U> {
+        return AsyncMapDeferredObservableProperty(this, block, lifecycle, equalityPolicy, overflowPolicy)
+    }
 
     private fun <T, RESULT> withNonRepeatingStateFlow(
         stateFlow: StateFlow<T>,

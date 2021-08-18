@@ -44,4 +44,3 @@ open class ViewModelIrGenerationExtension(
         return ComposeViewIrGenerator(this, messageCollector, types)
     }
 }
-

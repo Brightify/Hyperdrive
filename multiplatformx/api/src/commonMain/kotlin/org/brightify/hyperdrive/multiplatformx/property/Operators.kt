@@ -39,17 +39,17 @@ public fun <T> ObservableProperty<T>.filter(
     return FilterObservableProperty(this, initialValue, predicate, equalityPolicy)
 }
 
-public fun <T> ObservableProperty.Companion.combineLatest(sources: List<ObservableProperty<T>>): ObservableProperty<List<T>> {
+public fun <T> combine(sources: List<ObservableProperty<T>>): ObservableProperty<List<T>> {
     return CombineLatestObservableProperty(sources)
 }
 
-public fun <T1, T2> ObservableProperty.Companion.combineLatest(
+public fun <T1, T2> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
-): ObservableProperty<Pair<T1, T2>> = combineLatest(source1, source2, ::Pair)
+): ObservableProperty<Pair<T1, T2>> = combine(source1, source2, ::Pair)
 
 @Suppress("UNCHECKED_CAST")
-public fun <T1, T2, U> ObservableProperty.Companion.combineLatest(
+public fun <T1, T2, U> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
     combine: (T1, T2) -> U,
@@ -66,14 +66,14 @@ public fun <T1, T2, U> ObservableProperty.Companion.combineLatest(
     }
 }
 
-public fun <T1, T2, T3, U> ObservableProperty.Companion.combineLatest(
+public fun <T1, T2, T3, U> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
     source3: ObservableProperty<T3>,
-): ObservableProperty<Triple<T1, T2, T3>> = combineLatest(source1, source2, source3, ::Triple)
+): ObservableProperty<Triple<T1, T2, T3>> = combine(source1, source2, source3, ::Triple)
 
 @Suppress("UNCHECKED_CAST")
-public fun <T1, T2, T3, U> ObservableProperty.Companion.combineLatest(
+public fun <T1, T2, T3, U> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
     source3: ObservableProperty<T3>,
@@ -92,7 +92,7 @@ public fun <T1, T2, T3, U> ObservableProperty.Companion.combineLatest(
 }
 
 @Suppress("UNCHECKED_CAST")
-public fun <T1, T2, T3, T4, U> ObservableProperty.Companion.combineLatest(
+public fun <T1, T2, T3, T4, U> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
     source3: ObservableProperty<T3>,
@@ -113,7 +113,7 @@ public fun <T1, T2, T3, T4, U> ObservableProperty.Companion.combineLatest(
 }
 
 @Suppress("UNCHECKED_CAST")
-public fun <T1, T2, T3, T4, T5, U> ObservableProperty.Companion.combineLatest(
+public fun <T1, T2, T3, T4, T5, U> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
     source3: ObservableProperty<T3>,

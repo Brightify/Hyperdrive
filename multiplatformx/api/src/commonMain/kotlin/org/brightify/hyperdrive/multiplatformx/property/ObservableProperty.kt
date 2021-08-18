@@ -6,8 +6,12 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
+import org.brightify.hyperdrive.multiplatformx.Lifecycle
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -30,8 +34,6 @@ public interface ObservableProperty<T> {
     public fun interface EqualityPolicy<T> {
         public fun isEqual(oldValue: T, newValue: T): Boolean
     }
-
-    public companion object
 }
 
 public suspend fun <T> ObservableProperty<T>.nextValue(): T {
@@ -77,6 +79,6 @@ public fun <T> ObservableProperty<T>.asChannel(): Channel<T> {
     return channel
 }
 
-public fun <T> ObservableProperty<T>.asFlow(): Flow<T> {
-    return asChannel().consumeAsFlow()
+public fun <T> ObservableProperty<T>.asFlow(): Flow<T> = flow {
+    emitAll(asChannel())
 }

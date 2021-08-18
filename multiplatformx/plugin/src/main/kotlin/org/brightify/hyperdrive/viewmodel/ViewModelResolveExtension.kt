@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -14,12 +15,15 @@ import org.jetbrains.kotlin.descriptors.impl.PropertyGetterDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
+import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
+import org.jetbrains.kotlin.resolve.lazy.declarations.PackageMemberDeclarationProvider
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.typeUtil.createProjection
@@ -133,8 +137,8 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
             val realDescriptor =
                 thisDescriptor.unsubstitutedMemberScope.getContributedVariables(it, NoLookupLocation.FROM_SYNTHETIC_SCOPE)
                     .singleOrNull() ?: return@filter false
-            val delegateCallExpression = (realDescriptor.findPsi() as? KtProperty)?.delegateExpression
-            delegateCallExpression != null && observableDelegates.any { delegateCallExpression.text.startsWith("$it(") }
+            val delegateCallExpression = (realDescriptor.findPsi() as? KtProperty)?.delegateExpression ?: return@filter false
+            observableDelegates.any { delegateCallExpression.text.startsWith("$it(") }
         }?.map {
             Name.identifier(NamingHelper.getObservingPropertyName(it.identifier))
         } ?: emptyList()
