@@ -29,7 +29,7 @@ android {
         freeCompilerArgs += listOf(
             "-P", "plugin:org.brightify.hyperdrive.multiplatformx:enabled=true",
             "-P", "plugin:org.brightify.hyperdrive.multiplatformx:viewmodel.enabled=true",
-            "-P", "plugin:org.brightify.hyperdrive.multiplatformx:viewmodel.autoobserve.enabled=true",
+            "-P", "plugin:org.brightify.hyperdrive.multiplatformx:viewmodel.compose-auto-observe.enabled=true",
             "-P", "plugin:org.brightify.hyperdrive.multiplatformx:autofactory.enabled=true"
         )
     }
