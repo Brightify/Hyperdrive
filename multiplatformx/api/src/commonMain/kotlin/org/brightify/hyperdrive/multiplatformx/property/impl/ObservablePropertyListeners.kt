@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
+import org.brightify.hyperdrive.multiplatformx.impl.BaseCancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.utils.WeakReference
 
@@ -31,7 +32,7 @@ internal class ObservablePropertyListeners<T>(private val backing: ObservablePro
         val reference = WeakReference(listener)
         listeners.add(reference)
         return CancellationToken {
-            listeners.remove(reference)
+            removeListener(listener)
         }
     }
 
@@ -41,4 +42,3 @@ internal class ObservablePropertyListeners<T>(private val backing: ObservablePro
         }
     }
 }
-

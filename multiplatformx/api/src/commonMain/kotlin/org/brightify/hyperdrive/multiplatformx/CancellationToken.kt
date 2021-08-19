@@ -1,16 +1,17 @@
 package org.brightify.hyperdrive.multiplatformx
 
-public class CancellationToken(private val onCancel: () -> Unit) {
-    public var isCanceled: Boolean = false
-        private set
-    
-    public fun cancel() {
-        check(!isCanceled) { "Canceling an already canceled token is illegal." }
-        onCancel()
-        isCanceled = true
-    }
+import org.brightify.hyperdrive.multiplatformx.impl.BlockCancellationToken
+
+public interface CancellationToken {
+    public val isCanceled: Boolean
+
+    public fun cancel()
 
     public companion object {
+        public operator fun invoke(onCancel: () -> Unit): CancellationToken {
+            return BlockCancellationToken(onCancel)
+        }
+
         public fun concat(tokens: Iterable<CancellationToken>): CancellationToken {
             return CancellationToken {
                 for (token in tokens) {
@@ -22,3 +23,4 @@ public class CancellationToken(private val onCancel: () -> Unit) {
 }
 
 public fun Iterable<CancellationToken>.concat(): CancellationToken = CancellationToken.concat(this)
+
