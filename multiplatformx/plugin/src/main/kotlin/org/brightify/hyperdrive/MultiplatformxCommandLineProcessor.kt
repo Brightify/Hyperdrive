@@ -29,7 +29,7 @@ class MultiplatformxCommandLineProcessor: CommandLineProcessor {
         val enabled = PluginOption("enabled", "<true|false>", "")
         val autoFactoryEnabled = PluginOption("autofactory.enabled", "<true|false>", "")
         val viewModelEnabled = PluginOption("viewmodel.enabled", "<true|false>", "")
-        val viewModelAutoObserveEnabled = PluginOption("viewmodel.autoobserve.enabled", "<true|false>", "")
+        val viewModelAutoObserveEnabled = PluginOption("viewmodel.composable-auto-observe.enabled", "<true|false>", "")
     }
 
     override fun processOption(option: AbstractCliOption, value: String, configuration: CompilerConfiguration) {
@@ -39,7 +39,7 @@ class MultiplatformxCommandLineProcessor: CommandLineProcessor {
             Options.enabled -> configuration.putIfNotNull(MultiplatformXConfigurationKeys.isEnabled, value.toBooleanLenient())
             Options.autoFactoryEnabled -> configuration.putIfNotNull(MultiplatformXConfigurationKeys.AutoFactory.isEnabled, value.toBooleanLenient())
             Options.viewModelEnabled -> configuration.putIfNotNull(MultiplatformXConfigurationKeys.ViewModel.isEnabled, value.toBooleanLenient())
-            Options.viewModelAutoObserveEnabled -> configuration.putIfNotNull(MultiplatformXConfigurationKeys.ViewModel.isAutoObserveEnabled, value.toBooleanLenient())
+            Options.viewModelAutoObserveEnabled -> configuration.putIfNotNull(MultiplatformXConfigurationKeys.ViewModel.isComposableAutoObserveEnabled, value.toBooleanLenient())
         }
     }
 }

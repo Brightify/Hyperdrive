@@ -25,7 +25,7 @@ object MultiplatformXConfigurationKeys {
 
     object ViewModel {
         val isEnabled = CompilerConfigurationKey<Boolean>("viewmodel.enabled")
-        val isAutoObserveEnabled = CompilerConfigurationKey<Boolean>("viewmodel.autoobserve.enabled")
+        val isComposableAutoObserveEnabled = CompilerConfigurationKey<Boolean>("viewmodel.composable-auto-observe.enabled")
     }
 }
 
@@ -44,11 +44,15 @@ class MultiplatformXComponentRegistrar: ComponentRegistrar {
             registerAutoFactoryExtensions(project)
         }
 
-        if (configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isEnabled)) {
+        if (
+            configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isEnabled) ||
+            configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isComposableAutoObserveEnabled)
+        ) {
             registerViewModelExtensions(
                 project,
                 messageCollector,
-                configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isAutoObserveEnabled),
+                configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isEnabled),
+                configuration.getBoolean(MultiplatformXConfigurationKeys.ViewModel.isComposableAutoObserveEnabled),
             )
         }
     }
@@ -61,12 +65,14 @@ class MultiplatformXComponentRegistrar: ComponentRegistrar {
     private fun registerViewModelExtensions(
         project: MockProject,
         messageCollector: MessageCollector,
-        isAutoObserveEnabled: Boolean,
+        isViewModelEnabled: Boolean,
+        isComposableAutoObserveEnabled: Boolean,
     ) {
         SyntheticResolveExtension.registerExtension(project, ViewModelResolveExtension())
         val irGenerationExtension = ViewModelIrGenerationExtension(
             messageCollector,
-            isAutoObserveEnabled,
+            isViewModelEnabled,
+            isComposableAutoObserveEnabled,
         )
         @Suppress("UnstableApiUsage")
         project.extensionArea.getExtensionPoint(IrGenerationExtension.extensionPointName)

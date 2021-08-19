@@ -19,18 +19,16 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.parent
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.addAll
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
 import org.jetbrains.kotlin.ir.declarations.lazy.IrLazyField
 import org.jetbrains.kotlin.ir.expressions.IrPropertyReference
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrPropertyReferenceImpl
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrDelegatingPropertySymbolImpl
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrFieldSymbolImpl
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.dump
@@ -50,15 +48,19 @@ import org.jetbrains.kotlin.types.typeUtil.createProjection
 import java.util.*
 
 class ViewModelIrGenerator(
-    private val pluginContext: IrPluginContext
+    private val pluginContext: IrPluginContext,
+    private val types: Types,
 ): IrElementTransformerVoid(), ClassLoweringPass {
+
+    class Types(
+        val lazy: IrClassSymbol,
+        val lazyValue: IrSimpleFunctionSymbol,
+        val observe: IrSimpleFunctionSymbol,
+    )
+
     @OptIn(ObsoleteDescriptorBasedAPI::class)
     override fun lower(irClass: IrClass) {
         if (!irClass.hasAnnotation(ViewModelNames.Annotation.viewModel)) { return }
-
-        val lazy = pluginContext.referenceClass(ViewModelNames.Kotlin.lazy) ?: return
-        val lazyValue = lazy.getPropertyGetter(ViewModelNames.Kotlin.Lazy.value.identifier) ?: return
-        val observe = irClass.functions.singleOrNull { it.name == Name.identifier("observe") } ?: return
 
         val observePropertyIndices = mutableSetOf<Int>()
         for ((index, declaration) in irClass.declarations.withIndex()) {
@@ -79,7 +81,7 @@ class ViewModelIrGenerator(
                 origin = IrDeclarationOrigin.PROPERTY_DELEGATE,
                 symbol = IrFieldSymbolImpl(property.descriptor),
                 name = Name.identifier("${property.name.identifier}\$delegate"),
-                type = lazy.typeWith(propertyGetter.returnType),
+                type = types.lazy.typeWith(propertyGetter.returnType),
                 visibility = DescriptorVisibilities.PRIVATE,
                 isFinal = true,
                 isExternal = false,
@@ -87,7 +89,7 @@ class ViewModelIrGenerator(
             ).also { field ->
                 field.parent = irClass
                 field.initializer = declarationBuilder.irExprBody(
-                    declarationBuilder.irCall(observe.symbol, field.type).apply {
+                    declarationBuilder.irCall(types.observe, field.type).apply {
                         putTypeArgument(0, referencedProperty.getter!!.returnType)
                         dispatchReceiver = irClass.thisReceiver?.let { declarationBuilder.irGet(it) }
                         putValueArgument(0,
@@ -111,7 +113,7 @@ class ViewModelIrGenerator(
             property.backingField = delegateField
             propertyGetter.body = declarationBuilder.irBlockBody {
                 +irReturn(
-                    irCall(lazyValue, propertyGetter.returnType).apply {
+                    irCall(types.lazyValue, propertyGetter.returnType).apply {
                         dispatchReceiver = irGetField(propertyGetter.dispatchReceiverParameter?.let { irGet(it) }, delegateField)
                     }
                 )

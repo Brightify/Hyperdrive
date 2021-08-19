@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.viewmodel
 
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.codegen.kotlinType
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
@@ -17,16 +18,27 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.stubs.impl.Utils
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DelegatedPropertyResolver
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
+import org.jetbrains.kotlin.resolve.calls.CallResolver
 import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
+import org.jetbrains.kotlin.resolve.descriptorUtil.isSubclassOf
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
 import org.jetbrains.kotlin.resolve.lazy.declarations.PackageMemberDeclarationProvider
+import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
+import org.jetbrains.kotlin.types.DeferredType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.expressions.FakeCallResolver
 import org.jetbrains.kotlin.types.typeUtil.createProjection
+import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
+import org.jetbrains.kotlin.types.typeUtil.replaceArgumentsWithStarProjections
 
 open class ViewModelResolveExtension(private val messageCollector: MessageCollector = MessageCollector.NONE): SyntheticResolveExtension {
     private companion object {
@@ -73,8 +85,8 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
         }
         val observableDelegates = viewModelAnnotation.observableDelegates
 
-        val viewModelProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.observableProperty) ?: return
-        val mutableViewModelProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.mutableViewModelProperty) ?: return
+        val observableProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.observableProperty) ?: return
+        val mutableObservableProperty = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.mutableViewModelProperty) ?: return
 
         val referencedPropertyIdentifier = NamingHelper.getReferencedPropertyName(name.identifier) ?: return
 
@@ -83,8 +95,15 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
             .getContributedVariables(refName, NoLookupLocation.FROM_SYNTHETIC_SCOPE)
             .singleOrNull() ?: return
 
+        // This is needed because it triggers the type resolve.
+        @Suppress("UNUSED_VARIABLE")
+        val resolvedRealType = (realDescriptor.type as? DeferredType)?.delegate
+        val delegatedType = (realDescriptor.findPsi() as? KtProperty)?.delegateExpressionOrInitializer?.kotlinType(bindingContext)
         val delegateCallExpression = (realDescriptor.findPsi() as? KtProperty)?.delegateExpression
-        if (delegateCallExpression != null && observableDelegates.any { delegateCallExpression.text.startsWith("$it(") })
+        if (
+            (delegatedType != null && delegatedType.isSubtypeOf(observableProperty.defaultType.replaceArgumentsWithStarProjections())) ||
+            (delegateCallExpression != null  && observableDelegates.any { delegateCallExpression.text.startsWith("$it(") })
+        ) {
             result.add(
                 PropertyDescriptorImpl.create(
                     thisDescriptor,
@@ -104,7 +123,7 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
                 ).apply {
                     val type = KotlinTypeFactory.simpleNotNullType(
                         Annotations.EMPTY,
-                        if (realDescriptor.isVar) mutableViewModelProperty else viewModelProperty,
+                        if (realDescriptor.isVar) mutableObservableProperty else observableProperty,
                         listOf(createProjection(realDescriptor.returnTypeOrNothing, Variance.INVARIANT, null))
                     )
 
@@ -128,17 +147,18 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
                     setType(type, emptyList(), thisDescriptor.thisAsReceiverParameter, null)
                 }
             )
+        }
     }
 
     override fun getSyntheticPropertiesNames(thisDescriptor: ClassDescriptor): List<Name> {
-        val viewModelAnnotation = thisDescriptor.annotations.findAnnotation(ViewModelNames.Annotation.viewModel) ?: return emptyList()
-        val observableDelegates = viewModelAnnotation.observableDelegates
+        if (!thisDescriptor.annotations.hasAnnotation(ViewModelNames.Annotation.viewModel)) {
+            return emptyList()
+        }
         return thisDescriptor.unsubstitutedMemberScope.getClassifierNames()?.filter {
             val realDescriptor =
                 thisDescriptor.unsubstitutedMemberScope.getContributedVariables(it, NoLookupLocation.FROM_SYNTHETIC_SCOPE)
                     .singleOrNull() ?: return@filter false
-            val delegateCallExpression = (realDescriptor.findPsi() as? KtProperty)?.delegateExpression ?: return@filter false
-            observableDelegates.any { delegateCallExpression.text.startsWith("$it(") }
+            (realDescriptor.findPsi() as? KtProperty)?.hasDelegateExpression() ?: false
         }?.map {
             Name.identifier(NamingHelper.getObservingPropertyName(it.identifier))
         } ?: emptyList()

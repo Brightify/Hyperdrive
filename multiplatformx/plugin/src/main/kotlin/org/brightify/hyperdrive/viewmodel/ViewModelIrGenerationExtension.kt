@@ -7,20 +7,42 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPropertyGetter
+import org.jetbrains.kotlin.name.Name
 
 open class ViewModelIrGenerationExtension(
     private val messageCollector: MessageCollector = MessageCollector.NONE,
-    private val autoObserveEnabled: Boolean = false,
+    private val viewModelEnabled: Boolean = false,
+    private val composableAutoObserveEnabled: Boolean = false,
 ): IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val generator = ViewModelIrGenerator(pluginContext)
+        val generator = pluginContext.viewModelIrGenerator()
         val composeViewIrGenerator = pluginContext.composeViewIrGenerator()
 
         for (file in moduleFragment.files) {
-            generator.runOnFilePostfix(file)
+            generator?.runOnFilePostfix(file)
             composeViewIrGenerator?.runOnFilePostfix(file)
         }
+    }
+
+    private fun IrPluginContext.viewModelIrGenerator(): ViewModelIrGenerator? {
+        fun logDisabledReason(reason: String): ViewModelIrGenerator? {
+            messageCollector.report(CompilerMessageSeverity.WARNING, "ViewModel Observe Property generator disabled. Reason: $reason.")
+            return null
+        }
+
+        if (!viewModelEnabled) { return null }
+        val lazy = referenceClass(ViewModelNames.Kotlin.lazy) ?: return logDisabledReason("could not resolve Lazy<T> class")
+        val observableObject = referenceClass(ViewModelNames.API.observableObject) ?: return logDisabledReason("could not resolve ObservableObject class")
+        val observe = observableObject.functions.singleOrNull { it.owner.name == Name.identifier("observe") } ?: return logDisabledReason("could not resolve `observe` method for `ObservableObject` class")
+
+        val types = ViewModelIrGenerator.Types(
+            lazy = lazy,
+            lazyValue = lazy.getPropertyGetter(ViewModelNames.Kotlin.Lazy.value.identifier) ?: return logDisabledReason("could not resolve `value` getter for `Lazy<T>` class"),
+            observe = observe,
+        )
+        return ViewModelIrGenerator(this, types)
     }
 
     private fun IrPluginContext.composeViewIrGenerator(): ComposeViewIrGenerator? {
@@ -29,7 +51,7 @@ open class ViewModelIrGenerationExtension(
             return null
         }
 
-        if (!autoObserveEnabled) { return null }
+        if (!composableAutoObserveEnabled) { return null }
         val stateType = referenceClass(ViewModelNames.Compose.state) ?: return logDisabledReason("could not resolve `State<T>` class")
         val manageableViewModel = referenceClass(ViewModelNames.API.manageableViewModel.asSingleFqName()) ?: return logDisabledReason("could not resolve `ManageableViewModel` class")
         val types = ComposeViewIrGenerator.Types(

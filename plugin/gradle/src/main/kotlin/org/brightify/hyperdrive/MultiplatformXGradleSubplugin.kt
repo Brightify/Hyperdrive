@@ -21,7 +21,7 @@ class MultiplatformXGradleSubplugin: KotlinCompilerPluginSupportPlugin {
                     MultiplatformxCommandLineProcessor.Options.enabled.subpluginOption("true"),
                     MultiplatformxCommandLineProcessor.Options.autoFactoryEnabled.subpluginOption(multiplatformX.isAutoFactoryEnabled),
                     MultiplatformxCommandLineProcessor.Options.viewModelEnabled.subpluginOption(multiplatformX.isViewModelEnabled),
-                    MultiplatformxCommandLineProcessor.Options.viewModelAutoObserveEnabled.subpluginOption(multiplatformX.isAutoObserveEnabled),
+                    MultiplatformxCommandLineProcessor.Options.viewModelAutoObserveEnabled.subpluginOption(multiplatformX.isComposableAutoObserveEnabled),
                 )
             } else {
                 listOf(
