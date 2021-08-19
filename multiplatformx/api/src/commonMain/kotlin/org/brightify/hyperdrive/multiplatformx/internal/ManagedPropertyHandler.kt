@@ -9,17 +9,17 @@ internal class ManagedPropertyHandler<VM: ManageableViewModel?>(
     private val owner: BaseObservableManageableObject,
     private val property: ObservableProperty<VM>,
     private val publishedChanges: Boolean,
-) {
+): ObservableProperty.ValueChangeListener<VM> {
     private var publishJobCancellation: CancellationToken? = null
 
     init {
         addChild(property.value)
-        property.addListener(object: ObservableProperty.ValueChangeListener<VM> {
-            override fun valueDidChange(oldValue: VM, newValue: VM) {
-                removeChild(oldValue)
-                addChild(property.value)
-            }
-        })
+        property.addListener(this)
+    }
+
+    override fun valueDidChange(oldValue: VM, newValue: VM) {
+        removeChild(oldValue)
+        addChild(property.value)
     }
 
     private fun addChild(child: VM) {
