@@ -34,7 +34,7 @@ open class ViewModelIrGenerationExtension(
 
         if (!viewModelEnabled) { return null }
         val lazy = referenceClass(ViewModelNames.Kotlin.lazy) ?: return logDisabledReason("could not resolve Lazy<T> class")
-        val observableObject = referenceClass(ViewModelNames.API.observableObject) ?: return logDisabledReason("could not resolve ObservableObject class")
+        val observableObject = referenceClass(ViewModelNames.API.baseObservableObject) ?: return logDisabledReason("could not resolve BaseObservableObject class")
         val observe = observableObject.functions.singleOrNull { it.owner.name == Name.identifier("observe") } ?: return logDisabledReason("could not resolve `observe` method for `ObservableObject` class")
 
         val types = ViewModelIrGenerator.Types(

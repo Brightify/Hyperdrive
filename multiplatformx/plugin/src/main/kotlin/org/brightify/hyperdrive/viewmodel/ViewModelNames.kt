@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.brightify.hyperdrive.multiplatformx.BaseViewModel
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
-import org.brightify.hyperdrive.multiplatformx.ObservableObject
+import org.brightify.hyperdrive.multiplatformx.BaseObservableObject
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.MutableObservableProperty
 import org.jetbrains.kotlin.name.ClassId
@@ -29,8 +29,8 @@ object ViewModelNames {
     object API {
         val baseViewModel = classIdOf(BaseViewModel::class)
         val manageableViewModel = classIdOf(ManageableViewModel::class)
-        val observableObjectClassId = classIdOf(ObservableObject::class)
-        val observableObject = observableObjectClassId.asSingleFqName()
+        val baseObservableObjectClassId = classIdOf(BaseObservableObject::class)
+        val baseObservableObject = baseObservableObjectClassId.asSingleFqName()
         val observableProperty = classIdOf(ObservableProperty::class)
         val mutableViewModelProperty = classIdOf(MutableObservableProperty::class)
     }
