@@ -20,8 +20,10 @@ The most basic of the delegates, allows the views to observe changes the view mo
 `List`s and `Map`s only capture changes on assignment (i.e. `list = newList`), so mutating them in any other way is not propagated.
 :::
 
-### `collected`
-Works similarly to `published`, although this one is used for observing a `Flow` or `StateFlow` and mapping the values if needed.
+### `collected` and `collectedFlatMapLatest`
+Works similarly to `published`, although this one is used for observing an `ObservableProperty`, `Flow`, or `StateFlow` and mapping the values if needed.
+
+The `collectedFlatMapLatest` variant maps the value into an `ObservableProperty` or `StateFlow` that is then observed.
 
 :::tip
 Properties declared using the property delegates are mappable, this allows for a property depending on another to be observable as well.
@@ -41,6 +43,9 @@ class BedViewModel: BaseViewModel() {
 Due to the way view model hierarchy works in Hyperdrive, it is recommended to use `managed` for a single view model and `managedList` for a list of view models. This automatically *manages* them to make sure that they don't perform any unnecessary work when they aren't yet used in the view hierarchy.
 
 In case you need a view model to eagerly perform work like observe flows in `collected` and perform code in `whileAttached()`, you may use `published` instead, though that is not recommended unless you're really sure what you're doing.
+
+### `binding`
+Creates a two-way binding where assigning a value to the property assigns the value to the provided `MutableStateFlow` or uses a setter closure. This delegate is appropriate when you want to immediately propagate changes from the view model into the layer above it.
 
 ## Annotations
 The following annotations are used by the **Hyperdrive Gradle plugin** to generate and modify IR to let you focus on the code and not the surrounding boilerplate.
