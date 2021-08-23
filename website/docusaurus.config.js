@@ -1,85 +1,97 @@
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+const lightCodeTheme = require("prism-react-renderer/themes/github");
+const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
-  title: 'Hyperdrive',
-  tagline: 'Kotlin Multiplatform Extensions',
-  url: 'https://hyperdrive.tools',
-  baseUrl: '/',
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
-  favicon: 'img/favicon.ico',
-  organizationName: 'Brightify', // Usually your GitHub org/user name.
-  projectName: 'hyperdrive-kt', // Usually your repo name.
+  title: "Hyperdrive",
+  tagline: "Kotlin Multiplatform Extensions",
+  url: "https://hyperdrive.tools",
+  baseUrl: "/",
+  onBrokenLinks: "throw",
+  onBrokenMarkdownLinks: "warn",
+  favicon: "img/favicon.ico",
+  organizationName: "Brightify", // Usually your GitHub org/user name.
+  projectName: "hyperdrive-kt", // Usually your repo name.
   themeConfig: {
     navbar: {
-      title: 'Hyperdrive',
+      title: "Hyperdrive",
       logo: {
-        alt: 'Hyperdrive Logo',
-        src: 'img/logo.svg',
+        alt: "Hyperdrive Logo",
+        src: "img/logo.svg",
       },
       items: [
         {
-          type: 'doc',
-          docId: 'krpc/intro',
-          position: 'left',
-          label: 'kRPC',
+          type: "doc",
+          docId: "getting-started/intro",
+          position: "left",
+          label: "Getting Started",
         },
         {
-          type: 'doc',
-          docId: 'tutorials/intro',
-          position: 'left',
-          label: 'Tutorials',
+          type: "doc",
+          docId: "multiplatformx/intro",
+          position: "left",
+          label: "MultiplatformX",
         },
-        {to: '/blog', label: 'Blog', position: 'left'},
-        {to: '/markdown-page', label: 'Markdown Page', position: 'left'},
         {
-          href: 'https://github.com/Brightify/hyperdrive-kt',
-          label: 'GitHub',
-          position: 'right',
+          type: "doc",
+          docId: "krpc/intro",
+          position: "left",
+          label: "kRPC",
+        },
+        {
+          type: "doc",
+          docId: "tutorials/intro",
+          position: "left",
+          label: "Tutorials",
+        },
+        { to: "/blog", label: "Blog", position: "left" },
+        { to: "/markdown-page", label: "Markdown Page", position: "left" },
+        {
+          href: "https://github.com/Brightify/hyperdrive-kt",
+          label: "GitHub",
+          position: "right",
         },
       ],
     },
     footer: {
-      style: 'dark',
+      style: "dark",
       links: [
         {
-          title: 'Docs',
+          title: "Docs",
           items: [
             {
-              label: 'Tutorials',
-              to: '/docs/tutorials/intro',
+              label: "Tutorials",
+              to: "/docs/tutorials/intro",
             },
           ],
         },
         {
-          title: 'Community',
+          title: "Community",
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/hyperdrive',
+              label: "Stack Overflow",
+              href: "https://stackoverflow.com/questions/tagged/hyperdrive",
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/Brightify',
+              label: "Discord",
+              href: "https://discordapp.com/invite/Brightify",
             },
             {
-              label: 'Twitter',
-              href: 'https://twitter.com/BrightifyOrg',
+              label: "Twitter",
+              href: "https://twitter.com/BrightifyOrg",
             },
           ],
         },
         {
-          title: 'More',
+          title: "More",
           items: [
             {
-              label: 'Blog',
-              to: '/blog',
+              label: "Blog",
+              to: "/blog",
             },
             {
-              label: 'GitHub',
-              href: 'https://github.com/Brightify/hyperdrive-kt',
+              label: "GitHub",
+              href: "https://github.com/Brightify/hyperdrive-kt",
             },
           ],
         },
@@ -89,26 +101,27 @@ module.exports = {
     prism: {
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
+      additionalLanguages: ["kotlin", "swift"],
     },
   },
   presets: [
     [
-      '@docusaurus/preset-classic',
+      "@docusaurus/preset-classic",
       {
         docs: {
-          sidebarPath: require.resolve('./sidebars.js'),
+          sidebarPath: require.resolve("./sidebars.js"),
           // Please change this to your repo.
           editUrl:
-            'https://github.com/Brightify/hyperdrive-kt/edit/main/website/',
+            "https://github.com/Brightify/hyperdrive-kt/edit/main/website/",
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           editUrl:
-            'https://github.com/Brightify/hyperdrive-kt/edit/main/website/blog/',
+            "https://github.com/Brightify/hyperdrive-kt/edit/main/website/blog/",
         },
         theme: {
-          customCss: require.resolve('./src/css/custom.css'),
+          customCss: require.resolve("./src/css/custom.css"),
         },
       },
     ],
