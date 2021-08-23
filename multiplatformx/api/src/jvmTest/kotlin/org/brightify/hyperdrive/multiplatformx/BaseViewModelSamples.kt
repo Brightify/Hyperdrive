@@ -34,6 +34,27 @@ class BaseViewModelSamples {
     }
 
     @Test
+    fun managedListTest() = runBlocking {
+        class Child: BaseViewModel()
+
+        class Parent: BaseViewModel() {
+            val child by managedList(listOf(Child()))
+        }
+
+        val parent = Parent()
+        parent.lifecycle.attach(testScope)
+        delay(1000)
+        parent.lifecycle.detach()
+        delay(1000)
+        parent.lifecycle.attach(testScope)
+        delay(1000)
+        parent.lifecycle.detach()
+        delay(1000)
+        parent.lifecycle.attach(testScope)
+        delay(1000)
+    }
+
+    @Test
     fun notifyObjectWillChange() {
         class Sample: BaseViewModel() {
             var name: String? = null

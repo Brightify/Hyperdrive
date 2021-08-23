@@ -1,7 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
 /**
- * Enables automatic factory generator for the annotated class, or a class containing the annotated constructor.
+ * Enables automatic factory generation for the annotated class, or a class containing the annotated constructor.
  *
  * When a class is annotated, a primary constructor is used to create a new instance of the class by the generated factory.
  * When a constructor is annotated, it's used to create a new instance of the class by the generated factory.

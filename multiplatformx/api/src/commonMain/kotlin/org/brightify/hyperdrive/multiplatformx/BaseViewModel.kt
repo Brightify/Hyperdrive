@@ -23,7 +23,7 @@ import kotlin.reflect.KProperty
  * In the native code that depends on a module using [BaseViewModel], add the following implementation:
  *
  * ```
- * #warning("Don't forget to import the Kotlin multiplatform framework instead of this warning.")
+ * #warning("Import the Kotlin multiplatform framework in place of this warning.")
  * import Combine
  *
  * extension BaseViewModel: ObservableObject {
@@ -51,14 +51,14 @@ import kotlin.reflect.KProperty
  *
  * ### With AutoObserve (default)
  *
- * When using the Hyperdrive Gradle plugin, once `multiplatformx` is enabled, each `@Composable` function is transformed to automatically
- * observe any view model parameters.
+ * When using the Hyperdrive Gradle plugin, once `multiplatformx` is enabled, each `@Composable` function's IR is modified
+ * to automatically observe any view model parameters.
  *
  * ### Without AutoObserve
  *
- *  To access an observable property, use the [observe] method, passing it a property which has been declared using one of the provided
- *  property delegates. To further minimize required boilerplate, the Hyperdrive Kotlin compiler plugin generates `observeX` properties
- *  for each property `x` serving as quick access to the [ObservableProperty] for the given property.
+ * To access an observable property, use the [observe] method, passing it a property which has been declared using one of the provided
+ * property delegates. To further minimize required boilerplate, the Hyperdrive Kotlin compiler plugin generates `observeX` properties
+ * for each property `x` serving as quick access to the [ObservableProperty] for the given property.
  *
  * ```
  * @ViewModel
@@ -96,13 +96,25 @@ public abstract class BaseViewModel: BaseObservableManageableObject(), Manageabl
     protected val instanceLock: InterfaceLock
         get() = locks.instanceLock
 
+    /**
+     * Create a new lock. When provided with a group, the lock will compete with other locks linked to this group.
+     */
     protected fun createLock(group: InterfaceLock.Group? = null): InterfaceLock = locks.createLock(group)
 
+    /**
+     * Get (or create) a lock lock that is specific to the provided object.
+     */
     protected fun objectLock(obj: Any): InterfaceLock = locks.objectLock(obj)
 
+    /**
+     * Get (or create) a lock that is specific to the provided property with support for providing a lock group.
+     */
     protected fun propertyLock(property: KProperty<*>, group: InterfaceLock.Group? = null): InterfaceLock
         = locks.propertyLock(property, group)
 
+    /**
+     * Get (or create) a lock that is specific to the provided function with support for providing a lock group.
+     */
     protected fun functionLock(function: KFunction<*>, group: InterfaceLock.Group? = null): InterfaceLock
         = locks.functionLock(function, group)
 

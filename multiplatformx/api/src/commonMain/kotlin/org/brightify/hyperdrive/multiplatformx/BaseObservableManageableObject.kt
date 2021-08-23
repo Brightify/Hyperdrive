@@ -159,6 +159,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         flatMapping: (T) -> StateFlow<U>,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> = collectedFlatMapLatest(property, equalityPolicy, flatMapping)
 
+    /**
+     * Property delegate used to mirror an instance of [ObservableProperty], flat-mapping its value and only observing the latest's [ObservableProperty]'s changes.
+     *
+     * @see collected
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, U> collectedFlatMapLatest(
         property: ObservableProperty<T>,
         equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
@@ -177,7 +182,7 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
      * Any child view model that is a part of your view model should be initiated using the managed delegate. Its [lifecycle] then automatically
      * attached and detached from the parent view model's [lifecycle].
      *
-     * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managed
+     * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managedTest
      */
     protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel?> managed(
         childModel: VM,
@@ -187,6 +192,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         ValueObservableProperty(childModel, equalityPolicy)
     }
 
+    /**
+     * Property delegate used for view model composition.
+     *
+     * This variant takes in a [StateFlow] instead of just the value.
+     */
     protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel?> managed(
         childStateFlow: StateFlow<VM>,
         published: Boolean = false,
@@ -198,6 +208,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
             }
         }
 
+    /**
+     * Property delegate used for view model composition.
+     *
+     * This variant takes in a value [StateFlow] and a mapping function that converts it into a view model.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel?> managed(
         valueStateFlow: StateFlow<T>,
         published: Boolean = false,
@@ -210,6 +225,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
             }
         }
 
+    /**
+     * Property delegate used for view model composition.
+     *
+     * This variant takes in an [ObservableProperty] and a mapping function that converts it into a view model.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel> managed(
         property: ObservableProperty<T>,
         published: Boolean = false,
@@ -219,12 +239,22 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         property.map(equalityPolicy, mapping)
     }
 
+    /**
+     * Property delegate used for view model composition.
+     *
+     * This variant takes in an [ObservableProperty].
+     */
     protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel> managed(
         property: ObservableProperty<VM>,
         published: Boolean = false,
         equalityPolicy: ObservableProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, VM>> = managed(property, published, equalityPolicy) { it }
 
+    /**
+     * Property delegate used for view model composition.
+     *
+     * This variant accepts a [Flow], a mapping closure, but needs an initial view model.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel?> managed(
         initialChild: VM,
         valueFlow: Flow<T>,
@@ -235,6 +265,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         CollectedObservableProperty(valueFlow.map { mapping(it) }, owner.lifecycle, equalityPolicy, initialChild)
     }
 
+    /**
+     * Property delegate used for view model composition.
+     *
+     * This variant accepts a [Flow], but needs an initial view model.
+     */
     protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel?> managed(
         initialChild: VM,
         childFlow: Flow<VM>,
@@ -244,6 +279,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         CollectedObservableProperty(childFlow, owner.lifecycle, equalityPolicy, initialChild)
     }
 
+    /**
+     * List variant property delegate used for view model composition.
+     *
+     * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managedListTest
+     */
     protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel> managedList(
         childModels: List<VM>,
         published: Boolean = false,
@@ -252,6 +292,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         ValueObservableProperty(childModels, equalityPolicy)
     }
 
+    /**
+     * List variant property delegate used for view model composition.
+     *
+     * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managedListTest
+     */
     protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel?> managedList(
         childStateFlow: StateFlow<List<VM>>,
         published: Boolean = false,
@@ -263,6 +308,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
             }
         }
 
+    /**
+     * List variant property delegate used for view model composition.
+     *
+     * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managedListTest
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel?> managedList(
         valueStateFlow: StateFlow<T>,
         published: Boolean = false,
@@ -275,6 +325,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
             }
         }
 
+    /**
+     * List variant property delegate used for view model composition.
+     *
+     * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managedListTest
+     */
     protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel?> managedList(
         property: ObservableProperty<List<VM>>,
         published: Boolean = false,
@@ -282,6 +337,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         property
     }
 
+    /**
+     * List variant property delegate used for view model composition.
+     *
+     * This variant accepts a [Flow], a mapping closure, but needs an initial value.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel?> managedList(
         initialChild: List<VM>,
         valueFlow: Flow<T>,
@@ -292,6 +352,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         CollectedObservableProperty(valueFlow.map { mapping(it) }, owner.lifecycle, equalityPolicy, initialChild)
     }
 
+    /**
+     * List variant property delegate used for view model composition.
+     *
+     * This variant accepts a [Flow], but needs an initial value.
+     */
     protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel?> managedList(
         initialChild: List<VM>,
         childFlow: Flow<List<VM>>,
@@ -301,12 +366,20 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
         CollectedObservableProperty(childFlow, owner.lifecycle, equalityPolicy, initialChild)
     }
 
+    /**
+     * Property delegate used to create a two-way binding.
+     * Assigning a value to this delegate also modifies the provided [MutableStateFlow].
+     */
     protected fun <OWNER: BaseObservableManageableObject, T> binding(
         stateFlow: MutableStateFlow<T>,
         equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> =
         BoundPropertyProvider(stateFlow.value, stateFlow, { it }, { stateFlow.value = it }, equalityPolicy)
 
+    /**
+     * Property delegate used to create a two-way binding.
+     * This variation allows for mapping the value.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, U> binding(
         stateFlow: MutableStateFlow<U>,
         readMapping: (U) -> T,
@@ -315,6 +388,10 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> =
         BoundPropertyProvider(readMapping(stateFlow.value), stateFlow, readMapping, { stateFlow.value = writeMapping(it) }, equalityPolicy)
 
+    /**
+     * Property delegate used to create a two-way binding.
+     * This variation doesn't set the assigned value back to the [StateFlow] and instead uses the provided setter.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T> binding(
         stateFlow: StateFlow<T>,
         equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
@@ -322,6 +399,11 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> =
         BoundPropertyProvider(stateFlow.value, stateFlow, { it }, set, equalityPolicy)
 
+    /**
+     * Property delegate used to create a two-way binding.
+     * This variation allows for mapping the value
+     * and doesn't set the assigned value back to the [StateFlow] and instead uses the provided setter.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, U> binding(
         stateFlow: StateFlow<U>,
         mapping: (U) -> T,
@@ -330,6 +412,10 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> =
         BoundPropertyProvider(mapping(stateFlow.value), stateFlow, mapping, set, equalityPolicy)
 
+    /**
+     * Property delegate used to create a two-way binding.
+     * This variation allows providing an asynchronous setter.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T> binding(
         stateFlow: StateFlow<T>,
         equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
@@ -338,6 +424,10 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> =
         AsyncBoundPropertyProvider(stateFlow.value, stateFlow, { it }, asyncSet, equalityPolicy, overflowPolicy)
 
+    /**
+     * Property delegate used to create a two-way binding.
+     * This variation allows for mapping the value and uses the provided asynchronous setter.
+     */
     protected fun <OWNER: BaseObservableManageableObject, T, U> binding(
         stateFlow: StateFlow<U>,
         mapping: (U) -> T,
@@ -347,12 +437,18 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> =
         AsyncBoundPropertyProvider(mapping(stateFlow.value), stateFlow, mapping, asyncSet, equalityPolicy, overflowPolicy)
 
+    /**
+     * Conversion method from [StateFlow] to [ObservableProperty].
+     */
     protected fun <T> StateFlow<T>.asObservable(
         equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     ): ObservableProperty<T> {
         return CollectedObservableProperty(this, lifecycle, equalityPolicy, value)
     }
 
+    /**
+     * Mapping method that uses the provided asynchronous mapping closure.
+     */
     protected fun <T, U> ObservableProperty<T>.asyncMap(
         equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
         overflowPolicy: AsyncQueue.OverflowPolicy = AsyncQueue.OverflowPolicy.Conflate,

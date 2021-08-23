@@ -35,6 +35,10 @@ public class InterfaceLock(
         private set(newState) {
             mutableState.value = newState
         }
+
+    /**
+     * Whether the lock is currently executing work and is locked.
+     */
     public val isLocked: Boolean get() = observeIsLocked.value
     public val observeIsLocked: ObservableProperty<Boolean> = mutableState.map { it == State.Running }
 
@@ -73,12 +77,21 @@ public class InterfaceLock(
         }
     }
 
+    /**
+     * Exclusive access lock group. Multiple locks in the same group are competing with each other.
+     *
+     * When `runExclusively` is executing on one lock in the group, second lock's `runExclusively`
+     * bounces as if the second lock was already in middle of executing `runExclusively` itself.
+     */
     public class Group {
         private val mutableIsOperationRunning = MutexValueObservableProperty(false, defaultEqualityPolicy())
         public val observeIsOperationRunning: ObservableProperty<Boolean> = mutableIsOperationRunning
         public val isOperationRunning: Boolean
             get() = mutableIsOperationRunning.value
 
+        /**
+         * While the supplied `work` is running, this group is considered locked and all other invocations of this method will just return, doing nothing.
+         */
         public suspend fun runExclusively(work: suspend () -> Unit) {
             if (!mutableIsOperationRunning.compareAndSet(expect = false, update = true)) {
                 return
@@ -92,9 +105,23 @@ public class InterfaceLock(
         }
     }
 
+    /**
+     * State of the lock.
+     */
     public sealed class State {
+        /**
+         * Lock is currently executing work.
+         */
         public object Running: State()
+
+        /**
+         * Lock has failed during work execution and provides the [throwable].
+         */
         public class Failed(public val throwable: Throwable): State()
+
+        /**
+         * Lock is currently not executing work.
+         */
         public object Idle: State()
     }
 }

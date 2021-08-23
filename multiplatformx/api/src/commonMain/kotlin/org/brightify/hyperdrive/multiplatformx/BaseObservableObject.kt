@@ -92,6 +92,13 @@ public abstract class BaseObservableObject: ObservableObject {
         return PublishedPropertyProvider(initialValue, equalityPolicy)
     }
 
+    /**
+     * Property delegate used for collecting changes of the provided [ObservableProperty].
+     */
+    @Deprecated(
+        "Use `ObservableProperty.map` directly.",
+        ReplaceWith("property.map(equalityPolicy, mapping)", "org.brightify.hyperdrive.multiplatformx.property.map")
+    )
     protected fun <OWNER: BaseObservableObject, T, U> collected(
         property: ObservableProperty<T>,
         equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
