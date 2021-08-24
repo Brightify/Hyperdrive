@@ -32,7 +32,7 @@ Example:
 ```kotlin title="BedViewModel.kt"
 @ViewModel
 class BedViewModel: BaseViewModel() {
-    var monstersNearby = published(0)
+    var monstersNearby by published(0)
 
     val isSleepAvailable by observeMonstersNearby.map { it.isEmpty }
 }
