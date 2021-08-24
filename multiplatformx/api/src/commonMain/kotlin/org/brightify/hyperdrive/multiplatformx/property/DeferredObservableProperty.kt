@@ -52,7 +52,7 @@ public interface DeferredObservableProperty<T> {
          * @param oldValue current value
          * @param newValue next value
          */
-        public fun valueWillChange(oldValue: T, newValue: T) { }
+        public fun valueWillChange(oldValue: T?, newValue: T) { }
 
         /**
          * Listener method called after [DeferredObservableProperty] value changes.
@@ -60,6 +60,6 @@ public interface DeferredObservableProperty<T> {
          * @param oldValue previous value
          * @param newValue current value
          */
-        public fun valueDidChange(oldValue: T, newValue: T) { }
+        public fun valueDidChange(oldValue: T?, newValue: T) { }
     }
 }
