@@ -3,6 +3,8 @@ import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 plugins {
     kotlin("multiplatform")
     `maven-publish`
+    // Include in documentation generation.
+    id("org.jetbrains.dokka")
 }
 
 kotlin {
@@ -31,4 +33,8 @@ kotlin {
             }
         }
     }
+}
+
+tasks.dokkaHtmlPartial.configure {
+    moduleName.set("Tachyon Server Implementation (${moduleName.get()})")
 }

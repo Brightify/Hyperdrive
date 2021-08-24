@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    // Include in documentation generation.
+    id("org.jetbrains.dokka")
 }
 
 kotlin {
@@ -48,3 +50,6 @@ kotlin {
     }
 }
 
+tasks.dokkaHtmlPartial.configure {
+    moduleName.set("Tachyon Client Implementation (${moduleName.get()})")
+}

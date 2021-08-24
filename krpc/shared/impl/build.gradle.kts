@@ -1,6 +1,8 @@
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    // Include in documentation generation.
+    id("org.jetbrains.dokka")
 }
 
 kotlin {
@@ -49,4 +51,8 @@ kotlin {
             languageSettings.useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
         }
     }
+}
+
+tasks.dokkaHtmlPartial.configure {
+    moduleName.set("Tachyon Shared Implementation (${moduleName.get()})")
 }

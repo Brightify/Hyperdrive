@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # IDE Plugin
 
-Working in tandem with the **Hyperdrive Gradle Plugin** to bring you auto-completion for the generated IR like `observeName` and view model factories (from `name`).
+Working in tandem with the **Hyperdrive Gradle Plugin** to bring you auto-completion for the generated IR like `observeName` (from `name`) and view model factories.
 
 Available on the [JetBrains plugin store][jetbrains-plugin-store].
 

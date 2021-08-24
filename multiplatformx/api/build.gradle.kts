@@ -1,5 +1,7 @@
 plugins {
     kotlin("multiplatform")
+    // Include in documentation generation.
+    id("org.jetbrains.dokka")
 }
 
 kotlin {
@@ -53,4 +55,8 @@ kotlin {
             dependsOn(nativeMain)
         }
     }
+}
+
+tasks.dokkaHtmlPartial.configure {
+    moduleName.set("Singularity API (${moduleName.get()})")
 }

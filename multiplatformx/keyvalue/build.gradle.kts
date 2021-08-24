@@ -1,5 +1,7 @@
 plugins {
     kotlin("multiplatform")
+    // Include in documentation generation.
+    id("org.jetbrains.dokka")
 }
 
 kotlin {
@@ -65,4 +67,8 @@ kotlin {
             dependsOn(nativeTest)
         }
     }
+}
+
+tasks.dokkaHtmlPartial.configure {
+    moduleName.set("Singularity Key-Value Storage (${moduleName.get()})")
 }

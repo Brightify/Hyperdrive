@@ -45,7 +45,11 @@ module.exports = {
           label: "Tutorials",
         },
         { to: "/blog", label: "Blog", position: "left" },
-        { to: "/markdown-page", label: "Markdown Page", position: "left" },
+        {
+          href: "https://hyperdrive.tools/reference",
+          label: "Reference",
+          position: "left",
+        },
         {
           href: "https://github.com/Brightify/hyperdrive-kt",
           label: "GitHub",

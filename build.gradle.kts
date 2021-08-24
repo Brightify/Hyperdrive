@@ -27,8 +27,6 @@ allprojects {
         gradlePluginPortal()
     }
 
-    apply(plugin = "org.jetbrains.dokka")
-
     group = "org.brightify.hyperdrive"
 
     tasks.withType(KotlinJvmCompile::class).all {
@@ -140,4 +138,11 @@ subprojects {
             }
         }
     }
+}
+
+tasks.dokkaHtmlMultiModule.configure {
+    suppressInheritedMembers.set(true)
+    suppressObviousFunctions.set(true)
+
+    outputDirectory.set(rootDir.resolve("website/static/reference"))
 }
