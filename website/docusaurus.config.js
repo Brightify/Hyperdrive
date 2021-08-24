@@ -12,6 +12,7 @@ module.exports = {
   favicon: "img/favicon.ico",
   organizationName: "Brightify", // Usually your GitHub org/user name.
   projectName: "hyperdrive-kt", // Usually your repo name.
+  trailingSlash: false,
   themeConfig: {
     navbar: {
       title: "Hyperdrive",
