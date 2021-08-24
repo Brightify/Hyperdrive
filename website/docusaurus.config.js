@@ -7,7 +7,7 @@ module.exports = {
   tagline: "Kotlin Multiplatform Extensions",
   url: "https://hyperdrive.tools",
   baseUrl: "/",
-  onBrokenLinks: "throw",
+  onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.ico",
   organizationName: "Brightify", // Usually your GitHub org/user name.
