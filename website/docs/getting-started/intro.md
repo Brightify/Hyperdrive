@@ -72,7 +72,7 @@ struct NewAccountView {
 }
 ```
 
-**Jetpack Compose**, thanks to the **Hyperdrive Gradle plugin** allows for a much more straight-forward code without the need for `observeAsState()` for every property you need to observe.
+**Jetpack Compose**, thanks to the **Hyperdrive Gradle plugin** allows for a much more straight-forward code without the need for `collectAsState()` for every property you need to observe.
 
 ```kotlin title="NewAccountView.kt"
 @Composable

@@ -47,7 +47,7 @@ hyperdrive {
         // Generate accessors for Hyperdrive observable properties in classes annotated `@ViewModel`.
         isViewModelEnabled = true
 
-        // Modify `@Composable` functions' IR to automatically observe `BaseViewModel` without the need for `observeAsState()`.
+        // Modify `@Composable` functions' IR to automatically observe `BaseViewModel` without the need for `collectAsState()`.
         isComposableAutoObserveEnabled = true
     }
 
