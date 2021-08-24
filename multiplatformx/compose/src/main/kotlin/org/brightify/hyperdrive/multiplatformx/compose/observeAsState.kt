@@ -6,6 +6,11 @@ import org.brightify.hyperdrive.multiplatformx.ObservableObject
 import org.brightify.hyperdrive.multiplatformx.property.MutableObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 
+/**
+ * Observe a view model as its properties change to update the view.
+ *
+ * Equivalent to [ObservableProperty.observeAsState] for observing all changes in a view model.
+ */
 @NoAutoObserve
 @Composable
 fun <T: ManageableViewModel> T.observeAsState(): State<T> {
@@ -26,6 +31,11 @@ fun <T: ManageableViewModel> T.observeAsState(): State<T> {
     return result
 }
 
+/**
+ * Observe a view model property as it changes to update the view.
+ *
+ * Equivalent to [collectAsState] for [ObservableProperty].
+ */
 @NoAutoObserve
 @Composable
 fun <T> ObservableProperty<T>.observeAsState(): State<T> {
