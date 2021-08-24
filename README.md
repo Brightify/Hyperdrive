@@ -1,8 +1,5 @@
 # Hyperdrive
 
-## Usage
+Head over to [documentation](https://hyperdrive.tools) to get started.
 
-Allowed occasionally.
-
-Java 8 required for compilation, otherwise it's unusable.
-
+Developed by [Brightify](https://www.brightify.org).
