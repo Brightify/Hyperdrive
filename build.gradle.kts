@@ -149,7 +149,13 @@ subprojects {
             val mavenCentralUsername: String? by project
             val mavenCentralPassword: String? by project
             if (mavenCentralUsername != null && mavenCentralPassword != null) {
-                mavenCentral {
+                maven(
+                    if (isSnapshot) {
+                        "https://oss.sonatype.org/content/repositories/snapshots/"
+                    } else {
+                        "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+                    }
+                ) {
                     name = "mavenCentral"
 
                     credentials {
