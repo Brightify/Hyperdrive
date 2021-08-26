@@ -111,7 +111,7 @@ subprojects {
 
             val pomFileName = "${publication.artifactId}-${publication.version}.pom"
             val artifactPath = "${project.group.toString().replace(".", "/")}/${publication.artifactId}/${publication.version}/${pomFileName}"
-            val repositoryUrl = "${repository.url}/${artifactPath}"
+            val repositoryUrl = "${repository.url.toString().replace("/$".toRegex(), "")}/${artifactPath}"
 
             println("\t- Full repository URL: $repositoryUrl")
 
