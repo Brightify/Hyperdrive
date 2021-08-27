@@ -1,0 +1,106 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>BaseViewModel</title>
+</head><body><link href="../../../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script><script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script><link href="../../../styles/style.css" rel="Stylesheet"><link href="../../../styles/logo-styles.css" rel="Stylesheet"><link href="../../../styles/jetbrains-mono.css" rel="Stylesheet"><link href="../../../styles/main.css" rel="Stylesheet"><script type="text/javascript" src="../../../scripts/clipboard.js" async></script><script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script><script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script><script type="text/javascript" src="../../../scripts/main.js" async></script>
+  
+    <div id="container">
+      <div id="leftColumn"><a href="../../../index.html">
+            <div id="logo"></div>
+          </a>
+        <div id="paneSearch"></div>
+        <div id="sideMenu"></div>
+      </div>
+      <div id="main">
+        <script type="text/javascript" src="../../../scripts/main.js"></script><div id="leftToggler"><span class="icon-toggler"></span></div>
+
+        <div class="main-content" id="content" pageids="Singularity API (multiplatformx-api)::org.brightify.hyperdrive.multiplatformx/BaseViewModel///PointingToDeclaration//-458107366">
+          <div class="navigation-wrapper" id="navigation-wrapper">
+            <div class="breadcrumbs"><a href="../../index.html">Singularity API (multiplatformx-api)</a>/<a href="../index.html">org.brightify.hyperdrive.multiplatformx</a>/<a href="index.html">BaseViewModel</a></div>
+            <div class="pull-right d-flex">
+              <div id="searchBar"></div>
+            </div>
+          </div>
+          <div class="cover ">
+            <h1 class="cover"><span>Base</span><wbr><span>View</span><wbr><span>Model</span></h1>
+            <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":multiplatformx-api:dokkaHtmlPartial/commonMain"><div class="symbol monospace">abstract class <a href="index.html">BaseViewModel</a> : <a href="../-base-observable-manageable-object/index.html">BaseObservableManageableObject</a>, <a href="../-manageable-view-model/index.html">ManageableViewModel</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><h1 class="">Common behavior for all view models.</h1><p class="paragraph">This class inherits property delegates for change tracking and observing from <a href="../-base-observable-manageable-object/index.html">BaseObservableManageableObject</a> and <a href="../-base-observable-object/index.html">BaseObservableObject</a>. As a single point of interaction with the native code for both Android and iOS (and possible other platforms), view models have to provide an easy way for the native code to consume them. Thanks to the behavior described below, developers of the view models can work directly with values without asynchronicity.</p><p class="paragraph">Declaring properties using the property delegates adds them for mutation tracking through the <a href="index.html#350752433%2FProperties%2F-458107366">changeTracking</a>. Each change to those properties then triggers the <a href="index.html#350752433%2FProperties%2F-458107366">changeTracking</a>'s <code>willChange</code> and <code>didChange</code> events.</p><h2 class=""> Support for SwiftUI</h2><p class="paragraph">In the native code that depends on a module using <a href="index.html">BaseViewModel</a>, add the following implementation:</p><div class="sample-container"><code class="" theme="idea"><pre>#warning("Import the Kotlin multiplatform framework in place of this warning.")<br>import Combine<br><br>extension BaseViewModel: ObservableObject {<br>    private static var objectWillChangeKey: UInt8 = 0<br>    public var objectWillChange: ObservableObjectPublisher {<br>        if let publisher = objc_getAssociatedObject(self, &amp;Self.objectWillChangeKey) as? ObservableObjectPublisher {<br>            return publisher<br>        }<br>        let publisher = ObjectWillChangePublisher()<br>        objc_setAssociatedObject(self, &amp;Self.objectWillChangeKey, publisher, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)<br>        willChange.addObserver {<br>            publisher.send()<br>        }<br>        return publisher<br>    }<br>}<br><br>extension BaseViewModel: Identifiable { }</pre></code></div><h2 class=""> Support for Jetpack Compose</h2><p class="paragraph">For Jetpack Compose support make sure to include the <code>multiplatformx-compose</code> in your dependencies. Each <a href="index.html">BaseViewModel</a> and its observable properties will be convertible to Compose State using observeAsState() function.</p><h3 class=""> With AutoObserve (default)</h3><p class="paragraph">When using the Hyperdrive Gradle plugin, once <code>multiplatformx</code> is enabled, each <code>@Composable</code> function's IR is modified to automatically observe any view model parameters.</p><h3 class=""> Without AutoObserve</h3><p class="paragraph">To access an observable property, use the <a href="../../../multiplatformx-api/org.brightify.hyperdrive.multiplatformx/-base-view-model/observe.html">observe</a> method, passing it a property which has been declared using one of the provided property delegates. To further minimize required boilerplate, the Hyperdrive Kotlin compiler plugin generates <code>observeX</code> properties for each property <code>x</code> serving as quick access to the <a href="../../org.brightify.hyperdrive.multiplatformx.property/-observable-property/index.html">ObservableProperty</a> for the given property.</p><div class="sample-container"><code class="" theme="idea"><pre>@ViewModel<br>class SampleViewModel: BaseViewModel() {<br>    var message: String by published("Default message")<br>        private set<br>}<br><br>@Composable<br>fun SampleView1(viewModel: SampleViewModel) {<br>    val observedViewModel by viewModel.observeAsState()<br>    Text(observedViewModel.message)<br>}<br><br>@Composable<br>fun SampleView2(viewModel: SampleViewModel) {<br>    val message by viewModel.observeMessage.observeAsState()<br>    Text(message)<br>}</pre></code></div></div></div>
+          </div>
+          <div class="tabbedcontent">
+            <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Properties">Properties</button><button class="section-tab" data-togglable="See also">See also</button></div>
+            <div class="tabs-section-body">
+              <h2 class="">See also</h2>
+              <div data-togglable="See also">
+                <div class="platform-hinted WithExtraAttributes" data-platform-hinted="data-platform-hinted" data-togglable="See also"><div class="content sourceset-depenent-content" data-active="" data-togglable=":multiplatformx-api:dokkaHtmlPartial/commonMain"><div data-togglable="See also"><div class="table" data-togglable="See also"><div class="table-row" data-filterable-current=":multiplatformx-api:dokkaHtmlPartial/commonMain" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue WithExtraAttributes RowTitle"><div class=""><span class="inline-flex"><a href="../-base-observable-object/index.html">org.brightify.hyperdrive.multiplatformx.BaseObservableObject</a></span><span class="inline-flex"><div data-togglable="See also"><p class="paragraph">for basic change tracking property delegates.</p></div></span></div><div></div></div></div><div class="table-row" data-filterable-current=":multiplatformx-api:dokkaHtmlPartial/commonMain" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue WithExtraAttributes RowTitle"><div class=""><span class="inline-flex"><a href="../-base-observable-manageable-object/index.html">org.brightify.hyperdrive.multiplatformx.BaseObservableManageableObject</a></span><span class="inline-flex"><div data-togglable="See also"><p class="paragraph">for observing property delegates.</p><p class="paragraph">NOTE: Annotate your class with <a href="../-view-model/index.html">ViewModel</a> and make it inherit <a href="index.html">BaseViewModel</a> to mark the class for processing by the Hyperdrive Kotlin compiler plugin.</p><h2 class=""> Future plans:</h2><ul><li><p class="paragraph">Maybe replace delegates with annotations and make the plugin replace the code during compilation. This would probably result in a better readability, but more magic behind the scenes.</p></li><li><p class="paragraph">Include required Swift code as a template in resources allowing for an easy import.</p></li></ul></div></span></div><div></div></div></div></div></div></div></div>
+              </div>
+              <h2 class="tabbedcontent">Constructors</h2>
+              <div class="table" data-togglable="Constructors"><a data-name="1209110671%2FConstructors%2F-458107366" anchor-label="BaseViewModel" id="1209110671%2FConstructors%2F-458107366" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":multiplatformx-api:dokkaHtmlPartial/commonMain" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue TabbedContent">
+                    <div class=""><span class="inline-flex"><a href="-base-view-model.html">BaseViewModel</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1209110671%2FConstructors%2F-458107366"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":multiplatformx-api:dokkaHtmlPartial/commonMain"><div class="symbol monospace">fun <a href="-base-view-model.html">BaseViewModel</a>()<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Functions</h2>
+              <div class="table" data-togglable="Functions"><a data-name="-455733250%2FFunctions%2F-458107366" anchor-label="toString" id="-455733250%2FFunctions%2F-458107366" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":multiplatformx-api:dokkaHtmlPartial/commonMain" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="../-base-observable-object/to-string.html">toString</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-455733250%2FFunctions%2F-458107366"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":multiplatformx-api:dokkaHtmlPartial/commonMain" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":multiplatformx-api:dokkaHtmlPartial/commonMain"><div class="symbol monospace">open override fun <a href="../-base-observable-object/to-string.html">toString</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Properties</h2>
+              <div class="table" data-togglable="Properties"><a data-name="350752433%2FProperties%2F-458107366" anchor-label="changeTracking" id="350752433%2FProperties%2F-458107366" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":multiplatformx-api:dokkaHtmlPartial/commonMain" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="index.html#350752433%2FProperties%2F-458107366">changeTracking</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="350752433%2FProperties%2F-458107366"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":multiplatformx-api:dokkaHtmlPartial/commonMain"><a data-name="350752433%2FProperties%2F-458107366" anchor-label="changeTracking" id="350752433%2FProperties%2F-458107366" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace">override val <a href="index.html#350752433%2FProperties%2F-458107366">changeTracking</a>: <a href="../-observable-object/-change-tracking/index.html">ObservableObject.ChangeTracking</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="1402550040%2FProperties%2F-458107366" anchor-label="lifecycle" id="1402550040%2FProperties%2F-458107366" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":multiplatformx-api:dokkaHtmlPartial/commonMain" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="index.html#1402550040%2FProperties%2F-458107366">lifecycle</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1402550040%2FProperties%2F-458107366"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":multiplatformx-api:dokkaHtmlPartial/commonMain"><a data-name="1402550040%2FProperties%2F-458107366" anchor-label="lifecycle" id="1402550040%2FProperties%2F-458107366" data-filterable-set=":multiplatformx-api:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace">override val <a href="index.html#1402550040%2FProperties%2F-458107366">lifecycle</a>: <a href="../-lifecycle/index.html">Lifecycle</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span class="go-to-top-icon"><a href="#content"></a></span><span>© 2021 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span></div>
+      </div>
+    </div>
+  
+</body></html>
+
+

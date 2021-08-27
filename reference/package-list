@@ -1,0 +1,43 @@
+$dokka.format:html-v1
+$dokka.linkExtension:html
+
+module:Tachyon Annotations (krpc-annotations)
+org.brightify.hyperdrive.krpc.api
+org.brightify.hyperdrive.krpc.api.validation
+module:Tachyon Client API (krpc-client-api)
+org.brightify.hyperdrive.krpc.client
+module:Tachyon Client Implementation (krpc-client-impl)
+org.brightify.hyperdrive.krpc.client.impl
+module:Tachyon Client Implementation Ktor (krpc-client-impl-ktor)
+org.brightify.hyperdrive.krpc.client.impl.ktor
+module:Tachyon Server API (krpc-server-api)
+org.brightify.hyperdrive.krpc.server
+module:Tachyon Server Implementation (krpc-server-impl)
+org.brightify.hyperdrive.krpc.server.impl
+module:Tachyon Server Implementation Ktor (krpc-server-impl-ktor)
+org.brightify.hyperdrive.krpc.server.impl.ktor
+module:Tachyon Shared API (krpc-shared-api)
+org.brightify.hyperdrive.krpc
+org.brightify.hyperdrive.krpc.description
+org.brightify.hyperdrive.krpc.error
+org.brightify.hyperdrive.krpc.frame
+org.brightify.hyperdrive.krpc.protocol
+org.brightify.hyperdrive.krpc.session
+org.brightify.hyperdrive.krpc.transport
+org.brightify.hyperdrive.krpc.util
+module:Tachyon Shared Implementation (krpc-shared-impl)
+org.brightify.hyperdrive.krpc
+org.brightify.hyperdrive.krpc.application
+org.brightify.hyperdrive.krpc.impl
+org.brightify.hyperdrive.krpc.protocol
+org.brightify.hyperdrive.krpc.protocol.ascension
+module:Tachyon Shared Implementation Ktor (krpc-shared-impl-ktor)
+org.brightify.hyperdrive.krpc.ktor
+module:Singularity API (multiplatformx-api)
+org.brightify.hyperdrive.multiplatformx
+org.brightify.hyperdrive.multiplatformx.property
+org.brightify.hyperdrive.multiplatformx.util
+org.brightify.hyperdrive.multiplatformx.util.bridge
+module:Singularity Key-Value Storage (multiplatformx-keyvalue)
+org.brightify.hyperdrive.multiplatformx.keyvalue
+org.brightify.hyperdrive.multiplatformx.keyvalue.impl
