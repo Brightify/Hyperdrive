@@ -30,3 +30,6 @@ publishing {
     }
 }
 
+java {
+    withSourcesJar()
+}
