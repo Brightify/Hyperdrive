@@ -95,9 +95,10 @@ subprojects {
 
                     responseCode == 200
                 } catch (ignored: java.io.IOException) {
-                    println("Ignoring exception: $ignored")
+                    println("Ignoring IO exception: $ignored")
                     false
                 } catch (e: Exception) {
+                    println("Ignoring exception: $e")
                     false
                 }
 
@@ -166,10 +167,8 @@ subprojects {
             }
         }
 
-        val mavenPublications = publications.filterIsInstance<MavenPublication>()
-
-        mavenPublications
-            .map { publication ->
+        publications.filterIsInstance<MavenPublication>()
+            .forEach { publication ->
                 publication.pom {
                     name.set("Hyperdrive")
                     description.set("Kotlin Multiplatform Extensions")
@@ -197,14 +196,14 @@ subprojects {
 
         signing {
             setRequired({
-                !isSnapshot && gradle.taskGraph.hasTask("publish")
+                gradle.taskGraph.hasTask("publishAllPublicationsToMavenCentralRepository")
             })
 
             val mavenCentralSigningKey: String? by project
             val mavenCentralSigningPassword: String? by project
             useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
 
-            mavenPublications.forEach(::sign)
+            publishing.publications.forEach(::sign)
         }
     }
 }
