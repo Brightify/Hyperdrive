@@ -134,24 +134,32 @@ subprojects {
         // Modify all non-example projects' publications to contain info required by OSSRH.
         if (!isExampleProject) {
             afterEvaluate {
-                val javadocJar by try {
-                    // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
-                    val htmlDokkaTask = tasks.dokkaHtml
+                // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
+                val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
+                val javadocJarExists = tasks.any { it.name == "javadocJar" }
 
-                    tasks.registering(Jar::class) {
-                        dependsOn(htmlDokkaTask)
-                        archiveClassifier.set("javadoc")
-                        from(htmlDokkaTask)
+                publication.artifact(
+                    if (javadocJarExists) {
+                        println("Using already created Javadoc jar for ${project.name}.")
+                        tasks.named("javadocJar")
+                    } else {
+                        val javadocJar by if (htmlDokkaExists) {
+                            println("Creating Javadoc jar for ${project.name}.")
+                            tasks.registering(Jar::class) {
+                                dependsOn(tasks.dokkaHtml)
+                                archiveClassifier.set("javadoc")
+                                from(tasks.dokkaHtml)
+                            }
+                        } else {
+                            println("Creating empty Javadoc jar for ${project.name}, `dokkaHtml` task not found.")
+                            tasks.registering(Jar::class) {
+                                archiveClassifier.set("javadoc")
+                                from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
+                            }
+                        }
+                        javadocJar
                     }
-                } catch (ignored: UnknownTaskException) {
-                    println("Creating empty javadoc jar for ${project.name}, `dokkaHtml` task not found.")
-
-                    tasks.registering(Jar::class) {
-                        archiveClassifier.set("javadoc")
-                        from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
-                    }
-                }
-                publication.artifact(javadocJar)
+                )
 
                 publication.pom {
                     name.set("Hyperdrive")
