@@ -74,33 +74,6 @@ subprojects {
     val isSnapshot = project.version.withGroovyBuilder { "isSnapshot"() } as Boolean
     val isExampleProject = project.name.contains("example-")
 
-    afterEvaluate {
-        try {
-            // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
-            val htmlDokkaTask = tasks.dokkaHtml
-
-            tasks {
-                val javadocJar by registering(Jar::class) {
-                    dependsOn(htmlDokkaTask.name)
-                    archiveClassifier.set("javadoc")
-                    from(htmlDokkaTask)
-                }
-
-                artifacts.archives(javadocJar)
-            }
-        } catch (ignored: UnknownTaskException) {
-            println("Creating empty javadoc jar for ${project.name}, `dokkaHtml` task not found.")
-
-            tasks {
-                val emptyJarTask by registering(Jar::class) {
-                    archiveClassifier.set("javadoc")
-                }
-
-                artifacts.archives(emptyJarTask)
-            }
-        }
-    }
-
     tasks.withType<PublishToMavenRepository> {
         onlyIf {
             if (isExampleProject) {
@@ -161,6 +134,26 @@ subprojects {
         // Modify all non-example projects' publications to contain info required by OSSRH.
         if (!isExampleProject) {
             afterEvaluate {
+                publication.artifact(
+                    try {
+                        // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
+                        val htmlDokkaTask = tasks.dokkaHtml
+
+                        tasks.registering(Jar::class) {
+                            dependsOn(htmlDokkaTask)
+                            archiveClassifier.set("javadoc")
+                            from(htmlDokkaTask)
+                        }
+                    } catch (ignored: UnknownTaskException) {
+                        println("Creating empty javadoc jar for ${project.name}, `dokkaHtml` task not found.")
+
+                        tasks.registering(Jar::class) {
+                            archiveClassifier.set("javadoc")
+                            from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
+                        }
+                    }
+                )
+
                 publication.pom {
                     name.set("Hyperdrive")
                     description.set("Kotlin Multiplatform Extensions")
