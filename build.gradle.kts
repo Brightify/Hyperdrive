@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 plugins {
     `maven-publish`
     signing
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
     id("org.jetbrains.dokka")
     kotlin("multiplatform") apply false
     kotlin("jvm") apply false
@@ -85,7 +86,7 @@ subprojects {
                 try {
                     val connection = java.net.URL(repositoryUrl).openConnection() as java.net.HttpURLConnection
 
-                    val (username, password) = with (repository.credentials) { username to password }
+                    val (username, password) = with(repository.credentials) { username to password }
 
                     val base64EncodedCredentials = java.util.Base64.getEncoder().encodeToString("$username:$password".toByteArray())
                     connection.setRequestProperty("Authorization", "Basic $base64EncodedCredentials")
@@ -139,17 +140,18 @@ subprojects {
                 val javadocJarExists = tasks.any { it.name == "javadocJar" }
 
                 if (javadocJarExists) {
-                    println("Using already created Javadoc jar for ${project.name}.")
+                    println("Using already created Javadoc jar for ${publication.artifactId}.")
+                    publication.artifact(tasks.named("javadocJar"))
                 } else {
                     val javadocJar by if (htmlDokkaExists) {
-                        println("Creating Javadoc jar for ${project.name}.")
+                        println("Creating Javadoc jar for ${publication.artifactId}.")
                         tasks.registering(Jar::class) {
                             dependsOn(tasks.dokkaHtml)
                             archiveClassifier.set("javadoc")
                             from(tasks.dokkaHtml)
                         }
                     } else {
-                        println("Creating empty Javadoc jar for ${project.name}, `dokkaHtml` task not found.")
+                        println("Creating empty Javadoc jar for ${publication.artifactId}, `dokkaHtml` task not found.")
                         tasks.registering(Jar::class) {
                             archiveClassifier.set("javadoc")
                             from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
@@ -204,38 +206,32 @@ subprojects {
                     password = brightifyPassword
                 }
             }
+        }
+    }
 
-            // Maven central repo.
-            val mavenCentralUsername: String? by project
-            val mavenCentralPassword: String? by project
-            if (mavenCentralUsername != null && mavenCentralPassword != null) {
-                maven(
-                    if (isSnapshot) {
-                        "https://oss.sonatype.org/content/repositories/snapshots/"
-                    } else {
-                        "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-                    }
-                ) {
-                    name = "mavenCentral"
-
-                    credentials {
-                        username = mavenCentralUsername
-                        password = mavenCentralPassword
-                    }
+    // Maven central repo.
+    val mavenCentralUsername: String? by project
+    val mavenCentralPassword: String? by project
+    if (mavenCentralUsername != null && mavenCentralPassword != null) {
+        nexusPublishing {
+            repositories {
+                sonatype {
+                    username.set(mavenCentralUsername)
+                    password.set(mavenCentralPassword)
                 }
             }
-        }
 
-        signing {
-            setRequired({
-                gradle.taskGraph.hasTask("publishAllPublicationsToMavenCentralRepository")
-            })
+            signing {
+                setRequired({
+                    gradle.taskGraph.hasTask("publishToSonatype")
+                })
 
-            val mavenCentralSigningKey: String? by project
-            val mavenCentralSigningPassword: String? by project
-            useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
+                val mavenCentralSigningKey: String? by project
+                val mavenCentralSigningPassword: String? by project
+                useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
 
-            sign(publishing.publications)
+                sign(publishing.publications)
+            }
         }
     }
 }
