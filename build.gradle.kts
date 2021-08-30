@@ -72,10 +72,11 @@ subprojects {
     version = rootProject.version
 
     val isSnapshot = project.version.withGroovyBuilder { "isSnapshot"() } as Boolean
+    val isExampleProject = project.name.contains("example-")
 
     tasks.withType<PublishToMavenRepository> {
         onlyIf {
-            if (project.name.contains("example-")) {
+            if (isExampleProject) {
                 println("Skipping publishing of example project '${project.name}'.")
                 return@onlyIf false
             }
@@ -130,27 +131,32 @@ subprojects {
             }
         }
 
-        publication.pom {
-            name.set("Hyperdrive")
-            description.set("Kotlin Multiplatform Extensions")
-            url.set("https://hyperdrive.tools/")
-            licenses {
-                license {
-                    name.set("MIT License")
-                    url.set("http://www.opensource.org/licenses/mit-license.php")
+        // Modify all non-example projects' publications to contain info required by OSSRH.
+        if (!isExampleProject) {
+            afterEvaluate {
+                publication.pom {
+                    name.set("Hyperdrive")
+                    description.set("Kotlin Multiplatform Extensions")
+                    url.set("https://hyperdrive.tools/")
+                    licenses {
+                        license {
+                            name.set("MIT License")
+                            url.set("http://www.opensource.org/licenses/mit-license.php")
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set("TadeasKriz")
+                            name.set("Tadeas Kriz")
+                            email.set("tadeas@brightify.org")
+                        }
+                    }
+                    scm {
+                        connection.set("scm:git:git://github.com/Brightify/hyperdrive-kt.git")
+                        developerConnection.set("scm:git:git@github.com:Brightify/hyperdrive-kt.git")
+                        url.set("https://github.com/Brightify/hyperdrive-kt")
+                    }
                 }
-            }
-            developers {
-                developer {
-                    id.set("TadeasKriz")
-                    name.set("Tadeas Kriz")
-                    email.set("tadeas@brightify.org")
-                }
-            }
-            scm {
-                connection.set("scm:git:git://github.com/Brightify/hyperdrive-kt.git")
-                developerConnection.set("scm:git:git@github.com:Brightify/hyperdrive-kt.git")
-                url.set("https://github.com/Brightify/hyperdrive-kt")
             }
         }
     }
