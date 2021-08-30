@@ -75,6 +75,11 @@ subprojects {
 
     tasks.withType<PublishToMavenRepository> {
         onlyIf {
+            if (project.name.contains("example-")) {
+                println("Skipping publishing of example project '${project.name}'.")
+                return@onlyIf false
+            }
+
             fun urlExists(repositoryUrl: String) =
                 try {
                     val connection = java.net.URL(repositoryUrl).openConnection() as java.net.HttpURLConnection
@@ -124,6 +129,30 @@ subprojects {
                 true
             }
         }
+
+        publication.pom {
+            name.set("Hyperdrive")
+            description.set("Kotlin Multiplatform Extensions")
+            url.set("https://hyperdrive.tools/")
+            licenses {
+                license {
+                    name.set("MIT License")
+                    url.set("http://www.opensource.org/licenses/mit-license.php")
+                }
+            }
+            developers {
+                developer {
+                    id.set("TadeasKriz")
+                    name.set("Tadeas Kriz")
+                    email.set("tadeas@brightify.org")
+                }
+            }
+            scm {
+                connection.set("scm:git:git://github.com/Brightify/hyperdrive-kt.git")
+                developerConnection.set("scm:git:git@github.com:Brightify/hyperdrive-kt.git")
+                url.set("https://github.com/Brightify/hyperdrive-kt")
+            }
+        }
     }
 
     publishing {
@@ -163,32 +192,6 @@ subprojects {
                         username = mavenCentralUsername
                         password = mavenCentralPassword
                     }
-                }
-            }
-        }
-
-        tasks.withType<PublishToMavenRepository>().configureEach {
-            publication.pom {
-                name.set("Hyperdrive")
-                description.set("Kotlin Multiplatform Extensions")
-                url.set("https://hyperdrive.tools/")
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("http://www.opensource.org/licenses/mit-license.php")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("TadeasKriz")
-                        name.set("Tadeas Kriz")
-                        email.set("tadeas@brightify.org")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:git://github.com/Brightify/hyperdrive-kt.git")
-                    developerConnection.set("scm:git:git@github.com:Brightify/hyperdrive-kt.git")
-                    url.set("https://github.com/Brightify/hyperdrive-kt")
                 }
             }
         }
