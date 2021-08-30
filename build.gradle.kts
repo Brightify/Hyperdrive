@@ -74,6 +74,24 @@ subprojects {
     val isSnapshot = project.version.withGroovyBuilder { "isSnapshot"() } as Boolean
     val isExampleProject = project.name.contains("example-")
 
+    afterEvaluate {
+        try {
+            val javadocDokkaTask = tasks.dokkaJavadoc
+
+            tasks {
+                val javadocJar by registering(Jar::class) {
+                    dependsOn(javadocDokkaTask.name)
+                    archiveClassifier.set("javadoc")
+                    from(javadocDokkaTask)
+                }
+
+                artifacts.archives(javadocJar)
+            }
+        } catch (ignored: UnknownTaskException) {
+            println("Skipping javadoc jar for ${project.name}, `dokkaJavadoc` task not found.")
+        }
+    }
+
     tasks.withType<PublishToMavenRepository> {
         onlyIf {
             if (isExampleProject) {
