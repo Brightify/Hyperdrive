@@ -76,19 +76,28 @@ subprojects {
 
     afterEvaluate {
         try {
-            val javadocDokkaTask = tasks.dokkaJavadoc
+            // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
+            val htmlDokkaTask = tasks.dokkaHtml
 
             tasks {
                 val javadocJar by registering(Jar::class) {
-                    dependsOn(javadocDokkaTask.name)
+                    dependsOn(htmlDokkaTask.name)
                     archiveClassifier.set("javadoc")
-                    from(javadocDokkaTask)
+                    from(htmlDokkaTask)
                 }
 
                 artifacts.archives(javadocJar)
             }
         } catch (ignored: UnknownTaskException) {
-            println("Skipping javadoc jar for ${project.name}, `dokkaJavadoc` task not found.")
+            println("Creating empty javadoc jar for ${project.name}, `dokkaHtml` task not found.")
+
+            tasks {
+                val emptyJarTask by registering(Jar::class) {
+                    archiveClassifier.set("javadoc")
+                }
+
+                artifacts.archives(emptyJarTask)
+            }
         }
     }
 
