@@ -138,28 +138,25 @@ subprojects {
                 val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
                 val javadocJarExists = tasks.any { it.name == "javadocJar" }
 
-                publication.artifact(
-                    if (javadocJarExists) {
-                        println("Using already created Javadoc jar for ${project.name}.")
-                        tasks.named("javadocJar")
-                    } else {
-                        val javadocJar by if (htmlDokkaExists) {
-                            println("Creating Javadoc jar for ${project.name}.")
-                            tasks.registering(Jar::class) {
-                                dependsOn(tasks.dokkaHtml)
-                                archiveClassifier.set("javadoc")
-                                from(tasks.dokkaHtml)
-                            }
-                        } else {
-                            println("Creating empty Javadoc jar for ${project.name}, `dokkaHtml` task not found.")
-                            tasks.registering(Jar::class) {
-                                archiveClassifier.set("javadoc")
-                                from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
-                            }
+                if (javadocJarExists) {
+                    println("Using already created Javadoc jar for ${project.name}.")
+                } else {
+                    val javadocJar by if (htmlDokkaExists) {
+                        println("Creating Javadoc jar for ${project.name}.")
+                        tasks.registering(Jar::class) {
+                            dependsOn(tasks.dokkaHtml)
+                            archiveClassifier.set("javadoc")
+                            from(tasks.dokkaHtml)
                         }
-                        javadocJar
+                    } else {
+                        println("Creating empty Javadoc jar for ${project.name}, `dokkaHtml` task not found.")
+                        tasks.registering(Jar::class) {
+                            archiveClassifier.set("javadoc")
+                            from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
+                        }
                     }
-                )
+                    publication.artifact(javadocJar)
+                }
 
                 publication.pom {
                     name.set("Hyperdrive")
