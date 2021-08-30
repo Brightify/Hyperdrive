@@ -167,32 +167,31 @@ subprojects {
             }
         }
 
-        publications.filterIsInstance<MavenPublication>()
-            .forEach { publication ->
-                publication.pom {
-                    name.set("Hyperdrive")
-                    description.set("Kotlin Multiplatform Extensions")
-                    url.set("https://hyperdrive.tools/")
-                    licenses {
-                        license {
-                            name.set("MIT License")
-                            url.set("http://www.opensource.org/licenses/mit-license.php")
-                        }
-                    }
-                    developers {
-                        developer {
-                            id.set("TadeasKriz")
-                            name.set("Tadeas Kriz")
-                            email.set("tadeas@brightify.org")
-                        }
-                    }
-                    scm {
-                        connection.set("scm:git:git://github.com/Brightify/hyperdrive-kt.git")
-                        developerConnection.set("scm:git:git@github.com:Brightify/hyperdrive-kt.git")
-                        url.set("https://github.com/Brightify/hyperdrive-kt")
+        tasks.withType<PublishToMavenRepository>().configureEach {
+            publication.pom {
+                name.set("Hyperdrive")
+                description.set("Kotlin Multiplatform Extensions")
+                url.set("https://hyperdrive.tools/")
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("http://www.opensource.org/licenses/mit-license.php")
                     }
                 }
+                developers {
+                    developer {
+                        id.set("TadeasKriz")
+                        name.set("Tadeas Kriz")
+                        email.set("tadeas@brightify.org")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/Brightify/hyperdrive-kt.git")
+                    developerConnection.set("scm:git:git@github.com:Brightify/hyperdrive-kt.git")
+                    url.set("https://github.com/Brightify/hyperdrive-kt")
+                }
             }
+        }
 
         signing {
             setRequired({
@@ -203,7 +202,7 @@ subprojects {
             val mavenCentralSigningPassword: String? by project
             useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
 
-            publishing.publications.forEach(::sign)
+            sign(publishing.publications)
         }
     }
 }
