@@ -9,18 +9,10 @@ dependencies {
     implementation(project(":plugin-impl", configuration = "shadow"))
 }
 
-tasks.withType<org.gradle.jvm.tasks.Jar> {
+tasks.jar {
     from(configurations.runtimeClasspath.map { config ->
         config.map {
             if (it.isDirectory || !it.exists()) it else zipTree(it)
         }
     })
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-        }
-    }
 }

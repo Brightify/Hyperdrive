@@ -52,15 +52,3 @@ fun DependencyHandlerScope.testImplementationWorkaround(dependency: ProjectDepen
         files(File(project.buildDir, "libs/${project.name}-jvm-${project.version}.jar"))
     )
 }
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-        }
-    }
-}
-
-java {
-    withSourcesJar()
-}

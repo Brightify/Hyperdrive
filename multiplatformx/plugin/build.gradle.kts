@@ -20,15 +20,3 @@ dependencies {
     testImplementation(libs.compile.testing)
     testImplementation(libs.junit.jupiter)
 }
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-        }
-    }
-}
-
-java {
-    withSourcesJar()
-}

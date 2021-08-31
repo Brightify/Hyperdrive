@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
+import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 
 plugins {
     `maven-publish`
@@ -133,13 +134,23 @@ subprojects {
         }
     }
 
-    if (!isExampleProject) {
-        val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
-        val javadocJarExists = tasks.any { it.name == "javadocJar" }
+    afterEvaluate {
+        if (isExampleProject) { return@afterEvaluate }
 
-        if (javadocJarExists) {
-            println("Using already created Javadoc jar for ${project}.")
-        } else {
+        if (plugins.hasPlugin(JavaPlugin::class)) {
+            extensions.configure<JavaPluginExtension> {
+                withSourcesJar()
+                withJavadocJar()
+            }
+
+            publishing.publications {
+                create<MavenPublication>("maven") {
+                    from(components["java"])
+                }
+            }
+        } else if (plugins.hasPlugin(KotlinMultiplatformPluginWrapper::class)) {
+            // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
+            val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
             val javadocJar by if (htmlDokkaExists) {
                 println("Creating Javadoc jar for ${project}.")
                 tasks.registering(Jar::class) {
@@ -154,6 +165,17 @@ subprojects {
                     from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
                 }
             }
+            publishing.publications.configureEach {
+                if (this !is MavenPublication) {
+                    return@configureEach
+                }
+                artifact(javadocJar)
+            }
+        } else {
+            logger.warn(
+                "Neither `sources` nor `javadoc` is being added to the publication artifacts.\n" +
+                "You should probably check that out, because both are required by Maven Central."
+            )
         }
 
         publishing {
@@ -161,7 +183,7 @@ subprojects {
                 if (this !is MavenPublication) {
                     return@configureEach
                 }
-                artifact(tasks.named("javadocJar"))
+
                 pom {
                     name.set("Hyperdrive")
                     description.set("Kotlin Multiplatform Extensions")

@@ -7,15 +7,3 @@ plugins {
 dependencies {
     compileOnly(kotlin("compiler-embeddable"))
 }
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-        }
-    }
-}
-
-java {
-    withSourcesJar()
-}
