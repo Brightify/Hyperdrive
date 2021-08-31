@@ -22,8 +22,15 @@ tasks.shadowJar {
     mergeServiceFiles()
 }
 
+tasks.shadowJar {
+    archiveClassifier.set("shadow")
+}
+
 publishing {
     publications {
+        create<MavenPublication>("shadow") {
+            project.shadow.component(this)
+        }
         create<MavenPublication>("maven") {
             from(components["java"])
         }
@@ -32,4 +39,5 @@ publishing {
 
 java {
     withSourcesJar()
+    withJavadocJar()
 }

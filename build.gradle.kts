@@ -131,36 +131,38 @@ subprojects {
                 true
             }
         }
+    }
 
-        // Modify all non-example projects' publications to contain info required by OSSRH.
-        if (!isExampleProject) {
-            afterEvaluate {
-                // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
-                val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
-                val javadocJarExists = tasks.any { it.name == "javadocJar" }
+    if (!isExampleProject) {
+        val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
+        val javadocJarExists = tasks.any { it.name == "javadocJar" }
 
-                if (javadocJarExists) {
-                    println("Using already created Javadoc jar for ${publication.artifactId}.")
-                    publication.artifact(tasks.named("javadocJar"))
-                } else {
-                    val javadocJar by if (htmlDokkaExists) {
-                        println("Creating Javadoc jar for ${publication.artifactId}.")
-                        tasks.registering(Jar::class) {
-                            dependsOn(tasks.dokkaHtml)
-                            archiveClassifier.set("javadoc")
-                            from(tasks.dokkaHtml)
-                        }
-                    } else {
-                        println("Creating empty Javadoc jar for ${publication.artifactId}, `dokkaHtml` task not found.")
-                        tasks.registering(Jar::class) {
-                            archiveClassifier.set("javadoc")
-                            from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
-                        }
-                    }
-                    publication.artifact(javadocJar)
+        if (javadocJarExists) {
+            println("Using already created Javadoc jar for ${project}.")
+        } else {
+            val javadocJar by if (htmlDokkaExists) {
+                println("Creating Javadoc jar for ${project}.")
+                tasks.registering(Jar::class) {
+                    dependsOn(tasks.dokkaHtml)
+                    archiveClassifier.set("javadoc")
+                    from(tasks.dokkaHtml)
                 }
+            } else {
+                println("Creating empty Javadoc jar for ${project}, `dokkaHtml` task not found.")
+                tasks.registering(Jar::class) {
+                    archiveClassifier.set("javadoc")
+                    from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
+                }
+            }
+        }
 
-                publication.pom {
+        publishing {
+            publications.configureEach {
+                if (this !is MavenPublication) {
+                    return@configureEach
+                }
+                artifact(tasks.named("javadocJar"))
+                pom {
                     name.set("Hyperdrive")
                     description.set("Kotlin Multiplatform Extensions")
                     url.set("https://hyperdrive.tools/")
@@ -184,41 +186,39 @@ subprojects {
                     }
                 }
             }
-        }
-    }
 
-    publishing {
-        repositories {
-            // Brightify repo.
-            maven(
-                if (isSnapshot) {
-                    "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-snapshots"
-                } else {
-                    "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-releases"
-                }
-            ) {
-                name = "brightify"
+            repositories {
+                // Brightify repo.
+                maven(
+                    if (isSnapshot) {
+                        "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-snapshots"
+                    } else {
+                        "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-releases"
+                    }
+                ) {
+                    name = "brightify"
 
-                val brightifyUsername: String by project
-                val brightifyPassword: String by project
-                credentials {
-                    username = brightifyUsername
-                    password = brightifyPassword
+                    val brightifyUsername: String by project
+                    val brightifyPassword: String by project
+                    credentials {
+                        username = brightifyUsername
+                        password = brightifyPassword
+                    }
                 }
             }
         }
-    }
 
-    signing {
-        setRequired({
-            gradle.taskGraph.hasTask("publishToSonatype")
-        })
+        signing {
+            setRequired({
+                gradle.taskGraph.hasTask("publishToSonatype")
+            })
 
-        val mavenCentralSigningKey: String? by project
-        val mavenCentralSigningPassword: String? by project
-        useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
+            val mavenCentralSigningKey: String? by project
+            val mavenCentralSigningPassword: String? by project
+            useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
 
-        sign(publishing.publications)
+            sign(publishing.publications)
+        }
     }
 }
 

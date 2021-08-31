@@ -12,7 +12,7 @@ dependencies {
 tasks.withType<org.gradle.jvm.tasks.Jar> {
     from(configurations.runtimeClasspath.map { config ->
         config.map {
-            if (it.isDirectory) it else zipTree(it)
+            if (it.isDirectory || !it.exists()) it else zipTree(it)
         }
     })
 }
