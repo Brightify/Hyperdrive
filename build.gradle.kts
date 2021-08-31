@@ -209,28 +209,28 @@ subprojects {
         }
     }
 
-    // Maven central repo.
-    val mavenCentralUsername: String? by project
-    val mavenCentralPassword: String? by project
-    if (mavenCentralUsername != null && mavenCentralPassword != null) {
-        nexusPublishing {
-            repositories {
-                sonatype {
-                    username.set(mavenCentralUsername)
-                    password.set(mavenCentralPassword)
-                }
-            }
+    signing {
+        setRequired({
+            gradle.taskGraph.hasTask("publishToSonatype")
+        })
 
-            signing {
-                setRequired({
-                    gradle.taskGraph.hasTask("publishToSonatype")
-                })
+        val mavenCentralSigningKey: String? by project
+        val mavenCentralSigningPassword: String? by project
+        useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
 
-                val mavenCentralSigningKey: String? by project
-                val mavenCentralSigningPassword: String? by project
-                useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
+        sign(publishing.publications)
+    }
+}
 
-                sign(publishing.publications)
+// Maven central repo.
+val mavenCentralUsername: String? by project
+val mavenCentralPassword: String? by project
+if (mavenCentralUsername != null && mavenCentralPassword != null) {
+    nexusPublishing {
+        repositories {
+            sonatype {
+                username.set(mavenCentralUsername)
+                password.set(mavenCentralPassword)
             }
         }
     }
