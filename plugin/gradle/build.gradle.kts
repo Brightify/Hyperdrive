@@ -1,3 +1,4 @@
+import com.gradle.publish.PluginBundleExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -5,6 +6,7 @@ plugins {
     kotlin("kapt")
     `java-gradle-plugin`
     id("com.github.gmazzo.buildconfig")
+    id("com.gradle.plugin-publish") version "0.15.0"
 }
 
 buildConfig {
@@ -16,11 +18,19 @@ buildConfig {
     buildConfigField("String", "KOTLIN_NATIVE_PLUGIN_NAME", "\"${project(":plugin-impl-native").name}\"")
 }
 
+pluginBundle {
+    website = "https://hyperdrive.tools"
+    vcsUrl = "https://github.com/Brightify/hyperdrive-kt"
+    tags = listOf("hyperdrive", "kotlin", "multiplatform", "ios", "android")
+}
+
 gradlePlugin {
     plugins {
         create("hyperdrive") {
             id = "org.brightify.hyperdrive"
             implementationClass = "org.brightify.hyperdrive.HyperdriveGradlePlugin"
+            displayName = "Hyperdrive Gradle Plugin"
+            description = "Kotlin Multiplatform extensions plugin."
         }
     }
 }
