@@ -11,7 +11,6 @@ plugins {
     kotlin("jvm") apply false
 }
 
-
 buildscript {
     apply(from = "compose-check.gradle.kts")
 
@@ -22,6 +21,9 @@ buildscript {
         }
     }
 }
+
+apply(from = "compose-check.gradle.kts")
+val enableCompose: Boolean by extra
 
 allprojects {
     apply(plugin = "maven-publish")
@@ -137,48 +139,62 @@ subprojects {
     afterEvaluate {
         if (isExampleProject) { return@afterEvaluate }
 
-        if (plugins.hasPlugin(JavaPlugin::class)) {
-            extensions.configure<JavaPluginExtension> {
-                withSourcesJar()
-                withJavadocJar()
-            }
+        when {
+            plugins.hasPlugin(JavaPlugin::class) -> {
+                extensions.configure<JavaPluginExtension> {
+                    withSourcesJar()
+                    withJavadocJar()
+                }
 
-            publishing.publications {
-                create<MavenPublication>("maven") {
-                    from(components["java"])
+                publishing.publications {
+                    create<MavenPublication>("maven") {
+                        from(components["java"])
+                    }
                 }
             }
-        } else if (plugins.hasPlugin(KotlinMultiplatformPluginWrapper::class)) {
-            // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
-            val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
-            val javadocJar by if (htmlDokkaExists) {
-                println("Creating Javadoc jar for ${project}.")
-                tasks.registering(Jar::class) {
-                    dependsOn(tasks.dokkaHtml)
-                    archiveClassifier.set("javadoc")
-                    from(tasks.dokkaHtml)
+            plugins.hasPlugin(KotlinMultiplatformPluginWrapper::class) -> {
+                // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
+                val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
+                val javadocJar by if (htmlDokkaExists) {
+                    println("Creating Javadoc jar for ${project}.")
+                    tasks.registering(Jar::class) {
+                        dependsOn(tasks.dokkaHtml)
+                        archiveClassifier.set("javadoc")
+                        from(tasks.dokkaHtml)
+                    }
+                } else {
+                    println("Creating empty Javadoc jar for ${project}, `dokkaHtml` task not found.")
+                    tasks.registering(Jar::class) {
+                        archiveClassifier.set("javadoc")
+                        from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
+                    }
                 }
-            } else {
-                println("Creating empty Javadoc jar for ${project}, `dokkaHtml` task not found.")
-                tasks.registering(Jar::class) {
-                    archiveClassifier.set("javadoc")
-                    from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
+                publishing.publications.configureEach {
+                    if (this !is MavenPublication) {
+                        return@configureEach
+                    }
+                    artifact(javadocJar)
                 }
             }
-            publishing.publications.configureEach {
-                if (this !is MavenPublication) {
-                    return@configureEach
-                }
-                artifact(javadocJar)
+            else -> {
+                logger.warn(
+                    "Neither `sources` nor `javadoc` is being added to the publication artifacts.\n" +
+                        "You should probably check that out, because both are required by Maven Central."
+                )
             }
-        } else {
-            logger.warn(
-                "Neither `sources` nor `javadoc` is being added to the publication artifacts.\n" +
-                "You should probably check that out, because both are required by Maven Central."
-            )
         }
 
         publishing {
+            if (enableCompose) {
+                publications.removeAll {
+                    if (this !is MavenPublication) {
+                        return@removeAll true
+                    }
+
+                    return@removeAll !this.artifactId.contains("compose")
+                }
+            }
+
             publications.configureEach {
                 if (this !is MavenPublication) {
                     return@configureEach
