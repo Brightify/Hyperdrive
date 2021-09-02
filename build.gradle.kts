@@ -200,6 +200,8 @@ subprojects {
                     return@configureEach
                 }
 
+                file("${artifactId}.jar")
+
                 pom {
                     name.set("Hyperdrive")
                     description.set("Kotlin Multiplatform Extensions")
