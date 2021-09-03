@@ -6,7 +6,7 @@ buildscript {
         "final",
         "patch",
     )
-    val isProbablySupportingJetpackCompose: Boolean = extra.properties.containsKey("enableCompose") || androidStudioVersionSuffixes.any {
+    val isProbablySupportingJetpackCompose: Boolean = extra.properties.containsKey("forceEnableCompose") || androidStudioVersionSuffixes.any {
         extra.properties.getOrDefault("android.injected.studio.version", "").toString().toLowerCase().contains(it)
     }
 
