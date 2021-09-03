@@ -13,11 +13,17 @@ repositories {
 
 val kotlinVersion: String by project
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
+}
+
 android {
-    compileSdkVersion(30)
+    compileSdk = 30
 
     defaultConfig {
-        minSdkVersion(21)
+        minSdk = 21
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -25,7 +31,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
-        useIR = true
         freeCompilerArgs += listOf(
             "-P", "plugin:org.brightify.hyperdrive.multiplatformx:enabled=true",
             "-P", "plugin:org.brightify.hyperdrive.multiplatformx:viewmodel.enabled=true",
@@ -37,8 +42,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerVersion = kotlinVersion
-        kotlinCompilerExtensionVersion = libs.versions.compose.get()
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 }
 

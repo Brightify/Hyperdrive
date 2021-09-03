@@ -16,6 +16,7 @@ pluginManagement {
         id("com.chromaticnoise.multiplatform-swiftpackage") version "2.0.3"
         id("com.github.gmazzo.buildconfig") version "3.0.1"
         id("org.jetbrains.intellij") version "1.1.2"
+        id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
     }
     resolutionStrategy {
         eachPlugin {

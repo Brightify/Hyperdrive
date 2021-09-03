@@ -1,11 +1,13 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
     `maven-publish`
     signing
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+    id("io.github.gradle-nexus.publish-plugin")
     id("org.jetbrains.dokka")
     kotlin("multiplatform") apply false
     kotlin("jvm") apply false
@@ -36,7 +38,8 @@ allprojects {
 
     group = "org.brightify.hyperdrive"
 
-    tasks.withType(KotlinJvmCompile::class).all {
+
+    tasks.withType<KotlinJvmCompile> {
         kotlinOptions {
             jvmTarget = "1.8"
         }
@@ -53,15 +56,22 @@ allprojects {
     }
 
     afterEvaluate {
-        extensions.findByType(org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension::class)?.sourceSets?.all {
-            languageSettings {
-                useExperimentalAnnotation("kotlin.RequiresOptIn")
-                useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
+        extensions.findByType<JavaPluginExtension>()?.apply {
+            toolchain {
+               languageVersion.set(JavaLanguageVersion.of(8))
+            }
+        }
+
+        extensions.findByType(KotlinMultiplatformExtension::class)?.apply {
+            sourceSets.all {
+                languageSettings {
+                    optIn("kotlinx.serialization.ExperimentalSerializationApi")
+                }
             }
         }
     }
 
-    tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
+    tasks.withType<KotlinJvmTest> {
         useJUnitPlatform()
     }
 

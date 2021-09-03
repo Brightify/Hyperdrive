@@ -7,7 +7,8 @@ auto-service = "1.0"
 kotlin-compile-testing = "1.4.2"
 jupiter = "5.7.2"
 kotest = "4.6.0"
-compose = "1.0.1"
+compose = "1.0.2"
+compose-compiler = "1.1.0-alpha03"
 multiplatformSettings = "0.7.7"
 
 [libraries]
