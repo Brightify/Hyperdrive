@@ -195,16 +195,6 @@ subprojects {
         }
 
         publishing {
-            if (enableCompose) {
-                publications.removeAll {
-                    if (this !is MavenPublication) {
-                        return@removeAll true
-                    }
-
-                    return@removeAll !this.artifactId.contains("compose")
-                }
-            }
-
             publications.configureEach {
                 if (this !is MavenPublication) {
                     return@configureEach
