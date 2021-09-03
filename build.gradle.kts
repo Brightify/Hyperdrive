@@ -88,10 +88,13 @@ subprojects {
     val isSnapshot = project.version.withGroovyBuilder { "isSnapshot"() } as Boolean
     val isExampleProject = project.name.contains("example-")
 
+    val ignoredPublicationProjects = setOf("krpc-integration")
+    val shouldPublish = !isExampleProject && !ignoredPublicationProjects.contains(project.name)
+
     tasks.withType<PublishToMavenRepository> {
         onlyIf {
-            if (isExampleProject) {
-                println("Skipping publishing of example project '${project.name}'.")
+            if (!shouldPublish) {
+                println("Skipping publishing of project '${project.name}'.")
                 return@onlyIf false
             }
 
@@ -150,7 +153,7 @@ subprojects {
     }
 
     afterEvaluate {
-        if (isExampleProject) { return@afterEvaluate }
+        if (!shouldPublish) { return@afterEvaluate }
 
         when {
             plugins.hasPlugin(JavaPlugin::class) -> {
