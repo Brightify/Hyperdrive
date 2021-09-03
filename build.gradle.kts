@@ -136,7 +136,10 @@ subprojects {
 
             println("\t- Full repository URL: $repositoryUrl")
 
-            return@onlyIf if (urlExists(repositoryUrl)) {
+            val isMavenCentralPublication = repository.url.toString().contains("sonatype.org")
+            val mavenCentralRepositoryUrl = "https://search.maven.org/remotecontent?filepath=$artifactPath"
+
+            return@onlyIf if (urlExists(repositoryUrl) || (isMavenCentralPublication && urlExists(mavenCentralRepositoryUrl))) {
                 println("\t- Existing Maven artifact found. Stopping.")
                 false
             } else {
