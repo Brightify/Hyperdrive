@@ -3,6 +3,8 @@ package org.brightify.hyperdrive.multiplatformx.property.impl
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
+import org.brightify.hyperdrive.utils.Optional
+import org.brightify.hyperdrive.utils.someOrDefault
 
 internal class DeferredToImmediateObservablePropertyWrapper<T>(
     private val initialValue: T,
@@ -13,20 +15,21 @@ internal class DeferredToImmediateObservablePropertyWrapper<T>(
     override var value: T = initialValue
         private set
 
-    private var pendingValue: T? = null
+    private var pendingValue: Optional<T> = Optional.None
 
     init {
         wrapped.addListener(this)
     }
 
-    override fun valueWillChange(oldValue: T?, newValue: T) {
-        pendingValue = newValue
+    override fun valueWillChange(oldValue: Optional<T>, newValue: T) {
+        pendingValue = Optional.Some(newValue)
         listeners.notifyValueWillChange(value, newValue)
     }
 
-    override fun valueDidChange(oldValue: T?, newValue: T) {
-        value = pendingValue ?: return
-        listeners.notifyValueDidChange(oldValue ?: initialValue, value)
+    override fun valueDidChange(oldValue: Optional<T>, newValue: T) = pendingValue.withValue {
+        value = it
+        pendingValue = Optional.None
+        listeners.notifyValueDidChange(oldValue.someOrDefault { initialValue }, value)
     }
 
     override fun addListener(listener: ObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)

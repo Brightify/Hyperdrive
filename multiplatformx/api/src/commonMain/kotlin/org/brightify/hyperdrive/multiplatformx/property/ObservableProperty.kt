@@ -5,11 +5,7 @@ package org.brightify.hyperdrive.multiplatformx.property
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.Lifecycle
 import kotlin.properties.ReadOnlyProperty
@@ -116,15 +112,20 @@ internal fun <OWNER, T> MutableObservableProperty<T>.toKotlinMutableProperty(): 
 @OptIn(ExperimentalCoroutinesApi::class)
 public fun <T> ObservableProperty<T>.asChannel(): Channel<T> {
     val channel = Channel<T>(Channel.CONFLATED)
+
     val listener = object: ObservableProperty.ValueChangeListener<T> {
         override fun valueDidChange(oldValue: T, newValue: T) {
-            channel.trySend(value)
+            channel.trySend(newValue)
         }
     }
+
+    // TODO: If the value changes between the next two lines, it won't get delivered since the listener is not added yet.
+    channel.trySend(value)
     addListener(listener)
     channel.invokeOnClose {
         removeListener(listener)
     }
+
     return channel
 }
 

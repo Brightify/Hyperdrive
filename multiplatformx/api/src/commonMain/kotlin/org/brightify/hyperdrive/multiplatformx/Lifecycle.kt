@@ -8,7 +8,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
 import org.brightify.hyperdrive.multiplatformx.util.bridge.NonNullFlowWrapper
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -20,42 +21,77 @@ public fun <T: Any> NonNullFlowWrapper<T>.collectWhileAttached(lifecycle: Lifecy
     }
 }
 
-/**
- * Shorthand for `Lifecycle.attach(MultiplatformGlobalScope)`.
- */
+@Suppress("DEPRECATION")
 @Deprecated("Use attachToMainScope instead.", replaceWith = ReplaceWith("attachToMainScope", "org.brightify.hyperdrive.multiplatformx.attachToMainScope"))
-public fun Lifecycle.attachToMultiplatformGlobalScope() {
-    @Suppress("DEPRECATION")
-    attach(MultiplatformGlobalScope)
-}
+public fun LifecycleGraph.Root.attachToMultiplatformGlobalScope(): CancellationToken
+    = attach(MultiplatformGlobalScope)
 
-/**
- * Shorthand for `Lifecycle.attach(MainScope())`
- */
-public fun Lifecycle.attachToMainScope() {
-    attach(MainScope())
-}
+public fun LifecycleGraph.Root.attachToMainScope(): CancellationToken = attach(MainScope())
 
 private typealias RunnerId = ULong
+
+public fun LifecycleRoot(owner: Any? = null): LifecycleGraph.Root {
+    return LifecycleGraph.Root(owner)
+}
 
 /**
  * This class is **NOT** thread-safe. Attaching and detaching from scopes should be performed from the main thread.
  */
-public class Lifecycle(private val owner: Any) {
-    private val children = mutableSetOf<Lifecycle>()
-    private val childrenProviders = mutableSetOf<Flow<Lifecycle>>()
-    private var state: State = State.Detached
-
+public sealed class LifecycleGraph {
     public val isAttached: Boolean
         get() = state is State.Attached
 
     public val debugDescription: String
-        get() = "$owner (Lifecycle@${hashCode().toUInt().toString(16)})"
+        get() {
+            val selfDescription = "Lifecycle@${hashCode().toUInt().toString(16)}"
+            return owner?.let {
+                "$it ($selfDescription)"
+            } ?: selfDescription
+        }
 
-    private val listeners = mutableMapOf<ListenerRegistration.Kind, MutableSet<ListenerRegistration>>()
+    protected abstract val owner: Any?
+    internal var state: State = State.Detached
+        set(newState) {
+            if (newState == field) { return }
+            val isAttaching = field is State.Detached && newState is State.Attached
+            val isDetaching = field is State.Attached && newState is State.Detached
+            check(isAttaching || isDetaching) { "Invalid state change! Transition from $field to $newState is not supported!" }
+
+            if (isAttaching) {
+                notifyListeners(ListenerRegistration.Kind.WillAttach)
+            } else if (isDetaching) {
+                notifyListeners(ListenerRegistration.Kind.WillDetach)
+            }
+
+            when (newState) {
+                is State.Attached -> {
+                    activeJobs.putAll(whileAttachedRunners.mapValues { (_, runner) -> newState.scope.launch(block = runner) })
+                }
+                is State.Detached -> {
+                    activeJobs.values.forEach { job ->
+                        if (job.isActive) {
+                            job.cancel("Lifecycle has been detached.")
+                        }
+                    }
+                    activeJobs.clear()
+                }
+            }
+            children.forEach { it.state = newState }
+            field = newState
+
+            if (isAttaching) {
+                notifyListeners(ListenerRegistration.Kind.DidAttach)
+            } else if (isDetaching) {
+                notifyListeners(ListenerRegistration.Kind.DidDetach)
+            }
+        }
 
     private var runnerIdSequence: RunnerId = 0u
     private val whileAttachedRunners = mutableMapOf<RunnerId, suspend CoroutineScope.() -> Unit>()
+
+    private val children = mutableSetOf<Node>()
+    private val listeners = mutableSetOf<LifecycleListener>()
+    private val eventListeners = mutableMapOf<ListenerRegistration.Kind, MutableSet<ListenerRegistration>>()
 
     private val attachedScope: CoroutineScope?
         get() = when(val state = state) {
@@ -65,91 +101,52 @@ public class Lifecycle(private val owner: Any) {
 
     private var activeJobs = mutableMapOf<RunnerId, Job>()
 
-    /**
-     * Attach this lifecycle instance to a coroutine scope.
-     *
-     * @throws IllegalStateException If already attached.
-     */
-    public fun attach(scope: CoroutineScope) {
-        if (isAttached) {
-            throw IllegalStateException("Trying to attach $debugDescription that's already attached to a different scope!")
+    public fun topMostNode(): LifecycleGraph {
+        return when (this) {
+            is Node -> root?.topMostNode() ?: parent?.topMostNode() ?: this
+            is Root -> this
         }
-
-        // TODO: Subscribe scope.onCancel to detach
-        notifyListeners(ListenerRegistration.Kind.WillAttach)
-
-        activeJobs.putAll(whileAttachedRunners.mapValues { (_, runner) ->
-            scope.launchDetachingOnCancellation(runner)
-        })
-
-        children.forEach { it.attach(scope) }
-
-        state = State.Attached(scope)
-
-        notifyListeners(ListenerRegistration.Kind.DidAttach)
-    }
-
-    /**
-     * Detach this lifecycle instance from its current scope. Also detaches all of its children.
-     *
-     * @throws IllegalStateException If not attached.
-     */
-    public fun detach() {
-        if (!isAttached) {
-            throw IllegalStateException("Trying to detach $debugDescription is not attached!")
-        }
-
-        notifyListeners(ListenerRegistration.Kind.WillDetach)
-
-        state = State.Detached
-
-        children.forEach { it.detach() }
-
-        for (job in activeJobs.values) {
-            if (job.isActive) {
-                job.cancel("Lifecycle has been detached.")
-            }
-        }
-        activeJobs.clear()
-
-        notifyListeners(ListenerRegistration.Kind.DidDetach)
-    }
-
-    public fun hasChild(child: Lifecycle): Boolean {
-        return children.contains(child)
     }
 
     /**
      * Adds [child] as a dependent lifecycle sharing the same scope and attachment status as this instance.
      */
-    public fun addChild(child: Lifecycle) {
-        if (children.contains(child)) {
-            return
+    public fun addChild(child: Node) {
+        require(child.parent == null) {
+            "$debugDescription: Could not add child which already has a parent:\n${child.dumpBranchToRootLines().joinToString("\n") { "    $it" } }"
         }
-
-        runIfAttached {
-            child.attach(this)
-        }
-
         children.add(child)
+        child.parent = this
+        child.root = when (this) {
+            is Root -> this
+            is Node -> root
+        }
+        child.state = state
     }
 
-    public fun addChildren(childrenToAdd: Collection<Lifecycle>): Unit = childrenToAdd.forEach(::addChild)
+    public fun addChildren(childrenToAdd: Collection<Node>): Unit = childrenToAdd.forEach(::addChild)
 
-    /**
-     * Removes [child] if it's dependent of this lifecycle instance. If not does nothing.
-     */
-    public fun removeChild(child: Lifecycle) {
-        if (!children.remove(child)) {
-            return
+    public fun removeChild(child: Node) {
+        require(child.parent === this) {
+            "$debugDescription: Could not remove child of a different parent:\n${child.dumpBranchToRootLines().joinToString("\n") { "    $it" } }"
         }
 
-        runIfAttached {
-            child.detach()
-        }
+        child.state = State.Detached
+        child.parent = null
+        child.root = null
+        children.remove(child)
     }
 
     public fun removeChildren(childrenToRemove: Collection<Lifecycle>): Unit  = childrenToRemove.forEach(::removeChild)
+
+    public fun hasChild(child: Node): Boolean {
+        return children.contains(child)
+    }
+
+    protected fun runIfAttached(work: CoroutineScope.() -> Unit) {
+        val attachedState = state as? State.Attached ?: return
+        work(attachedState.scope)
+    }
 
     /**
      * Launches [runner] right away if attached, does nothing otherwise.
@@ -158,7 +155,7 @@ public class Lifecycle(private val owner: Any) {
      */
     public fun runOnceIfAttached(runner: suspend CoroutineScope.() -> Unit): Boolean {
         val scope = attachedScope ?: return false
-        activeJobs[nextRunnerId()] = scope.launchDetachingOnCancellation(runner)
+        activeJobs[nextRunnerId()] = scope.launch(block = runner)
         return true
     }
 
@@ -175,7 +172,7 @@ public class Lifecycle(private val owner: Any) {
         whileAttachedRunners[id] = runner
 
         val scope = attachedScope ?: return cancellation
-        activeJobs[id] = scope.launchDetachingOnCancellation(runner)
+        activeJobs[id] = scope.launch(block = runner)
         return cancellation
     }
 
@@ -188,9 +185,8 @@ public class Lifecycle(private val owner: Any) {
      *
      * @param validity Specify how many events should the listener receive. Defaults to an infinite validity.
      */
-    public fun onWillAttach(validity: ListenerValidity = ListenerValidity.Infinite, listener: () -> Unit) {
-        addListener(ListenerRegistration.Kind.WillAttach, validity, listener)
-    }
+    public fun onWillAttach(validity: LifecycleListener.Validity = LifecycleListener.Validity.Infinite, listener: () -> Unit): CancellationToken
+        = addListener(ListenerRegistration.Kind.WillAttach, validity, listener)
 
     /**
      * Registers [listener] for the [DidAttach][ListenerRegistration.Kind.DidAttach] event.
@@ -199,9 +195,8 @@ public class Lifecycle(private val owner: Any) {
      *
      * @param validity Specify how many events should the listener receive. Defaults to an infinite validity.
      */
-    public fun onDidAttach(validity: ListenerValidity = ListenerValidity.Infinite, listener: () -> Unit) {
-        addListener(ListenerRegistration.Kind.DidAttach, validity, listener)
-    }
+    public fun onDidAttach(validity: LifecycleListener.Validity = LifecycleListener.Validity.Infinite, listener: () -> Unit): CancellationToken
+        = addListener(ListenerRegistration.Kind.DidAttach, validity, listener)
 
     /**
      * Registers [listener] for the [WillDetach][ListenerRegistration.Kind.WillDetach] event.
@@ -210,9 +205,8 @@ public class Lifecycle(private val owner: Any) {
      *
      * @param validity Specify how many events should the listener receive. Defaults to an infinite validity.
      */
-    public fun onWillDetach(validity: ListenerValidity = ListenerValidity.Infinite, listener: () -> Unit) {
-        addListener(ListenerRegistration.Kind.WillDetach, validity, listener)
-    }
+    public fun onWillDetach(validity: LifecycleListener.Validity = LifecycleListener.Validity.Infinite, listener: () -> Unit): CancellationToken
+        = addListener(ListenerRegistration.Kind.WillDetach, validity, listener)
 
     /**
      * Registers [listener] for the [DidDetach][ListenerRegistration.Kind.DidDetach] event.
@@ -221,13 +215,70 @@ public class Lifecycle(private val owner: Any) {
      *
      * @param validity Specify how many events should the listener receive. Defaults to an infinite validity.
      */
-    public fun onDidDetach(validity: ListenerValidity = ListenerValidity.Infinite, listener: () -> Unit) {
-        addListener(ListenerRegistration.Kind.DidDetach, validity, listener)
+    public fun onDidDetach(validity: LifecycleListener.Validity = LifecycleListener.Validity.Infinite, listener: () -> Unit): CancellationToken
+        = addListener(ListenerRegistration.Kind.DidDetach, validity, listener)
+
+    public fun addListener(listener: LifecycleListener): CancellationToken {
+        listeners.add(listener)
+        return CancellationToken {
+            removeListener(listener)
+        }
+    }
+
+    public fun removeListener(listener: LifecycleListener) {
+        listeners.remove(listener)
+    }
+
+    internal fun addListener(kind: ListenerRegistration.Kind, validity: LifecycleListener.Validity, listener: () -> Unit): CancellationToken {
+        val registration = ListenerRegistration(listener, validity)
+        eventListeners.getOrPut(kind) { mutableSetOf() }.add(registration)
+        return CancellationToken {
+            eventListeners[kind]?.remove(registration)
+        }
+    }
+
+    private fun notifyListeners(kind: ListenerRegistration.Kind) {
+        listeners.forEach {
+            when (kind) {
+                ListenerRegistration.Kind.WillAttach -> it.willAttach()
+                ListenerRegistration.Kind.DidAttach -> it.didAttach()
+                ListenerRegistration.Kind.WillDetach -> it.willDetach()
+                ListenerRegistration.Kind.DidDetach -> it.didDetach()
+            }
+        }
+
+        val listeners = eventListeners[kind] ?: return
+
+        listeners.removeAll {
+            !it.notifyAndShouldKeep()
+        }
+    }
+
+    internal sealed class State {
+        object Detached: State()
+        class Attached(val scope: CoroutineScope): State()
+    }
+
+    internal class ListenerRegistration(
+        private val listener: () -> Unit,
+        private val validity: LifecycleListener.Validity,
+    ) {
+        fun notifyAndShouldKeep(): Boolean {
+            listener()
+            return validity.decrementAndShouldKeep()
+        }
+
+        enum class Kind {
+            WillAttach,
+            DidAttach,
+            WillDetach,
+            DidDetach,
+        }
     }
 
     public fun dumpTree(): String = dumpTreeLines().joinToString("\n")
 
-    private fun dumpTreeLines(): List<String> {
+    protected fun dumpTreeLines(): List<String> {
         val lastChildIndex = children.count() - 1
         return listOf(debugDescription) + children.flatMapIndexed { childIndex, child ->
             val childTreeLines = child.dumpTreeLines()
@@ -249,79 +300,88 @@ public class Lifecycle(private val owner: Any) {
         }
     }
 
-    private fun addListener(kind: ListenerRegistration.Kind, validity: ListenerValidity, listener: () -> Unit) {
-        listeners.getOrPut(kind, { mutableSetOf() })
-            .add(ListenerRegistration(listener, validity))
-    }
-
-    private fun CoroutineScope.launchDetachingOnCancellation(block: suspend CoroutineScope.() -> Unit) = launch {
-        try {
-            block()
-        } catch (e: CancellationException) {
-            if (isAttached) {
-                detach()
+    public class Root(override val owner: Any?): LifecycleGraph() {
+        /**
+         * Attach this lifecycle instance to a coroutine scope the method has been called in.
+         *
+         * @throws IllegalStateException If already attached.
+         */
+        public fun attach(scope: CoroutineScope): CancellationToken {
+            check(state == State.Detached) { "Couldn't attach lifecycle root to $this. Already attached: $state." }
+            state = State.Attached(scope)
+            val job = scope.launch {
+                try {
+                    awaitCancellation()
+                } finally {
+                    state = State.Detached
+                }
             }
-            throw e
+            return CancellationToken {
+                job.cancel()
+            }
         }
     }
 
-    private fun notifyListeners(kind: ListenerRegistration.Kind) {
-        val listeners = listeners[kind] ?: return
+    public class Node(override val owner: Any): LifecycleGraph() {
+        internal var parent: LifecycleGraph? = null
+        internal var root: Root? = null
 
-        listeners.removeAll {
-            !it.notifyAndShouldKeep()
+        public fun removeFromParent() {
+            parent?.removeChild(this)
+        }
+
+        public fun dumpBranchToRoot(): String = dumpBranchToRootLines().joinToString("\n")
+
+        internal fun dumpBranchToRootLines(): List<String> {
+            return listOf(debugDescription) + parent.let { parent ->
+                val parentBranchLines = when (parent) {
+                    is Node -> parent.dumpBranchToRootLines()
+                    is Root -> listOf(parent.debugDescription)
+                    null -> listOf("No root parent")
+                }
+                parentBranchLines.mapIndexed { lineIndex, line ->
+                    if (lineIndex == 0) {
+                        "└───"
+                    } else {
+                        "    "
+                    } + " $line"
+                }
+            }
         }
     }
 
-    private fun runIfAttached(work: CoroutineScope.() -> Unit) {
-        val attachedState = state as? State.Attached ?: return
-        work(attachedState.scope)
-    }
+}
+
+public interface LifecycleListener {
+    public fun willAttach() { }
+    public fun didAttach() { }
+    public fun willDetach() { }
+    public fun didDetach() { }
 
     /**
      * How long the listener is being notified. Most common is an Infinite validity where a listener is notified for the entire
      * lifetime of the Lifecycle.
      */
-    public sealed class ListenerValidity {
+    public sealed class Validity {
         public abstract fun decrementAndShouldKeep(): Boolean
 
-        public object Infinite: ListenerValidity() {
+        public object Infinite: Validity() {
             override fun decrementAndShouldKeep(): Boolean {
                 return true
             }
         }
-        public object Once: ListenerValidity() {
+        public object Once: Validity() {
             override fun decrementAndShouldKeep(): Boolean {
                 return false
             }
         }
-        public class Finite(private var usesLeft: Int): ListenerValidity() {
+        public class Finite(private var usesLeft: Int): Validity() {
             override fun decrementAndShouldKeep(): Boolean {
                 usesLeft -= 1
                 return usesLeft > 0
             }
         }
     }
-
-    private sealed class State {
-        object Detached: State()
-        class Attached(val scope: CoroutineScope): State()
-    }
-
-    private class ListenerRegistration(
-        private val listener: () -> Unit,
-        private val validity: ListenerValidity,
-    ) {
-        fun notifyAndShouldKeep(): Boolean {
-            listener()
-            return validity.decrementAndShouldKeep()
-        }
-
-        enum class Kind {
-            WillAttach,
-            DidAttach,
-            WillDetach,
-            DidDetach,
-        }
-    }
 }
+
+public typealias Lifecycle = LifecycleGraph.Node

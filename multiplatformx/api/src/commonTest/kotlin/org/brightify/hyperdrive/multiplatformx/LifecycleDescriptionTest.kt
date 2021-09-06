@@ -2,7 +2,7 @@ package org.brightify.hyperdrive.multiplatformx
 
 import kotlin.test.Test
 
-class LifecycleTest {
+class LifecycleDescriptionTest {
 
     @Test
     fun printDumpTree() {

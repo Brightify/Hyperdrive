@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
@@ -19,18 +20,24 @@ class BaseViewModelSamples {
         class Parent: BaseViewModel() {
             val child by managed(Child())
         }
-
+        val root = LifecycleRoot("root")
+        val cancelAttach = root.attach(testScope)
         val parent = Parent()
-        parent.lifecycle.attach(testScope)
+
+
+        root.addChild(parent.lifecycle)
         delay(1000)
-        parent.lifecycle.detach()
+        parent.lifecycle.removeFromParent()
         delay(1000)
-        parent.lifecycle.attach(testScope)
+        root.addChild(parent.lifecycle)
         delay(1000)
-        parent.lifecycle.detach()
+        cancelAttach.cancel()
         delay(1000)
-        parent.lifecycle.attach(testScope)
+        parent.lifecycle.removeFromParent()
         delay(1000)
+        root.addChild(parent.lifecycle)
+        delay(1000)
+        root.attach(testScope)
     }
 
     @Test
@@ -41,16 +48,20 @@ class BaseViewModelSamples {
             val child by managedList(listOf(Child()))
         }
 
+        val root = LifecycleRoot("root")
+        val cancelAttach = root.attach(testScope)
+
         val parent = Parent()
-        parent.lifecycle.attach(testScope)
+
+        root.addChild(parent.lifecycle)
         delay(1000)
-        parent.lifecycle.detach()
+        parent.lifecycle.removeFromParent()
         delay(1000)
-        parent.lifecycle.attach(testScope)
+        root.addChild(parent.lifecycle)
         delay(1000)
-        parent.lifecycle.detach()
+        cancelAttach.cancel()
         delay(1000)
-        parent.lifecycle.attach(testScope)
+        root.attach(testScope)
         delay(1000)
     }
 

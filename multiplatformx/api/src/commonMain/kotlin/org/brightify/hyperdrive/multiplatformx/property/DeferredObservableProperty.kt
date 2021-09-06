@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx.property
 
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
+import org.brightify.hyperdrive.utils.Optional
 
 /**
  * This interface is an asynchronous variation to the [ObservableProperty]. Used if the initial value is undefined.
@@ -25,7 +26,7 @@ public interface DeferredObservableProperty<T> {
     /**
      * Returns the latest value if any was emitted, `null` otherwise.
      */
-    public val latestValue: T?
+    public val latestValue: Optional<T>
 
     /**
      * Blocks the current thread to wait for a value if [latestValue] is `null`,
@@ -52,7 +53,7 @@ public interface DeferredObservableProperty<T> {
          * @param oldValue current value
          * @param newValue next value
          */
-        public fun valueWillChange(oldValue: T?, newValue: T) { }
+        public fun valueWillChange(oldValue: Optional<T>, newValue: T) { }
 
         /**
          * Listener method called after [DeferredObservableProperty] value changes.
@@ -60,6 +61,6 @@ public interface DeferredObservableProperty<T> {
          * @param oldValue previous value
          * @param newValue current value
          */
-        public fun valueDidChange(oldValue: T?, newValue: T) { }
+        public fun valueDidChange(oldValue: Optional<T>, newValue: T) { }
     }
 }

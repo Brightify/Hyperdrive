@@ -4,6 +4,7 @@ import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.nextValue
+import org.brightify.hyperdrive.utils.Optional
 
 internal class ImmediateToDeferredObservablePropertyWrapper<T>(
     private val wrapped: ObservableProperty<T>,
@@ -11,11 +12,11 @@ internal class ImmediateToDeferredObservablePropertyWrapper<T>(
     private val listeners = DeferredObservablePropertyListeners(this)
 
     override fun valueWillChange(oldValue: T, newValue: T) {
-        listeners.notifyValueWillChange(oldValue, newValue)
+        listeners.notifyValueWillChange(Optional.Some(oldValue), newValue)
     }
 
     override fun valueDidChange(oldValue: T, newValue: T) {
-        listeners.notifyValueDidChange(oldValue, newValue)
+        listeners.notifyValueDidChange(Optional.Some(oldValue), newValue)
     }
 
     override fun addListener(listener: DeferredObservableProperty.ValueChangeListener<T>): CancellationToken =
@@ -24,8 +25,8 @@ internal class ImmediateToDeferredObservablePropertyWrapper<T>(
     override fun removeListener(listener: DeferredObservableProperty.ValueChangeListener<T>): Boolean =
         listeners.removeListener(listener)
 
-    override val latestValue: T?
-        get() = wrapped.value
+    override val latestValue: Optional<T>
+        get() = Optional.Some(wrapped.value)
 
     override suspend fun await(): T = wrapped.value
 

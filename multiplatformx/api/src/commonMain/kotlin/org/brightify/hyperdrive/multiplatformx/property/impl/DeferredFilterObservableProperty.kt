@@ -1,53 +1,61 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.*
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
+import org.brightify.hyperdrive.utils.Optional
+import org.brightify.hyperdrive.utils.filterSome
+import org.brightify.hyperdrive.utils.someOrDefault
 
 internal class DeferredFilterObservableProperty<T>(
     private val filtered: ObservableProperty<T>,
     private val predicate: (T) -> Boolean,
     private val equalityPolicy: ObservableProperty.EqualityPolicy<T>,
 ): DeferredObservableProperty<T>, ObservableProperty.ValueChangeListener<T> {
-    override val latestValue: T?
+    override val latestValue: Optional<T>
         get() = storage.value
-    private var pendingValue: T? = null
+    private var pendingValue: Optional<T> = Optional.None
 
     private val listeners = DeferredObservablePropertyListeners(this)
-    private val storage = MutableStateFlow<T?>(null)
+    private val storage = MutableStateFlow(filtered.value.let {
+        if (predicate(it)) {
+            Optional.Some(it)
+        } else {
+            Optional.None
+        }
+    })
 
     init {
         filtered.addListener(this)
     }
 
     override suspend fun await(): T {
-        return storage.value ?: storage.mapNotNull { it }.first()
+        return storage.value.someOrDefault {
+            storage.filterSome().first()
+        }
     }
 
     override suspend fun nextValue(): T {
-        return storage.drop(1).mapNotNull { it }.first()
+        return storage.drop(1).filterSome().first()
     }
 
     override fun valueWillChange(oldValue: T, newValue: T) {
         if (!predicate(newValue)) { return }
 
         val oldFilteredValue = storage.value
-        val shouldSave = oldFilteredValue == null || equalityPolicy.isEqual(oldFilteredValue, newValue)
+        val shouldSave = oldFilteredValue !is Optional.Some<T> || equalityPolicy.isEqual(oldFilteredValue.value, newValue)
         if (shouldSave) {
-            pendingValue = newValue
+            pendingValue = Optional.Some(newValue)
             listeners.notifyValueWillChange(oldFilteredValue, newValue)
         }
     }
 
-    override fun valueDidChange(oldValue: T, newValue: T) {
+    override fun valueDidChange(oldValue: T, newValue: T) = pendingValue.withValue {
         val oldFilteredValue = storage.value
-        val newFilteredValue = pendingValue ?: return
-        storage.value = newFilteredValue
-        pendingValue = null
+        val newFilteredValue = it
+        storage.value = Optional.Some(newFilteredValue)
+        pendingValue = Optional.None
         listeners.notifyValueDidChange(oldFilteredValue, newFilteredValue)
     }
 

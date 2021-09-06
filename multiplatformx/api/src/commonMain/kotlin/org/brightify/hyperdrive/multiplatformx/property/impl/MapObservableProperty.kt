@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
+import org.brightify.hyperdrive.utils.Optional
 
 internal class MapObservableProperty<T, U>(
     private val mapped: ObservableProperty<T>,
@@ -10,7 +11,7 @@ internal class MapObservableProperty<T, U>(
 ): ObservableProperty<U>, ObservableProperty.ValueChangeListener<T> {
     override var value: U = transform(mapped.value)
         private set
-    private var pendingValue: U? = null
+    private var pendingValue: Optional<U> = Optional.None
 
     private val listeners = ObservablePropertyListeners(this)
 
@@ -21,15 +22,15 @@ internal class MapObservableProperty<T, U>(
     override fun valueWillChange(oldValue: T, newValue: T) {
         val newTransformedValue = transform(newValue)
         if (equalityPolicy.isEqual(value, newTransformedValue)) { return }
-        pendingValue = newTransformedValue
+        pendingValue = Optional.Some(newTransformedValue)
         listeners.notifyValueWillChange(value, newTransformedValue)
     }
 
-    override fun valueDidChange(oldValue: T, newValue: T) {
+    override fun valueDidChange(oldValue: T, newValue: T) = pendingValue.withValue {
         val oldTransformedValue = value
-        value = pendingValue ?: return
-        pendingValue = null
-        listeners.notifyValueDidChange(oldTransformedValue, value)
+        value = it
+        pendingValue = Optional.None
+        listeners.notifyValueDidChange(oldTransformedValue, it)
     }
 
     override fun addListener(listener: ObservableProperty.ValueChangeListener<U>): CancellationToken = listeners.addListener(listener)

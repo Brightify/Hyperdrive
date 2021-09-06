@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
+import org.brightify.hyperdrive.utils.Optional
 
 internal class DeferredObservablePropertyListeners<T>(private val backing: DeferredObservableProperty<T>) {
 
@@ -15,11 +16,11 @@ internal class DeferredObservablePropertyListeners<T>(private val backing: Defer
         return result
     }
 
-    fun notifyValueWillChange(oldValue: T?, newValue: T) {
+    fun notifyValueWillChange(oldValue: Optional<T>, newValue: T) {
         listeners.forEach { it.valueWillChange(oldValue, newValue) }
     }
 
-    fun notifyValueDidChange(oldValue: T?, newValue: T) {
+    fun notifyValueDidChange(oldValue: Optional<T>, newValue: T) {
         listeners.forEach { it.valueDidChange(oldValue, newValue) }
     }
 

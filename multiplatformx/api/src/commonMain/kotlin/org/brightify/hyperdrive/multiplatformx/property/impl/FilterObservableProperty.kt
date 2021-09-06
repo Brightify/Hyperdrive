@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
+import org.brightify.hyperdrive.utils.Optional
 
 internal class FilterObservableProperty<T>(
     private val filtered: ObservableProperty<T>,
@@ -12,7 +13,7 @@ internal class FilterObservableProperty<T>(
 
     override var value: T = initialValue
         private set
-    private var pendingValue: T? = null
+    private var pendingValue: Optional<T> = Optional.None
 
     private val listeners = ObservablePropertyListeners(this)
 
@@ -26,16 +27,16 @@ internal class FilterObservableProperty<T>(
         val oldValue = value
         val shouldSave = oldValue == null || equalityPolicy.isEqual(oldValue, newValue)
         if (shouldSave) {
-            pendingValue = newValue
+            pendingValue = Optional.Some(newValue)
             listeners.notifyValueWillChange(oldValue, newValue)
         }
     }
 
-    override fun valueDidChange(oldValue: T, newValue: T) {
+    override fun valueDidChange(oldValue: T, newValue: T) = pendingValue.withValue {
         val oldFilteredValue = value
-        value = pendingValue ?: return
-        pendingValue = null
-        listeners.notifyValueDidChange(oldFilteredValue, value)
+        value = it
+        pendingValue = Optional.None
+        listeners.notifyValueDidChange(oldFilteredValue, it)
     }
 
     override fun addListener(listener: ObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)

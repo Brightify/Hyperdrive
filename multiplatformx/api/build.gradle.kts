@@ -19,7 +19,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":kotlin-utils"))
+                api(project(":kotlin-utils"))
                 implementation(libs.stately.common)
                 implementation(libs.coroutines.core)
             }
@@ -27,6 +27,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(libs.coroutines.core)
+                implementation(kotlin("reflect"))
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
             }
