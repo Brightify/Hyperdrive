@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,7 +12,7 @@ class LifecycleTest {
 
     @Test
     fun test1() {
-        val scope = CoroutineScope(EmptyCoroutineContext)
+        val scope = MainScope()
 
         val parent = LifecycleRoot("parent")
         val child = Lifecycle("child")

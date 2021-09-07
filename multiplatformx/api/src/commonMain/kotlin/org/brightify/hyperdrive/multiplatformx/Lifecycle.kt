@@ -2,6 +2,7 @@
 
 package org.brightify.hyperdrive.multiplatformx
 
+import co.touchlab.stately.ensureNeverFrozen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -100,6 +101,10 @@ public sealed class LifecycleGraph {
         }
 
     private var activeJobs = mutableMapOf<RunnerId, Job>()
+
+    init {
+        ensureNeverFrozen()
+    }
 
     public fun topMostNode(): LifecycleGraph {
         return when (this) {
