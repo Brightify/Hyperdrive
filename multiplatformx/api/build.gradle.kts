@@ -39,6 +39,11 @@ kotlin {
                 implementation(libs.coroutines.test)
             }
         }
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
+            }
+        }
 
         val nativeMain by creating {
             dependsOn(commonMain)
