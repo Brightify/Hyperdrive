@@ -12,7 +12,11 @@ kotlin {
     tvos()
     macosX64()
     js {
-        browser()
+        browser {
+            testTask {
+                enabled = false
+            }
+        }
         nodejs()
     }
 
