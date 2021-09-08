@@ -1,12 +1,15 @@
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
+
 plugins {
     kotlin("jvm")
     id("org.jetbrains.intellij")
 }
 
+val ideType: String by project
 description = "IntelliJ IDEA plugin for Hyperdrive."
 
 dependencies {
-    implementation(project(":plugin-impl-native"))
+    implementation(project(":plugin-impl", configuration = "shadow"))
 }
 
 tasks.jar {
@@ -20,12 +23,13 @@ tasks.jar {
 
 intellij {
     pluginName.set("hyperdrive")
-    version.set("2021.1.3")
+    version.set("2021.2")
+    type.set(ideType)
 
-    this.plugins.addAll(
+    plugins.addAll(
         "gradle",
-        "org.jetbrains.kotlin:211-1.5.10-release-909-IJ7142.45",
         "com.intellij.java",
+        "org.jetbrains.kotlin",
     )
 
     updateSinceUntilBuild.set(false)
@@ -34,9 +38,13 @@ intellij {
 tasks.runPluginVerifier {
     ideVersions.set(
         listOf(
-            "IU-211.7142"
+            "IU-211.7142.36",
         )
     )
+}
+
+tasks.buildPlugin {
+    archiveAppendix.set(ideType)
 }
 
 tasks.publishPlugin {
@@ -46,4 +54,10 @@ tasks.publishPlugin {
 
 tasks.buildSearchableOptions {
     enabled = false
+}
+
+tasks.patchPluginXml {
+    pluginXmlFiles.add(
+        projectDir.resolve("src/main/config/plugin-${ideType.toLowerCaseAsciiOnly()}.xml")
+    )
 }
