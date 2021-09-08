@@ -24,6 +24,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":kotlin-utils"))
+                api(project(":logging-api"))
                 implementation(libs.stately.common)
                 implementation(libs.coroutines.core)
             }

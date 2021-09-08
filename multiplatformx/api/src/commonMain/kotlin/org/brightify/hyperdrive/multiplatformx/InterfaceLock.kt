@@ -3,6 +3,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
 import kotlinx.coroutines.CancellationException
+import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
 import org.brightify.hyperdrive.multiplatformx.property.impl.MutexValueObservableProperty
@@ -28,6 +29,10 @@ public class InterfaceLock(
     private val lifecycle: Lifecycle,
     private val group: Group = Group(),
 ) {
+    private companion object {
+        val logger = Logger(InterfaceLock::class)
+    }
+
     private val mutableState = ValueObservableProperty<State>(State.Idle, defaultEqualityPolicy())
     public val observeState: ObservableProperty<State> = mutableState
     public var state: State
@@ -58,6 +63,7 @@ public class InterfaceLock(
                 }
                 // TODO: It might be unsafe to catch any Throwable. Please research.
                 catch (t: Throwable) {
+                    logger.warning(t) { "Work under lock failed." }
                     State.Failed(t)
                 }
             }
