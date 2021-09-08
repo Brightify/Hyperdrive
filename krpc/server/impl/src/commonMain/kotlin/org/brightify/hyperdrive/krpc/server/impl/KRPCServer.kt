@@ -8,10 +8,14 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.brightify.hyperdrive.Logger
+import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.ServiceRegistry
 import org.brightify.hyperdrive.krpc.SessionNodeExtension
+import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.DefaultRPCHandshakePerformer
@@ -39,21 +43,40 @@ class KRPCServer(
         SessionNodeExtension.Factory(sessionContextKeyRegistry, payloadSerializerFactory),
     )
 
+    val nodes: Set<RPCNode>
+        get() = nodeStorage.values.toSet()
+
+    private val nodeStorage = mutableMapOf<RPCConnection, RPCNode>()
+    private val nodeStorageLock = Mutex()
+
     suspend fun run() = withContext(coroutineContext) {
         while (isActive) {
             val connection = connector.nextConnection()
             // TODO: Check if we can make this launch die when the `runningJob` is canceled.
             connection.launch {
-                val node = DefaultRPCNode.Factory(
-                    handshakePerformer,
-                    payloadSerializerFactory,
-                    builtinExtensions + additionalExtensions,
-                    serviceRegistry
-                ).create(connection)
-                node.run {
-                    logger.debug { "Server node initialized." }
+                try {
+                    val node = DefaultRPCNode.Factory(
+                        handshakePerformer,
+                        payloadSerializerFactory,
+                        builtinExtensions + additionalExtensions,
+                        serviceRegistry
+                    ).create(connection)
+
+                    nodeStorageLock.withLock {
+                        nodeStorage[connection] = node
+                    }
+
+                    node.run {
+                        logger.debug { "Server node initialized." }
+                    }
+                    connection.close()
+                } catch (t: Throwable) {
+                    logger.warning(t) { "Connection ended." }
+                } finally {
+                    nodeStorageLock.withLock {
+                        nodeStorage.remove(connection)
+                    }
                 }
-                connection.close()
             }
         }
     }

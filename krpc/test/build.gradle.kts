@@ -1,3 +1,4 @@
+import org.brightify.hyperdrive.configurePlatforms
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
@@ -6,14 +7,7 @@ plugins {
 }
 
 kotlin {
-    jvm()
-    ios()
-    tvos()
-    macosX64()
-    js {
-        browser()
-        nodejs()
-    }
+    configurePlatforms()
 
     sourceSets {
         val commonMain by getting {
@@ -35,7 +29,6 @@ kotlin {
             }
         }
 
-        val jvmMain by getting
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))

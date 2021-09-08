@@ -6,6 +6,7 @@ import io.kotest.data.row
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.property.checkAll
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.Flow
@@ -23,17 +24,22 @@ import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.test.TestCoroutineScope
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
+import org.brightify.hyperdrive.krpc.application.CallLoggingNodeExtension
 import org.brightify.hyperdrive.krpc.client.impl.KRPCClient
 import org.brightify.hyperdrive.krpc.client.impl.ktor.WebSocketClient
+import org.brightify.hyperdrive.krpc.error.InternalServerError
 import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
 import org.brightify.hyperdrive.krpc.impl.JsonCombinedSerializer
 import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
+import org.brightify.hyperdrive.krpc.protocol.ascension.ConnectionClosedException
 import org.brightify.hyperdrive.krpc.server.impl.KRPCServer
 import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
+import kotlin.coroutines.EmptyCoroutineContext
 
 @OptIn(ObsoleteCoroutinesApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GeneratedServiceTest: BehaviorSpec({
+    lateinit var server: KRPCServer
     val serviceImpl = object: BasicTestService {
         override suspend fun multiplyByTwo(source: Int): Int {
             return source * 2
@@ -45,6 +51,14 @@ class GeneratedServiceTest: BehaviorSpec({
 
         override suspend fun singleCallError() {
             throw IllegalArgumentError("source cannot be zero")
+        }
+
+        override suspend fun singleCallUnexpectedError() {
+            error("This is an unexpected error for sure.")
+        }
+
+        override suspend fun singleCallClosingConnection() {
+            server.nodes.single().close()
         }
 
         override suspend fun sum(stream: Flow<Int>): Int {
@@ -76,14 +90,13 @@ class GeneratedServiceTest: BehaviorSpec({
         }
     }
 
-    val testScope = TestCoroutineScope()
+    val testScope = CoroutineScope(EmptyCoroutineContext)
 
     beforeSpec {
         Logger.setLevel(LoggingLevel.Info)
     }
 
     afterContainer {
-        testScope.cleanupTestCoroutines()
     }
 
     val client = lazy {
@@ -93,20 +106,27 @@ class GeneratedServiceTest: BehaviorSpec({
 
         val registry = DefaultServiceRegistry()
         registry.register(BasicTestService.Descriptor.describe(serviceImpl))
-        KRPCServer(
+
+        server = KRPCServer(
             KtorServerFrontend(),
             testScope,
             serializers.transportFrameSerializerFactory,
             serializers.payloadSerializerFactory,
             registry,
             SessionContextKeyRegistry.Empty,
-        ).start()
+            additionalExtensions = listOf(
+                CallLoggingNodeExtension.Factory(Logger(KRPCServer::class)),
+            )
+        ).also { it.start() }
 
         KRPCClient(
             WebSocketClient(),
             testScope,
             serializers,
-            registry
+            registry,
+            additionalExtensions = listOf(
+                CallLoggingNodeExtension.Factory(Logger(KRPCClient::class)),
+            )
         ).also { it.start() }
     }
 
@@ -128,9 +148,21 @@ class GeneratedServiceTest: BehaviorSpec({
                         }
                     }
 
-                    Then("`singleCallError` fails") {
+                    Then("`singleCallError` throws expected error") {
                         shouldThrowExactly<IllegalArgumentError> {
                             service.singleCallError()
+                        }
+                    }
+
+                    Then("`singleCallUnexpectedError` throws InternalServerError") {
+                        shouldThrowExactly<InternalServerError> {
+                            service.singleCallUnexpectedError()
+                        }
+                    }
+
+                    Then("`singleCallClosingConnection` throws ConnectionClosedException") {
+                        shouldThrowExactly<ConnectionClosedException> {
+                            service.singleCallClosingConnection()
                         }
                     }
                 }

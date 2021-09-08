@@ -24,6 +24,10 @@ interface BasicTestService {
     @Error(IllegalArgumentError::class)
     suspend fun singleCallError()
 
+    suspend fun singleCallUnexpectedError()
+
+    suspend fun singleCallClosingConnection()
+
     suspend fun sum(stream: @Error(IllegalArgumentError::class) Flow<Int>): Int
 
     suspend fun sumWithInitial(initialValue: Int, stream: Flow<Int>): Int

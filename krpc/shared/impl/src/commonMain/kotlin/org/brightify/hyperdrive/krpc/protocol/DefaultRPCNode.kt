@@ -53,7 +53,7 @@ class DefaultRPCNode(
         val logger = Logger<DefaultRPCNode>()
     }
 
-    fun <E: RPCNodeExtension> getExtension(identifier: RPCNodeExtension.Identifier<E>): E? {
+    override fun <E: RPCNodeExtension> getExtension(identifier: RPCNodeExtension.Identifier<E>): E? {
         @Suppress("UNCHECKED_CAST")
         return contract.extensions[identifier] as? E
     }
@@ -121,10 +121,10 @@ class DefaultRPCNode(
         runningProtocol.await()
     }
 
-    suspend fun close() {
+    override suspend fun close() {
         logger.trace { "Will close connection." }
-        coroutineContext.job.cancelAndJoin()
         contract.protocol.close()
+        coroutineContext.job.cancel()
         logger.trace { "Did close connection." }
     }
 }

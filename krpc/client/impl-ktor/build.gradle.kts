@@ -1,3 +1,5 @@
+import org.brightify.hyperdrive.configurePlatforms
+
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
@@ -6,14 +8,7 @@ plugins {
 }
 
 kotlin {
-    jvm()
-    ios()
-    tvos()
-    macosX64()
-    js {
-        browser()
-        nodejs()
-    }
+    configurePlatforms()
 
     sourceSets {
         val commonMain by getting {

@@ -28,6 +28,7 @@ import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
 import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
 import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
+import org.brightify.hyperdrive.krpc.protocol.ascension.ConnectionClosedException
 import org.brightify.hyperdrive.krpc.protocol.ascension.DefaultRPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.session.Session
@@ -101,6 +102,7 @@ class KRPCClient(
     suspend fun run() = withContext(coroutineContext) {
         while (isActive) {
             try {
+                logger.info { "Will create connection." }
                 connector.withConnection {
                     logger.info { "Connection created: $this" }
                     val node = DefaultRPCNode.Factory(handshakePerformer, payloadSerializerFactory, combinedExtensions, serviceRegistry).create(this)
@@ -108,11 +110,14 @@ class KRPCClient(
                         logger.info { "Client node initialized." }
                         activeNode.value = node
                     }
-                    logger.info { "Relasing connection: $this" }
+                    logger.info { "Releasing connection: $this" }
                 }
+                logger.info { "Client connection completed. Trying to reconnect soon." }
+                activeNode.value = null
+                delay(500)
             } catch (t: Throwable) {
                 activeNode.value = null
-                if (t is ClosedReceiveChannelException || connector.isConnectionCloseException(t)) {
+                if (t is ConnectionClosedException || connector.isConnectionCloseException(t)) {
                     logger.warning(t) { "Client connection disconnected. Trying to reconnect soon." }
                     // Disconnected from server, wait and then try again
                     delay(500)

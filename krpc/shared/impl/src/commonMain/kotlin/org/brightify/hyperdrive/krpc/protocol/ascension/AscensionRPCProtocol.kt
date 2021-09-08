@@ -7,6 +7,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
@@ -50,6 +51,8 @@ interface RPCHandshakePerformer {
         }
     }
 }
+
+class ConnectionClosedException(mesage: String = "Connection has been closed"): CancellationException(mesage)
 
 class DefaultRPCHandshakePerformer(
     private val frameSerializerFactory: TransportFrameSerializer.Factory,
@@ -310,10 +313,12 @@ class AscensionRPCProtocol(
                             handleDownstreamEvent(frame)
                         }
                         is AscensionRPCFrame.InternalProtocolError.Caller -> {
-                            pendingCallees.remove(frame.callReference)?.cancel("Internal protocol error on caller.", frame.throwable.toThrowable())
+                            pendingCallees.remove(frame.callReference)
+                                ?.cancel("Internal protocol error on caller.", frame.throwable.toThrowable())
                         }
                         is AscensionRPCFrame.InternalProtocolError.Callee -> {
-                            pendingCallers.remove(frame.callReference)?.cancel("Internal protocol error on callee.", frame.throwable.toThrowable())
+                            pendingCallers.remove(frame.callReference)
+                                ?.cancel("Internal protocol error on callee.", frame.throwable.toThrowable())
                         }
                         is AscensionRPCFrame.SingleCall -> error("PROTOCOL ERROR! Instances of AscensionRPCFrame.SingleCall should either be Upstream or Downstream!")
                         is AscensionRPCFrame.ColdUpstream -> error("PROTOCOL ERROR! Instances of AscensionRPCFrame.ColdUpstream should either be Upstream or Downstream!")
@@ -326,8 +331,22 @@ class AscensionRPCProtocol(
                 }
                 logger.trace { "Did handle frame $frame - $isActive." }
             }
-        } finally {
-            logger.trace { "Receiving ended" }
+            logger.trace { "Receiving ended." }
+            cancelPendingCallers(ConnectionClosedException())
+        } catch (t: CancellationException) {
+            logger.debug { "Receiving cancelled." }
+            cancelPendingCallers(t)
+        } catch (t: Throwable) {
+            logger.debug(t) { "Receiving failed." }
+            cancelPendingCallers(CancellationException("Receiving failed", t))
+        }
+    }
+
+    private fun cancelPendingCallers(cause: CancellationException) {
+        logger.trace { "Cancelling pending callers." }
+        val keys = pendingCallers.keys.toSet()
+        keys.forEach { key ->
+            pendingCallers.remove(key)?.cancel(cause)
         }
     }
 

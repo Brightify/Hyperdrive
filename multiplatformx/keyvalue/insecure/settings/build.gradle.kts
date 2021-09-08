@@ -1,18 +1,12 @@
+import org.brightify.hyperdrive.configurePlatforms
+
 plugins {
     kotlin("multiplatform")
 }
 
 kotlin {
+    configurePlatforms()
     explicitApi()
-
-    jvm()
-    ios()
-    tvos()
-    macosX64()
-    js {
-        browser()
-        nodejs()
-    }
 
     sourceSets {
         val commonMain by getting {
@@ -39,34 +33,6 @@ kotlin {
                 implementation(libs.junit.jupiter)
                 implementation(libs.coroutines.test)
             }
-        }
-
-        val nativeMain by creating {
-            dependsOn(commonMain)
-        }
-        val nativeTest by creating {
-            dependsOn(commonTest)
-        }
-
-        val iosMain by getting {
-            dependsOn(nativeMain)
-        }
-        val iosTest by getting {
-            dependsOn(nativeTest)
-        }
-
-        val macosX64Main by getting {
-            dependsOn(nativeMain)
-        }
-        val macosX64Test by getting {
-            dependsOn(nativeTest)
-        }
-
-        val tvosMain by getting {
-            dependsOn(nativeMain)
-        }
-        val tvosTest by getting {
-            dependsOn(nativeTest)
         }
     }
 }

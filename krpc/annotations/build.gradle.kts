@@ -1,3 +1,5 @@
+import org.brightify.hyperdrive.configurePlatforms
+
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
@@ -6,18 +8,7 @@ plugins {
 }
 
 kotlin {
-    /* Targets configuration omitted. 
-    *  To find out how to configure the targets, please follow the link:
-    *  https://kotlinlang.org/docs/reference/building-mpp-with-gradle.html#setting-up-targets */
-
-    jvm()
-    ios()
-    tvos()
-    macosX64()
-    js {
-        browser()
-        nodejs()
-    }
+    configurePlatforms()
 
     sourceSets {
         val commonMain by getting {
