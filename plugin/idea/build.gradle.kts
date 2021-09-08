@@ -57,7 +57,10 @@ tasks.buildSearchableOptions {
 }
 
 tasks.patchPluginXml {
-    pluginXmlFiles.add(
-        projectDir.resolve("src/main/config/plugin-${ideType.toLowerCaseAsciiOnly()}.xml")
+    sinceBuild.set(
+        when (ideType) {
+            "AS" -> "203"
+            else -> "211"
+        }
     )
 }
