@@ -19,7 +19,7 @@ buildscript {
     val enableCompose: Boolean by extra
     if (enableCompose) {
         dependencies {
-            classpath("com.android.tools.build:gradle:7.0.0")
+            classpath("com.android.tools.build:gradle:7.0.2")
         }
     }
 }
