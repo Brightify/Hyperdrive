@@ -3,26 +3,11 @@ package org.brightify.hyperdrive.krpc.client.impl
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.pin
 import kotlinx.cinterop.usePinned
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.SerializedFrame
 import org.brightify.hyperdrive.krpc.client.RPCClientConnector
-import platform.Foundation.NSData
-import platform.Foundation.NSError
-import platform.Foundation.NSOperationQueue
-import platform.Foundation.NSURL
-import platform.Foundation.NSURLSession
-import platform.Foundation.NSURLSessionConfiguration
-import platform.Foundation.NSURLSessionTask
-import platform.Foundation.NSURLSessionWebSocketCloseCode
-import platform.Foundation.NSURLSessionWebSocketDelegateProtocol
-import platform.Foundation.NSURLSessionWebSocketMessage
-import platform.Foundation.NSURLSessionWebSocketTask
-import platform.Foundation.create
+import platform.Foundation.*
 import platform.darwin.NSObject
 import platform.posix.memcpy
 import kotlin.native.concurrent.freeze
@@ -149,4 +134,3 @@ class IOSWebSocketClient(
     }
 }
 
-class NSErrorThrowable(val error: NSError): Throwable(error.description)

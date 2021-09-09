@@ -486,6 +486,6 @@ interface ContextUpdateService {
     }
 }
 
-class UnsupportedKey(override val qualifiedName: String): Session.Context.Key<SerializedPayload> {
+data class UnsupportedKey(override val qualifiedName: String): Session.Context.Key<SerializedPayload> {
     override val serializer: KSerializer<SerializedPayload> = SerializedPayload.serializer()
 }
