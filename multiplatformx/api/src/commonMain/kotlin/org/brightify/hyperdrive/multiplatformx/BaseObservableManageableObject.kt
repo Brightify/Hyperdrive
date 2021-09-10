@@ -118,7 +118,7 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
     protected fun <OWNER: BaseObservableManageableObject, T, U> collected(
         initialValue: T,
         flow: Flow<T>,
-        equalityPolicy: ObservableProperty.EqualityPolicy<U>,
+        equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
         mapping: (T) -> U,
     ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, U>> =
         CollectedPropertyProvider(mapping(initialValue), flow.map { mapping(it) }, equalityPolicy)
