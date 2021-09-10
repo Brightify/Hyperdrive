@@ -46,6 +46,7 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
             "published",
             "collected",
             "collectedFlatMap",
+            "collectedFlatMapLatest",
             "binding",
             "managed",
             "managedList",
