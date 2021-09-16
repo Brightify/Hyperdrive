@@ -38,7 +38,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 @OptIn(ObsoleteCoroutinesApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GeneratedServiceTest: BehaviorSpec({
-    Logger.configure { setMinLevel(LoggingLevel.Trace) }
+    Logger.configure { setMinLevel(LoggingLevel.Info) }
 
     lateinit var server: KRPCServer
     val serviceImpl = object: BasicTestService {
