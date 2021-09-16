@@ -25,7 +25,7 @@ class ExampleServiceTest {
     companion object {
         @BeforeClass
         fun setup() {
-            Logger.setLevel(LoggingLevel.Trace)
+            Logger.configure { setMinLevel(LoggingLevel.Trace) }
         }
     }
 
@@ -43,7 +43,7 @@ class ExampleServiceTest {
 
     // @Test
     fun runTest() {
-        Logger.setLevel(LoggingLevel.Trace)
+        Logger.configure { setMinLevel(LoggingLevel.Trace) }
 
         runYieldingBlocking {
             // val client = makeClient()
