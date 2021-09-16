@@ -191,7 +191,7 @@ class GeneratedServiceTest: BehaviorSpec({
 
                     Then("`clientStreamError` fails") {
                         shouldThrowExactly<IllegalArgumentError> {
-                            service.clientStreamError(flow { throw IllegalArgumentError("Expected error") })
+                            service.clientStreamError(flow<Unit> { throw IllegalArgumentError("Expected error") })
                         }
                     }
                 }

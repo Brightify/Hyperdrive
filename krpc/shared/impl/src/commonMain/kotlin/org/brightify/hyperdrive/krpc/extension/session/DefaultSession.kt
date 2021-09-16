@@ -233,7 +233,7 @@ public class DefaultSession internal constructor(
     suspend fun clear() {
         contextModificationLock.withLock {
             SessionNodeExtension.logger.debug { "Received a session context clear request." }
-            val modifiedKeys = context.keys
+            val modifiedKeys = context.keys.toSet()
             context.clear()
             modifiedKeysFlow.emit(modifiedKeys)
         }
