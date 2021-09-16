@@ -6,7 +6,7 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.SerializedFrame
-import org.brightify.hyperdrive.krpc.protocol.ascension.ConnectionClosedException
+import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
 
 class WebSocketSessionConnection(val webSocketSession: WebSocketSession): RPCConnection, CoroutineScope by webSocketSession + CoroutineName("WebSocketSessionConnection") {
     private companion object {

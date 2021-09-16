@@ -41,12 +41,13 @@ import kotlin.test.assertEquals
 class KrpcPluginTest {
 
     private val testScope = TestCoroutineScope()
+    private lateinit var connection: RPCConnection
     private lateinit var registry: MutableServiceRegistry
     private lateinit var node: DefaultRPCNode
 
     @BeforeEach
     fun setup() {
-        val connection = LoopbackConnection(testScope)
+        connection = LoopbackConnection(testScope)
         registry = DefaultServiceRegistry()
 
         val serializerRegistry = SerializerRegistry(
@@ -270,7 +271,7 @@ class KrpcPluginTest {
             println(response5)
             assertEquals("1, 2, 3, 4, 5", response5)
 
-            node.close()
+            connection.close()
         }
     }
 }

@@ -7,8 +7,11 @@ import kotlinx.coroutines.*
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.SerializedFrame
 import org.brightify.hyperdrive.krpc.client.RPCClientConnector
+import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
+import platform.CoreFoundation.kCFSocketError
 import platform.Foundation.*
 import platform.darwin.NSObject
+import platform.posix.errno
 import platform.posix.memcpy
 import kotlin.native.concurrent.freeze
 
@@ -78,18 +81,21 @@ class IOSWebSocketClient(
         return throwable is NSErrorThrowable
     }
 
-    inner class Connection(val websocket: NSURLSessionWebSocketTask, val scope: CoroutineScope): RPCConnection, CoroutineScope by scope {
+    inner class Connection(val websocket: NSURLSessionWebSocketTask, val scope: CoroutineScope): RPCConnection, CoroutineScope by scope + CoroutineName("IOSWebSocketClient.Connection") {
         override suspend fun close() {
             websocket.cancel()
             scope.coroutineContext[Job]?.cancel()
         }
 
         override suspend fun receive(): SerializedFrame {
+            this.ensureActive()
             val result = CompletableDeferred<SerializedFrame>()
+
             websocket.receiveMessageWithCompletionHandler { webSocketMessage, error ->
                 if (webSocketMessage != null) {
                     val data = webSocketMessage.data
                     val string = webSocketMessage.string
+
                     when {
                         data != null -> {
                             try {
@@ -102,16 +108,18 @@ class IOSWebSocketClient(
                         string != null -> {
                             result.complete(SerializedFrame.Text(string))
                         }
+
                         else -> {
                             result.completeExceptionally(RuntimeException("Neither data nor string received!"))
                         }
                     }
                 } else if (error != null) {
-                    result.completeExceptionally(NSErrorThrowable(error))
+                    result.completeExceptionally(ConnectionClosedException("Received a socket error: ${error.localizedDescription}.", NSErrorThrowable(error)))
                 } else {
                     error("No result or error received from iOS websocket!")
                 }
             }
+
             return result.await()
         }
 

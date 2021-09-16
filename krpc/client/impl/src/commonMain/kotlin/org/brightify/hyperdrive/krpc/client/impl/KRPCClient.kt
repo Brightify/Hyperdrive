@@ -7,7 +7,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
@@ -28,7 +27,7 @@ import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
 import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
 import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
-import org.brightify.hyperdrive.krpc.protocol.ascension.ConnectionClosedException
+import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
 import org.brightify.hyperdrive.krpc.protocol.ascension.DefaultRPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.session.Session

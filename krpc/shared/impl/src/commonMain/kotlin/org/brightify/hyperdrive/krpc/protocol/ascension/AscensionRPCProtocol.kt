@@ -7,6 +7,7 @@ import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.SerializationFormat
 import org.brightify.hyperdrive.krpc.SerializedFrame
 import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
+import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
 import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
 import org.brightify.hyperdrive.krpc.util.RPCReference
 import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
@@ -16,7 +17,6 @@ import org.brightify.hyperdrive.krpc.protocol.RPCImplementationRegistry
 import org.brightify.hyperdrive.krpc.protocol.callImplementation
 import org.brightify.hyperdrive.krpc.transport.TransportFrameSerializer
 import org.brightify.hyperdrive.utils.Do
-import kotlin.coroutines.coroutineContext
 
 interface RPCHandshakePerformer {
     sealed class HandshakeResult {
@@ -38,8 +38,6 @@ interface RPCHandshakePerformer {
         }
     }
 }
-
-class ConnectionClosedException(mesage: String = "Connection has been closed"): CancellationException(mesage)
 
 class DefaultRPCHandshakePerformer(
     private val frameSerializerFactory: TransportFrameSerializer.Factory,

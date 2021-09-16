@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.withIndex
-import kotlinx.coroutines.test.TestCoroutineScope
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.application.CallLoggingNodeExtension
@@ -31,7 +30,7 @@ import org.brightify.hyperdrive.krpc.error.InternalServerError
 import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
 import org.brightify.hyperdrive.krpc.impl.JsonCombinedSerializer
 import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
-import org.brightify.hyperdrive.krpc.protocol.ascension.ConnectionClosedException
+import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
 import org.brightify.hyperdrive.krpc.server.impl.KRPCServer
 import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
