@@ -23,11 +23,21 @@ interface Session: CoroutineContext.Element {
 
     operator fun <VALUE: Any> get(key: Context.Key<VALUE>): VALUE?
 
+    fun <VALUE: Any> observe(key: Context.Key<VALUE>): Flow<VALUE?>
+
     operator fun iterator(): Iterator<Context.Item<*>>
 
     fun copyOfContext(): Context
 
+    fun observeContextSnapshots(): Flow<Context>
+
+    fun observeModifications(): Flow<Set<Context.Key<*>>>
+
     suspend fun contextTransaction(block: Context.Mutator.() -> Unit)
+
+    suspend fun clearContext()
+
+    suspend fun awaitCompletedContextSync()
 
     object Id: Context.Key<Long> {
         override val qualifiedName = "builtin:org.brightify.hyperdrive.krpc.api.Session.Id"
@@ -38,6 +48,9 @@ interface Session: CoroutineContext.Element {
         @PublishedApi
         internal val data: MutableMap<Key<*>, Item<*>>,
     ) {
+        val keys: Set<Key<*>>
+            get() = data.keys
+
         @Suppress("UNCHECKED_CAST")
         operator fun <VALUE: Any> get(key: Key<VALUE>): Item<VALUE>? = data[key] as? Item<VALUE>
 
@@ -47,6 +60,8 @@ interface Session: CoroutineContext.Element {
 
         @Suppress("UNCHECKED_CAST")
         fun <VALUE: Any> remove(key: Key<VALUE>): Item<VALUE>? = data.remove(key) as? Item<VALUE>
+
+        fun clear() = data.clear()
 
         public operator fun iterator(): Iterator<Item<*>> = data.values.iterator()
 

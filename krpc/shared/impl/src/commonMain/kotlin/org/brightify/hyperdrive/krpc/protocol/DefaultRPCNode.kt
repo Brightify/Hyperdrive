@@ -1,11 +1,6 @@
 package org.brightify.hyperdrive.krpc.protocol
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.job
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.RPCTransport
@@ -24,6 +19,7 @@ import org.brightify.hyperdrive.krpc.protocol.ascension.ColdUpstreamRunner
 import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.protocol.ascension.SingleCallRunner
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
 class HandshakeFailedException(val rpcMesage: String): Exception("Handshake has failed: $rpcMesage")
@@ -47,8 +43,7 @@ class RPCExtensionServiceRegistry(extensions: List<RPCNodeExtension>): ServiceRe
 class DefaultRPCNode(
     override val contract: Contract,
     val transport: RPCTransport,
-
-): RPCNode, CoroutineScope by contract.protocol {
+): RPCNode {
     private companion object {
         val logger = Logger<DefaultRPCNode>()
     }
@@ -107,25 +102,31 @@ class DefaultRPCNode(
         }
     }
 
-    suspend fun run(onInitializationCompleted: suspend () -> Unit) = withContext(coroutineContext) {
+    suspend fun run(onInitializationCompleted: suspend () -> Unit): Unit = coroutineScope {
         // We need the protocol to be running before we bind the extensions.
         val runningProtocol = async { contract.protocol.run() }
 
-        for (extension in contract.extensions.values) {
+        val extensions = contract.extensions.values
+        for (extension in extensions) {
             extension.bind(transport, contract)
         }
 
         onInitializationCompleted()
 
-        // We want to end when the protocol does and rethrow any exceptions from it.
-        runningProtocol.await()
-    }
+        val parallelWorkContext = extensions.fold(coroutineContext) { accumulator, extension ->
+            extension.enhanceParallelWorkContext(accumulator)
+        }
 
-    override suspend fun close() {
-        logger.trace { "Will close connection." }
-        contract.protocol.close()
-        coroutineContext.job.cancel()
-        logger.trace { "Did close connection." }
+        val runningParallelWork = launch(parallelWorkContext) {
+            extensions.map { extension ->
+                async { extension.parallelWork() }
+            }.awaitAll()
+        }
+
+        // We want to the background work to end when the protocol does.
+        runningProtocol.invokeOnCompletion {
+            runningParallelWork.cancel("Protocol has completed.", it)
+        }
     }
 }
 

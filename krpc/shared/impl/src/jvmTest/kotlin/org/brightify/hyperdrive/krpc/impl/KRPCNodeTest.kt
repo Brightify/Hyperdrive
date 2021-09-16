@@ -43,7 +43,7 @@ class KRPCNodeTest: BehaviorSpec({
     val testScope = TestCoroutineScope(TestCoroutineExceptionHandler())
 
     beforeSpec {
-        Logger.setLevel(LoggingLevel.Trace)
+        Logger.configure { setMinLevel(LoggingLevel.Trace) }
     }
 
     afterTest {

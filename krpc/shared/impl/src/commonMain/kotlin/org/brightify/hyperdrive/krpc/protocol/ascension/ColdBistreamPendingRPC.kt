@@ -6,6 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.BinaryFormat
@@ -68,6 +71,19 @@ object ColdBistreamPendingRPC {
 
         private val clientStreamChannel = Channel<SerializedPayload>()
         private val serverStreamState = MutableStateFlow<StreamState>(StreamState.Created)
+
+        init {
+            scope.launch {
+                val clientStreamClosed = CompletableDeferred<Unit>()
+                clientStreamChannel.invokeOnClose { clientStreamClosed.complete(Unit) }
+                awaitAll(
+                    clientStreamClosed,
+                    async { serverStreamState.first { it == StreamState.Closed } },
+                )
+
+                complete()
+            }
+        }
 
         override suspend fun handle(frame: AscensionRPCFrame.ColdBistream.Upstream) {
             Do exhaustive when (frame) {

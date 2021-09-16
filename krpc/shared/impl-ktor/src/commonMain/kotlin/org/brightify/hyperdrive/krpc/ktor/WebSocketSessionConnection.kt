@@ -1,16 +1,14 @@
 package org.brightify.hyperdrive.krpc.ktor
 
 import io.ktor.http.cio.websocket.*
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.isActive
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.SerializedFrame
 import org.brightify.hyperdrive.krpc.protocol.ascension.ConnectionClosedException
 
-class WebSocketSessionConnection(val webSocketSession: WebSocketSession): RPCConnection, CoroutineScope by webSocketSession {
+class WebSocketSessionConnection(val webSocketSession: WebSocketSession): RPCConnection, CoroutineScope by webSocketSession + CoroutineName("WebSocketSessionConnection") {
     private companion object {
         val logger = Logger<WebSocketSessionConnection>()
     }
@@ -38,16 +36,15 @@ class WebSocketSessionConnection(val webSocketSession: WebSocketSession): RPCCon
     }
 
     override suspend fun send(frame: SerializedFrame) {
-        if (webSocketSession.outgoing.isClosedForSend) {
-            throw ConnectionClosedException()
-        }
+        webSocketSession.ensureActive()
         try {
             logger.debug { "Sending WebSocket frame: $frame" }
-            /* TODO: Do exhaustive */ when (frame) {
+            when (frame) {
                 is SerializedFrame.Binary -> webSocketSession.send(Frame.Binary(true, frame.binary))
                 is SerializedFrame.Text -> webSocketSession.send(Frame.Text(frame.text))
             }
         } catch (t: Throwable) {
+            logger.warning(t) { "Couldn't send WebSocket frame: $frame" }
             throw t
         }
     }
@@ -55,5 +52,6 @@ class WebSocketSessionConnection(val webSocketSession: WebSocketSession): RPCCon
     override suspend fun close() {
         logger.trace { "Closing connection $this" }
         webSocketSession.close()
+        webSocketSession.cancel(ConnectionClosedException())
     }
 }

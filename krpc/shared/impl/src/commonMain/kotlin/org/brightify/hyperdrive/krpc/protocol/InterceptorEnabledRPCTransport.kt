@@ -42,8 +42,4 @@ class InterceptorEnabledRPCTransport(
     ): Flow<RESPONSE> = interceptor.interceptOutgoingBistreamCall(request, clientStream, serviceCall) { newRequest, newClientStream ->
         transport.biStream(serviceCall, newRequest, newClientStream)
     }
-
-    override suspend fun close() {
-        transport.close()
-    }
 }

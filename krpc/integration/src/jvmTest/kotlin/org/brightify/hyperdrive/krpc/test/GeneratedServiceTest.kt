@@ -39,6 +39,8 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 @OptIn(ObsoleteCoroutinesApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GeneratedServiceTest: BehaviorSpec({
+    Logger.configure { setMinLevel(LoggingLevel.Trace) }
+
     lateinit var server: KRPCServer
     val serviceImpl = object: BasicTestService {
         override suspend fun multiplyByTwo(source: Int): Int {
@@ -58,7 +60,8 @@ class GeneratedServiceTest: BehaviorSpec({
         }
 
         override suspend fun singleCallClosingConnection() {
-            server.nodes.single().close()
+            server.connections.single().close()
+            Logger("BasicTestService").debug { "Did close connection from service" }
         }
 
         override suspend fun sum(stream: Flow<Int>): Int {
@@ -93,7 +96,6 @@ class GeneratedServiceTest: BehaviorSpec({
     val testScope = CoroutineScope(EmptyCoroutineContext)
 
     beforeSpec {
-        Logger.setLevel(LoggingLevel.Info)
     }
 
     afterContainer {
@@ -132,7 +134,7 @@ class GeneratedServiceTest: BehaviorSpec({
 
     listOf(client).forEach { lazyTransport ->
         val transport = lazyTransport.value
-        Given("An RPCTransport ${transport::class.simpleName}") {
+        Given("An RPCTransport") {
             val service = BasicTestService.Client(transport)
             And("Basic Test Service") {
                 When("Running single call") {
@@ -164,6 +166,7 @@ class GeneratedServiceTest: BehaviorSpec({
                         shouldThrowExactly<ConnectionClosedException> {
                             service.singleCallClosingConnection()
                         }
+                        service.multiplyByTwo(2) shouldBe 2 * 2
                     }
                 }
 

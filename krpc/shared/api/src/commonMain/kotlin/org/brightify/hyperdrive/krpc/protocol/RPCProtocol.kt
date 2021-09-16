@@ -81,7 +81,7 @@ interface RPC {
     }
 }
 
-interface RPCProtocol: CoroutineScope {
+interface RPCProtocol {
     val version: Version
 
     suspend fun run()
@@ -93,8 +93,6 @@ interface RPCProtocol: CoroutineScope {
     suspend fun downstream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Downstream.Caller
 
     suspend fun bistream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Bistream.Caller
-
-    suspend fun close()
 
     @Serializable
     enum class Version(val literal: Int) {

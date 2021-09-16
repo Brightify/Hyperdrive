@@ -1,7 +1,6 @@
 package org.brightify.hyperdrive
 
-import kotlinx.coroutines.Dispatchers
-import kotlin.native.concurrent.ThreadLocal
+import org.brightify.hyperdrive.utils.AtomicReference
 import kotlin.reflect.KClass
 
 // TODO: Unused for now.
@@ -15,11 +14,11 @@ public enum class LoggingLevel(public val levelValue: Int) {
     Trace(5),
 }
 
-private var logLevelOrBelow: LoggingLevel? = LoggingLevel.Warn
-
-public class Logger private constructor(private val ownerDescription: String) {
+public class Logger private constructor(
+    private val tag: String,
+) {
     public fun isLoggingEnabled(level: LoggingLevel, throwable: Throwable? = null): Boolean {
-        val logLevelOrBelow = logLevelOrBelow ?: return false
+        val logLevelOrBelow = configuration.minLogLevel ?: return false
         return level.levelValue <= logLevelOrBelow.levelValue
     }
 
@@ -45,33 +44,57 @@ public class Logger private constructor(private val ownerDescription: String) {
 
     public inline fun logIfEnabled(level: LoggingLevel, throwable: Throwable? = null, crossinline entryBuilder: () -> String) {
         if (isLoggingEnabled(level, throwable)) {
-            println(level.format(entryBuilder()) + (throwable?.let { "\n" + it.stackTraceToString() } ?: ""))
+            log(level, throwable, entryBuilder())
         }
     }
 
     @PublishedApi
-    internal fun LoggingLevel.format(message: String): String {
-        // TODO: Add current thread info.
-        val levelPrefix = when (this) {
-            LoggingLevel.Error -> "ERROR"
-            LoggingLevel.Warn -> "WARN"
-            LoggingLevel.Info -> "INFO"
-            LoggingLevel.Debug -> "DEBUG"
-            LoggingLevel.Trace -> "TRACE"
+    internal fun log(level: LoggingLevel, throwable: Throwable?, entry: String) {
+        for (destination in configuration.destinations) {
+            destination.log(level, throwable, tag, entry)
         }
+    }
 
-        return "$levelPrefix\t@\t$ownerDescription\t: $message"
+    public class Configuration(
+        public val minLogLevel: LoggingLevel?,
+        public val destinations: List<Destination>,
+    ) {
+
+        public class Builder {
+            private var minLogLevel: LoggingLevel? = LoggingLevel.Warn
+            private val destinations = mutableListOf<Destination>(PrintlnDestination())
+
+            public fun setMinLevel(level: LoggingLevel) {
+                minLogLevel = level
+            }
+
+            public fun disable() {
+                minLogLevel = null
+            }
+
+            public fun output(destination: Destination) {
+                destinations.add(destination)
+            }
+
+            public fun build(): Configuration = Configuration(
+                minLogLevel = minLogLevel,
+                destinations = destinations,
+            )
+        }
     }
 
     public companion object {
+        private val defaultConfiguration = Configuration.Builder().build()
+        private val configurationReference = AtomicReference(defaultConfiguration)
         private val mainLogger = Logger("o.b.h.l.Logger")
 
-        public fun setLevel(level: LoggingLevel) {
-            logLevelOrBelow = level
-        }
+        public val configuration: Configuration
+            get() = configurationReference.value
 
-        public fun disable() {
-            logLevelOrBelow = null
+        public fun configure(block: Configuration.Builder.() -> Unit) {
+            val builder = Configuration.Builder()
+            block(builder)
+            configurationReference.value = builder.build()
         }
 
         public inline operator fun <reified T: Any> invoke(): Logger {
@@ -85,7 +108,32 @@ public class Logger private constructor(private val ownerDescription: String) {
             }
             return Logger(name)
         }
+
+        public operator fun invoke(tag: String): Logger {
+            return Logger(tag)
+        }
+    }
+
+    public interface Destination {
+        public fun log(level: LoggingLevel, throwable: Throwable? = null, tag: String, message: String)
     }
 }
 
+public class PrintlnDestination: Logger.Destination {
+    override fun log(level: LoggingLevel, throwable: Throwable?, tag: String, message: String) {
+        println(level.format(tag, message) + (throwable?.let { "\n" + it.stackTraceToString() } ?: ""))
+    }
 
+    private fun LoggingLevel.format(tag: String, message: String): String {
+        // TODO: Add current thread info.
+        val levelPrefix = when (this) {
+            LoggingLevel.Error -> "ERROR"
+            LoggingLevel.Warn -> "WARN"
+            LoggingLevel.Info -> "INFO"
+            LoggingLevel.Debug -> "DEBUG"
+            LoggingLevel.Trace -> "TRACE"
+        }
+
+        return "$levelPrefix\t@\t$tag\t: $message"
+    }
+}

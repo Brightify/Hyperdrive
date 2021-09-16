@@ -4,7 +4,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,9 +16,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import org.brightify.hyperdrive.Logger
+import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.RPCTransport
 import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.SessionNodeExtension
+import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.client.RPCClientConnector
 import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
@@ -85,7 +85,7 @@ class KRPCClient(
     )
 
     suspend fun requireSession(): Session {
-        return requireNotNull(activeNode().getExtension(SessionNodeExtension.Identifier)) {
+        return requireNotNull(activeNode().getExtension(SessionNodeExtension.Identifier)?.session) {
             "Couldn't get session, probably the other party doesn't have the session extension active."
         }
     }
@@ -95,22 +95,27 @@ class KRPCClient(
         return session.block()
     }
 
-    private val activeNode = MutableStateFlow<DefaultRPCNode?>(null)
     private val handshakePerformer = DefaultRPCHandshakePerformer(frameSerializerFactory, DefaultRPCHandshakePerformer.Behavior.Client)
     private val combinedExtensions = builtinExtensions + additionalExtensions
+    private val nodeFactory = DefaultRPCNode.Factory(handshakePerformer, payloadSerializerFactory, combinedExtensions, serviceRegistry)
+
+    private var activeConnection: RPCConnection? = null
+    private val activeNode = MutableStateFlow<DefaultRPCNode?>(null)
 
     suspend fun run() = withContext(coroutineContext) {
         while (isActive) {
             try {
                 logger.info { "Will create connection." }
                 connector.withConnection {
+                    activeConnection = this
                     logger.info { "Connection created: $this" }
-                    val node = DefaultRPCNode.Factory(handshakePerformer, payloadSerializerFactory, combinedExtensions, serviceRegistry).create(this)
+                    val node = nodeFactory.create(this)
                     node.run {
                         logger.info { "Client node initialized." }
                         activeNode.value = node
                     }
                     logger.info { "Releasing connection: $this" }
+                    activeConnection = null
                 }
                 logger.info { "Client connection completed. Trying to reconnect soon." }
                 activeNode.value = null
@@ -133,7 +138,8 @@ class KRPCClient(
         run()
     }
 
-    override suspend fun close() {
+    suspend fun stop() {
+        activeConnection?.close()
         coroutineContext.job.cancelAndJoin()
     }
 
@@ -156,5 +162,5 @@ class KRPCClient(
 
     private suspend fun activeTransport(): RPCTransport = activeNode().transport
 
-    private suspend fun activeNode(): DefaultRPCNode = activeNode.filterNotNull().filter { it.isActive }.first()
+    private suspend fun activeNode(): DefaultRPCNode = activeNode.filterNotNull().first()
 }

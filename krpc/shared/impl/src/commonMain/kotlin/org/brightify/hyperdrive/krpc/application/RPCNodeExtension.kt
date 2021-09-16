@@ -4,23 +4,8 @@ import org.brightify.hyperdrive.krpc.RPCTransport
 import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import org.brightify.hyperdrive.krpc.protocol.RPCIncomingInterceptor
 import org.brightify.hyperdrive.krpc.protocol.RPCOutgoingInterceptor
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
+import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
-
-interface RPCNode {
-    val contract: Contract
-
-    fun <E: RPCNodeExtension> getExtension(identifier: RPCNodeExtension.Identifier<E>): E?
-
-    suspend fun close()
-
-    /**
-     * Configuration of this node as agreed upon with the node on the other side.
-     */
-    interface Contract {
-        val payloadSerializer: PayloadSerializer
-    }
-}
 
 interface RPCNodeExtension: RPCIncomingInterceptor, RPCOutgoingInterceptor {
     interface Identifier<E: RPCNodeExtension> {
@@ -36,6 +21,10 @@ interface RPCNodeExtension: RPCIncomingInterceptor, RPCOutgoingInterceptor {
      * The extension is allowed to store parts of the contract or the whole contract.
      */
     suspend fun bind(transport: RPCTransport, contract: RPCNode.Contract)
+
+    suspend fun enhanceParallelWorkContext(context: CoroutineContext): CoroutineContext = context
+
+    suspend fun parallelWork() { }
 
     interface Factory<E: RPCNodeExtension> {
         /**

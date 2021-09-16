@@ -9,8 +9,6 @@ import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.MutableServiceRegistry
 import org.brightify.hyperdrive.krpc.RPCConnection
-import org.brightify.hyperdrive.krpc.SessionNodeExtension
-import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
@@ -22,7 +20,7 @@ class SessionNodeExtensionTest: BehaviorSpec({
     val testScope = TestCoroutineScope(TestCoroutineExceptionHandler())
 
     beforeSpec {
-        Logger.setLevel(LoggingLevel.Trace)
+        Logger.configure { setMinLevel(LoggingLevel.Trace) }
     }
 
     afterTest {

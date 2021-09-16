@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -34,9 +35,11 @@ object SingleCallPendingRPC {
 
         override suspend fun handle(frame: AscensionRPCFrame.SingleCall.Upstream) {
             Do exhaustive when (frame) {
-                is AscensionRPCFrame.SingleCall.Upstream.Open -> {
+                is AscensionRPCFrame.SingleCall.Upstream.Open -> try {
                     val response = implementation.perform(frame.payload)
                     send(AscensionRPCFrame.SingleCall.Downstream.Response(response, reference))
+                } finally {
+                    complete()
                 }
             }
         }
@@ -54,10 +57,14 @@ object SingleCallPendingRPC {
 
         private val responseDeferred = CompletableDeferred<SerializedPayload>()
 
-        override suspend fun perform(payload: SerializedPayload): SerializedPayload = withContext(this.coroutineContext) {
-            send(AscensionRPCFrame.SingleCall.Upstream.Open(payload, serviceCallIdentifier, reference))
+        override suspend fun perform(payload: SerializedPayload): SerializedPayload = try {
+            withContext(this.coroutineContext) {
+                send(AscensionRPCFrame.SingleCall.Upstream.Open(payload, serviceCallIdentifier, reference))
 
-            responseDeferred.await()
+                responseDeferred.await()
+            }
+        } finally {
+            complete()
         }
 
         override suspend fun handle(frame: AscensionRPCFrame.SingleCall.Downstream) {
@@ -103,8 +110,12 @@ object SingleCallRunner {
             return try {
                 val response = call.perform(request)
                 serializer.serialize(responseSerializer, Response.Success(response))
+            } catch (e: CancellationException) {
+                throw e
             } catch (t: Throwable) {
                 serializer.serialize(responseSerializer, Response.Error(t))
+            } finally {
+
             }
         }
     }

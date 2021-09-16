@@ -1,20 +1,6 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
-import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.*
 import kotlinx.serialization.SerializationException
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
@@ -30,6 +16,7 @@ import org.brightify.hyperdrive.krpc.protocol.RPCImplementationRegistry
 import org.brightify.hyperdrive.krpc.protocol.callImplementation
 import org.brightify.hyperdrive.krpc.transport.TransportFrameSerializer
 import org.brightify.hyperdrive.utils.Do
+import kotlin.coroutines.coroutineContext
 
 interface RPCHandshakePerformer {
     sealed class HandshakeResult {
@@ -269,7 +256,7 @@ class AscensionRPCProtocol(
     private val connection: RPCConnection,
     private val frameSerializer: TransportFrameSerializer,
     private val implementationRegistry: RPCImplementationRegistry,
-): RPCProtocol, CoroutineScope by connection + SupervisorJob(connection.coroutineContext.job) {
+): RPCProtocol {
     private companion object {
         val logger = Logger<AscensionRPCProtocol>()
     }
@@ -282,11 +269,11 @@ class AscensionRPCProtocol(
     // TODO: Replace with AtomicInt
     private var callReferenceCounter: RPCReference = RPCReference(UInt.MIN_VALUE)
 
-    override suspend fun run() = withContext(coroutineContext) {
+    override suspend fun run() {
         logger.trace { "Receiving started" }
 
         try {
-            while (isActive) {
+            while (connection.isActive) {
                 logger.trace { "Will receive" }
                 val serializedFrame = connection.receive()
                 logger.trace { "Did receive serialized $serializedFrame" }
@@ -329,24 +316,30 @@ class AscensionRPCProtocol(
                     logger.error(t) { "Error handling frame $frame!" }
                     throw t
                 }
-                logger.trace { "Did handle frame $frame - $isActive." }
+                logger.trace { "Did handle frame $frame - ${connection.isActive}." }
             }
             logger.trace { "Receiving ended." }
-            cancelPendingCallers(ConnectionClosedException())
+            cancelPendingRPCs(ConnectionClosedException())
         } catch (t: CancellationException) {
             logger.debug { "Receiving cancelled." }
-            cancelPendingCallers(t)
+            cancelPendingRPCs(t)
+            throw t
         } catch (t: Throwable) {
             logger.debug(t) { "Receiving failed." }
-            cancelPendingCallers(CancellationException("Receiving failed", t))
+            cancelPendingRPCs(CancellationException("Receiving failed", t))
+            throw t
         }
     }
 
-    private fun cancelPendingCallers(cause: CancellationException) {
+    private fun cancelPendingRPCs(cause: CancellationException) {
         logger.trace { "Cancelling pending callers." }
-        val keys = pendingCallers.keys.toSet()
-        keys.forEach { key ->
+        val pendingCallerKeysCopy = pendingCallers.keys.toSet()
+        pendingCallerKeysCopy.forEach { key ->
             pendingCallers.remove(key)?.cancel(cause)
+        }
+        val pendingCalleeKeysCopy = pendingCallees.keys.toSet()
+        pendingCalleeKeysCopy.forEach { key ->
+            pendingCallees.remove(key)?.cancel(cause)
         }
     }
 
@@ -355,9 +348,8 @@ class AscensionRPCProtocol(
         try {
             connection.send(frameSerializer.serialize(AscensionRPCFrame.serializer(), frame))
         } catch (t: Throwable) {
-            logger.error(t) { "Could not send a frame, closing!" }
-            coroutineContext.job.cancel("Could not send a frame, closing!", t)
-            coroutineContext.job.join()
+            logger.error(t) { "Could not send a frame!" }
+            throw t
         }
     }
 
@@ -369,50 +361,6 @@ class AscensionRPCProtocol(
         (pendingCaller as PendingRPC.Caller<T, *>).accept(frame)
     }
 
-    private fun calleeScope(reference: RPCReference): CoroutineScope {
-        val job = Job(coroutineContext.job)
-        job.invokeOnCompletion {
-            if (it != null && it !is CancellationException) {
-                // TODO: Don't warn when `it` is `CancellationException` or `null`.
-                logger.error(it) { "Callee job completed with an unhandled exception!" }
-                launch {
-                    send(
-                        AscensionRPCFrame.InternalProtocolError.Callee(
-                            reference,
-                            AscensionRPCFrame.InternalProtocolError.SerializableThrowable(it)
-                        )
-                    )
-                }
-            } else {
-                logger.debug { "Callee job completed for reference $reference." }
-            }
-            pendingCallees.remove(reference)
-        }
-        return this + job
-    }
-
-    private fun callerScope(reference: RPCReference): CoroutineScope {
-        val job = Job(coroutineContext.job)
-        job.invokeOnCompletion {
-            if (it != null && it !is CancellationException) {
-                // TODO: Don't warn when `it` is `CancellationException` or `null`.
-                logger.error(it) { "Callee job completed with an unhandled exception!" }
-                launch {
-                    send(
-                        AscensionRPCFrame.InternalProtocolError.Caller(
-                            reference,
-                            AscensionRPCFrame.InternalProtocolError.SerializableThrowable(it)
-                        )
-                    )
-                }
-            } else {
-                logger.debug { "Callee job completed for reference $reference." }
-            }
-            pendingCallers.remove(reference)
-        }
-        return this + job
-    }
-
     private suspend fun <T> handleUpstreamEvent(frame: T) where T: AscensionRPCFrame, T: AscensionRPCFrame.Upstream {
         val reference = frame.callReference
         val existingPendingCallee = pendingCallees[reference]
@@ -422,31 +370,51 @@ class AscensionRPCProtocol(
                 val newPendingCallee = when (frame) {
                     is AscensionRPCFrame.SingleCall -> SingleCallPendingRPC.Callee(
                         this,
-                        calleeScope(reference),
+                        connection,
                         reference,
                         implementationRegistry.callImplementation(frame.serviceCallIdentifier),
                     )
                     is AscensionRPCFrame.ColdUpstream -> ColdUpstreamPendingRPC.Callee(
                         this,
-                        calleeScope(reference),
+                        connection,
                         reference,
                         implementationRegistry.callImplementation(frame.serviceCallIdentifier),
                     )
                     is AscensionRPCFrame.ColdDownstream -> ColdDownstreamPendingRPC.Callee(
                         this,
-                        calleeScope(reference),
+                        connection,
                         reference,
                         implementationRegistry.callImplementation(frame.serviceCallIdentifier),
                     )
                     is AscensionRPCFrame.ColdBistream -> ColdBistreamPendingRPC.Callee(
                         this,
-                        calleeScope(reference),
+                        connection,
                         reference,
                         implementationRegistry.callImplementation(frame.serviceCallIdentifier),
                     )
                     else -> TODO()
                 }
                 pendingCallees[reference] = newPendingCallee
+                newPendingCallee.invokeOnCompletion {
+                    try {
+                        if (it != null && it !is CancellationException) {
+                            // TODO: Don't warn when `it` is `CancellationException` or `null`.
+                            logger.error(it) { "Callee job ($reference) completed with an unhandled exception!" }
+                            connection.launch {
+                                send(
+                                    AscensionRPCFrame.InternalProtocolError.Callee(
+                                        reference,
+                                        AscensionRPCFrame.InternalProtocolError.SerializableThrowable(it)
+                                    )
+                                )
+                            }
+                        } else {
+                            logger.debug { "Callee job ($reference) completed." }
+                        }
+                    } finally {
+                        pendingCallees.remove(reference)
+                    }
+                }
                 newPendingCallee
             }
             else -> {
@@ -459,58 +427,67 @@ class AscensionRPCProtocol(
         (pendingCallee as PendingRPC.Callee<T, *>).accept(frame)
     }
 
-    override suspend fun close() {
-        logger.trace { "Will close" }
-        connection.close()
-        logger.trace { "Did close" }
+    private suspend fun <T: PendingRPC.Caller<*, *>> managedCaller(factory: (RPCReference) -> T): T {
+        val reference = nextCallReference()
+        val pendingRpc = factory(reference)
+        pendingCallers[reference] = pendingRpc
+        pendingRpc.invokeOnCompletion {
+            try {
+                if (it != null && it !is CancellationException) {
+                    // TODO: Don't warn when `it` is `CancellationException` or `null`.
+                    logger.error(it) { "Caller job completed with an unhandled exception!" }
+                    connection.launch {
+                        send(
+                            AscensionRPCFrame.InternalProtocolError.Caller(
+                                reference,
+                                AscensionRPCFrame.InternalProtocolError.SerializableThrowable(it)
+                            )
+                        )
+                    }
+                } else {
+                    logger.debug { "Caller job completed for reference $reference." }
+                }
+            } finally {
+                pendingCallers.remove(reference)
+            }
+        }
+        return pendingRpc
     }
 
-    override suspend fun singleCall(serviceCallIdentifier: ServiceCallIdentifier): RPC.SingleCall.Caller {
-        val reference = nextCallReference()
-        val pendingCaller = SingleCallPendingRPC.Caller(
+    override suspend fun singleCall(serviceCallIdentifier: ServiceCallIdentifier): RPC.SingleCall.Caller = managedCaller { reference ->
+        SingleCallPendingRPC.Caller(
             this,
-            callerScope(reference),
+            connection,
             serviceCallIdentifier,
             reference,
         )
-        pendingCallers[reference] = pendingCaller
-        return pendingCaller
     }
 
-    override suspend fun upstream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Upstream.Caller {
-        val reference = nextCallReference()
-        val pendingCaller = ColdUpstreamPendingRPC.Caller(
+    override suspend fun upstream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Upstream.Caller = managedCaller { reference ->
+        ColdUpstreamPendingRPC.Caller(
             this,
-            callerScope(reference),
+            connection,
             serviceCallIdentifier,
             reference,
         )
-        pendingCallers[reference] = pendingCaller
-        return pendingCaller
     }
 
-    override suspend fun downstream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Downstream.Caller {
-        val reference = nextCallReference()
-        val pendingCaller = ColdDownstreamPendingRPC.Caller(
+    override suspend fun downstream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Downstream.Caller = managedCaller { reference ->
+        ColdDownstreamPendingRPC.Caller(
             this,
-            callerScope(reference),
+            connection,
             serviceCallIdentifier,
             reference,
         )
-        pendingCallers[reference] = pendingCaller
-        return pendingCaller
     }
 
-    override suspend fun bistream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Bistream.Caller {
-        val reference = nextCallReference()
-        val pendingCaller = ColdBistreamPendingRPC.Caller(
+    override suspend fun bistream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Bistream.Caller = managedCaller { reference ->
+        ColdBistreamPendingRPC.Caller(
             this,
-            callerScope(reference),
+            connection,
             serviceCallIdentifier,
             reference,
         )
-        pendingCallers[reference] = pendingCaller
-        return pendingCaller
     }
 
     private fun nextCallReference(): RPCReference {

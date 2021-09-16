@@ -59,8 +59,4 @@ class ProtocolBasedRPCTransport(
             serviceCall,
         ).run(request, clientStream)
     }
-
-    override suspend fun close() {
-        protocol.close()
-    }
 }

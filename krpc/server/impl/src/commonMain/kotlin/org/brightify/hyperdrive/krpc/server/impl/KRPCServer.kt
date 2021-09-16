@@ -1,20 +1,12 @@
 package org.brightify.hyperdrive.krpc.server.impl
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.SessionNodeExtension
+import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
@@ -32,7 +24,7 @@ class KRPCServer(
     private val serviceRegistry: ServiceRegistry,
     private val sessionContextKeyRegistry: SessionContextKeyRegistry,
     private val additionalExtensions: List<RPCNodeExtension.Factory<*>> = emptyList(),
-): CoroutineScope by runScope + SupervisorJob(runScope.coroutineContext[Job]) {
+): CoroutineScope by runScope + CoroutineName("KRPCServer") + SupervisorJob(runScope.coroutineContext[Job]) {
     private companion object {
         val logger = Logger<KRPCServer>()
     }
@@ -43,6 +35,9 @@ class KRPCServer(
         SessionNodeExtension.Factory(sessionContextKeyRegistry, payloadSerializerFactory),
     )
 
+    val connections: Set<RPCConnection>
+        get() = nodeStorage.keys.toSet()
+
     val nodes: Set<RPCNode>
         get() = nodeStorage.values.toSet()
 
@@ -52,8 +47,10 @@ class KRPCServer(
     suspend fun run() = withContext(coroutineContext) {
         while (isActive) {
             val connection = connector.nextConnection()
+            logger.debug { "New connection: $connection" }
             // TODO: Check if we can make this launch die when the `runningJob` is canceled.
             connection.launch {
+                logger.debug { "Launched on connection: $connection" }
                 try {
                     val node = DefaultRPCNode.Factory(
                         handshakePerformer,
@@ -61,6 +58,7 @@ class KRPCServer(
                         builtinExtensions + additionalExtensions,
                         serviceRegistry
                     ).create(connection)
+                    logger.trace { "Node created" }
 
                     nodeStorageLock.withLock {
                         nodeStorage[connection] = node
@@ -69,6 +67,8 @@ class KRPCServer(
                     node.run {
                         logger.debug { "Server node initialized." }
                     }
+
+                    logger.debug { "Node stopped." }
                     connection.close()
                 } catch (t: Throwable) {
                     logger.warning(t) { "Connection ended." }

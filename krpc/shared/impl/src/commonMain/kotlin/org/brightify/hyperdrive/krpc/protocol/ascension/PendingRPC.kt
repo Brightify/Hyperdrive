@@ -1,15 +1,8 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.brightify.hyperdrive.Logger
@@ -23,7 +16,7 @@ abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFra
     scope: CoroutineScope,
     val reference: RPCReference,
     private val logger: Logger,
-): CoroutineScope by scope {
+): CoroutineScope by scope + CoroutineName("PendingRPC") {
     private val acceptLock = Mutex()
 
     protected abstract suspend fun handle(frame: INCOMING)
@@ -39,7 +32,10 @@ abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFra
         }
     }
 
+    fun invokeOnCompletion(handler: CompletionHandler) = runningJob.invokeOnCompletion(handler)
+
     suspend fun accept(frame: INCOMING) {
+        runningJob.ensureActive()
         logger.debug { "Accepting frame: $frame" }
         require(frame.callReference == reference) {
             "Cannot accept frame meant for another call! Frame: $frame, this.reference: $reference."
@@ -50,6 +46,10 @@ abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFra
 
     protected suspend fun send(frame: OUTGOING) {
         protocol.send(frame)
+    }
+
+    protected fun complete() {
+        acceptQueue.close()
     }
 
     private suspend fun rejectAsProtocolViolation(message: String) {

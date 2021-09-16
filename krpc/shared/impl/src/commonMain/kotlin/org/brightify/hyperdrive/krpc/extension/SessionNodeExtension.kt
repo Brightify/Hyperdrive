@@ -1,39 +1,24 @@
-package org.brightify.hyperdrive.krpc
+package org.brightify.hyperdrive.krpc.extension
 
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.modules.SerializersModule
 import org.brightify.hyperdrive.Logger
+import org.brightify.hyperdrive.krpc.extension.session.DefaultSession
+import org.brightify.hyperdrive.krpc.RPCTransport
+import org.brightify.hyperdrive.krpc.SerializedPayload
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
-import org.brightify.hyperdrive.krpc.description.CallDescription
-import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
-import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
-import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
-import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
-import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.description.ServiceDescription
-import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
-import org.brightify.hyperdrive.krpc.description.SingleCallDescription
+import org.brightify.hyperdrive.krpc.description.*
 import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
-import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import org.brightify.hyperdrive.krpc.session.Session
-import org.brightify.hyperdrive.utils.Do
+import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -41,11 +26,10 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
-class SessionNodeExtension(
-    private val sessionContextKeyRegistry: SessionContextKeyRegistry,
-    private val payloadSerializerFactory: PayloadSerializer.Factory,
+class SessionNodeExtension internal constructor(
+    session: DefaultSession,
     private val plugins: List<Plugin>,
-): Session, ContextUpdateService, RPCNodeExtension {
+): ContextUpdateService, RPCNodeExtension {
     companion object {
         val logger = Logger<SessionNodeExtension>()
         const val maximumRejections = 10
@@ -72,201 +56,51 @@ class SessionNodeExtension(
         override val isRequiredOnOtherSide = true
 
         override fun create(): SessionNodeExtension {
-            return SessionNodeExtension(sessionContextKeyRegistry, payloadSerializerFactory, plugins)
+            return SessionNodeExtension(
+                DefaultSession(payloadSerializerFactory,sessionContextKeyRegistry),
+                plugins
+            )
         }
     }
 
-    override val key: CoroutineContext.Key<*> get() = Session
+    private val _session: DefaultSession = session
+    val session: Session = _session
 
     override val providedServices: List<ServiceDescription> = listOf(
         ContextUpdateService.Descriptor.describe(this)
     )
 
-    private val context = Session.Context(mutableMapOf())
-    private val contextModificationLock = Mutex()
-    private var runningContextUpdate: Job? = null
-
-    private lateinit var payloadSerializer: PayloadSerializer
-    private lateinit var client: ContextUpdateService.Client
-
-    override fun copyOfContext(): Session.Context = context.copy()
-
-    override fun iterator(): Iterator<Session.Context.Item<*>> = context.iterator()
+    private val modifiedKeysFlow = MutableSharedFlow<Set<Session.Context.Key<*>>>()
 
     override suspend fun bind(transport: RPCTransport, contract: RPCNode.Contract) {
-        payloadSerializer = contract.payloadSerializer
-        client = ContextUpdateService.Client(transport)
+        _session.bind(transport, contract)
 
         for (plugin in plugins) {
-            plugin.onBindComplete(this)
+            plugin.onBindComplete(session)
         }
     }
 
-    override suspend fun update(request: ContextUpdateRequest): ContextUpdateResult = contextModificationLock.withLock {
-        logger.debug { "Received a session context update request: $request." }
-        val modificationsWithKeys = request.modifications.mapKeys { getKeyOrUnsupported(it.key) }
-        val rejectedItems = modificationsWithKeys.filter { (key, modification) ->
-            modification.oldRevisionOrNull != context[key]?.revision
-        }
-
-        if (rejectedItems.isEmpty()) {
-            logger.debug { "No reason for a rejection found. Accepting." }
-
-            val modifiedKeys = mutableSetOf<Session.Context.Key<*>>()
-            for ((key, modification) in modificationsWithKeys) {
-                when (modification) {
-                    // No action is needed.
-                    is ContextUpdateRequest.Modification.Required -> continue
-                    is ContextUpdateRequest.Modification.Set -> {
-                        deserializeAndPut(key, modification.newItem)
-                        modifiedKeys.add(key)
-                    }
-                    is ContextUpdateRequest.Modification.Remove -> {
-                        context.remove(key)
-                        modifiedKeys.add(key)
-                    }
-                }
+    override suspend fun parallelWork() {
+        session.observeModifications()
+            .collect {
+                notifyPluginsContextChanged(it)
             }
-
-            notifyPluginsContextChanged(modifiedKeys)
-
-            ContextUpdateResult.Accepted
-        } else {
-            logger.debug { "Found potential conflict in update request. Rejected items: $rejectedItems." }
-
-            ContextUpdateResult.Rejected(
-                rejectedItems.mapValues { (key, _) ->
-                    context[key]?.let {
-                        ContextUpdateResult.Rejected.Reason.Updated(it.toDto())
-                    } ?: ContextUpdateResult.Rejected.Reason.Removed
-                }.mapKeys { it.key.qualifiedName }
-            )
-        }
-    }
-    private fun getKeyOrUnsupported(qualifiedName: String): Session.Context.Key<*> {
-        return sessionContextKeyRegistry.getKeyByQualifiedName(qualifiedName) ?: UnsupportedKey(qualifiedName)
     }
 
-    private fun <T: Any> deserializeAndPut(key: Session.Context.Key<T>, itemDto: ContextItemDto) {
-        val item = when {
-            key is UnsupportedKey -> {
-                Session.Context.Item(key, itemDto.revision, itemDto.value)
-            }
-            itemDto.value.format == payloadSerializer.format -> {
-                Session.Context.Item(key, itemDto.revision, payloadSerializer.deserialize(key.serializer, itemDto.value))
-            }
-            payloadSerializerFactory.supportedSerializationFormats.contains(itemDto.value.format) -> {
-                Session.Context.Item(key, itemDto.revision, payloadSerializerFactory.create(itemDto.value.format).deserialize(key.serializer, itemDto.value))
-            }
-            else -> {
-                Session.Context.Item(UnsupportedKey(key.qualifiedName), itemDto.revision, itemDto.value)
-            }
-        }
-        putItem(item)
+    override suspend fun enhanceParallelWorkContext(context: CoroutineContext): CoroutineContext {
+        return context + session
     }
 
-    private fun <T: Any> putItem(item: Session.Context.Item<T>) {
-        context[item.key] = item
-    }
+    override suspend fun update(request: ContextUpdateRequest): ContextUpdateResult = _session.update(request)
 
-    private fun <T: Any> Session.Context.Item<T>.toDto(): ContextItemDto {
-        val serializedValue = if (key is UnsupportedKey) {
-            value as SerializedPayload
-        } else {
-            payloadSerializer.serialize(key.serializer, value)
-        }
-        return ContextItemDto(revision, serializedValue)
-    }
+    override suspend fun clear() = _session.clear()
 
     private suspend fun notifyPluginsContextChanged(modifiedKeys: Set<Session.Context.Key<*>>) {
+        modifiedKeysFlow.emit(modifiedKeys)
+
         for (plugin in plugins) {
-            plugin.onContextChanged(this, modifiedKeys)
+            plugin.onContextChanged(session, modifiedKeys)
         }
-    }
-
-    override fun <VALUE: Any> get(key: Session.Context.Key<VALUE>): VALUE? {
-        return context[key]?.value
-    }
-
-    override suspend fun contextTransaction(block: Session.Context.Mutator.() -> Unit) {
-        val ourJob = Job()
-
-        // Before running the transaction, we want to make sure there's no other context sync running.
-        awaitCompletedContextSync()
-        runningContextUpdate = ourJob
-
-        val modifiedKeys = mutableSetOf<Session.Context.Key<*>>()
-        // TODO: Don't rely on number of retries, but check the result from the other party to detect a bug.
-        var rejections = 0
-        do {
-            val modifications = mutableMapOf<Session.Context.Key<Any>, Session.Context.Mutator.Action>()
-            val mutator = Session.Context.Mutator(context, modifications)
-
-            block(mutator)
-
-            val request = ContextUpdateRequest(
-                modifications.mapValues { (_, action) ->
-                    when (action) {
-                        is Session.Context.Mutator.Action.Required -> ContextUpdateRequest.Modification.Required(action.oldItem?.revision)
-                        is Session.Context.Mutator.Action.Set -> ContextUpdateRequest.Modification.Set(
-                            action.oldItem?.revision,
-                            action.newItem.toDto()
-                        )
-                        is Session.Context.Mutator.Action.Remove -> ContextUpdateRequest.Modification.Remove(action.oldItem.revision)
-                    }
-                }.mapKeys { it.key.qualifiedName }
-            )
-
-            logger.debug { "Will try updating context (try #${rejections + 1}) with $request." }
-            val result = client.update(request)
-
-            contextModificationLock.withLock {
-                when (result) {
-                    is ContextUpdateResult.Rejected -> {
-                        rejections += 1
-                        if (rejections >= maximumRejections) {
-                            // FIXME: Throw error and inform user
-                        }
-                        logger.debug { "Context update rejected (try #$rejections). Reasons: ${result.rejectedModifications}" }
-                        val modificationsWithKeys = result.rejectedModifications.mapKeys { getKeyOrUnsupported(it.key) }
-                        for ((key, reason) in modificationsWithKeys) {
-                            Do exhaustive when (reason) {
-                                ContextUpdateResult.Rejected.Reason.Removed -> {
-                                    context.remove(key)
-                                    modifiedKeys.add(key)
-                                }
-                                is ContextUpdateResult.Rejected.Reason.Updated -> {
-                                    deserializeAndPut(key, reason.newItem)
-                                    modifiedKeys.add(key)
-                                }
-                            }
-                        }
-                    }
-                    ContextUpdateResult.Accepted -> {
-                        logger.debug { "Context update accepted (try #$rejections). Saving to local context." }
-                        for ((key, action) in modifications) {
-                            Do exhaustive when (action) {
-                                is Session.Context.Mutator.Action.Required -> continue
-                                is Session.Context.Mutator.Action.Set -> {
-                                    @Suppress("UNCHECKED_CAST")
-                                    context[key] = action.newItem as Session.Context.Item<Any>
-                                    modifiedKeys.add(key)
-                                }
-                                is Session.Context.Mutator.Action.Remove -> {
-                                    context.remove(key)
-                                    modifiedKeys.add(key)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } while (result != ContextUpdateResult.Accepted && rejections < maximumRejections)
-
-        notifyPluginsContextChanged(modifiedKeys)
-
-        runningContextUpdate = null
-        ourJob.complete()
     }
 
     override suspend fun <PAYLOAD, RESPONSE> interceptIncomingSingleCall(
@@ -312,10 +146,10 @@ class SessionNodeExtension(
         return if (call.identifier.serviceId == ContextUpdateService.Descriptor.identifier) {
             block()
         } else {
-            // TODO: Replace `this` with `immutableCopy`
-            withContext(coroutineContext + this) {
+            // TODO: Replace `session` with an immutable copy
+            withContext(coroutineContext + session) {
                 val result = block()
-                awaitCompletedContextSync()
+                session.awaitCompletedContextSync()
                 result
             }
         }
@@ -360,13 +194,9 @@ class SessionNodeExtension(
         return if (call.identifier.serviceId == ContextUpdateService.Descriptor.identifier) {
             block()
         } else {
-            awaitCompletedContextSync()
+            session.awaitCompletedContextSync()
             block()
         }
-    }
-
-    private suspend fun awaitCompletedContextSync() {
-        runningContextUpdate?.join()
     }
 }
 
@@ -453,11 +283,17 @@ sealed class ContextUpdateResult {
 interface ContextUpdateService {
     suspend fun update(request: ContextUpdateRequest): ContextUpdateResult
 
+    suspend fun clear()
+
     class Client(
         private val transport: RPCTransport,
     ): ContextUpdateService {
         override suspend fun update(request: ContextUpdateRequest): ContextUpdateResult {
             return transport.singleCall(Descriptor.Call.update, request)
+        }
+
+        override suspend fun clear() {
+            return transport.singleCall(Descriptor.Call.clear, Unit)
         }
     }
 
@@ -470,6 +306,9 @@ interface ContextUpdateService {
                 listOf(
                     Call.update.calling { request ->
                         service.update(request)
+                    },
+                    Call.clear.calling { reequest ->
+                        service.clear()
                     }
                 )
             )
@@ -480,6 +319,13 @@ interface ContextUpdateService {
                 ServiceCallIdentifier(identifier, "update"),
                 ContextUpdateRequest.serializer(),
                 ContextUpdateResult.serializer(),
+                RPCErrorSerializer(),
+            )
+
+            val clear = SingleCallDescription(
+                ServiceCallIdentifier(identifier, "clear"),
+                Unit.serializer(),
+                Unit.serializer(),
                 RPCErrorSerializer(),
             )
         }

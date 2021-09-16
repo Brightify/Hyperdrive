@@ -2,7 +2,7 @@ package org.brightify.hyperdrive.krpc.client.impl
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
-import org.brightify.hyperdrive.krpc.SessionNodeExtension
+import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
 import org.brightify.hyperdrive.krpc.session.Session
 
 class SessionContextSnapshotPlugin: SessionNodeExtension.Plugin {
@@ -12,17 +12,14 @@ class SessionContextSnapshotPlugin: SessionNodeExtension.Plugin {
     fun <VALUE: Any> observe(key: Session.Context.Key<VALUE>/*, includeInitialValue: Boolean = false*/): Flow<VALUE?> =
         flow {
             val channel = Channel<VALUE?>()
-
             val listener = FlowListener(key, channel)
-
-            val contextSnapshot = latestContextSnapshot
-            if (contextSnapshot != null) {
-                emit(contextSnapshot[key]?.value)
-            }
-
             emitAll(
                 channel.receiveAsFlow()
                     .onStart {
+                        val contextSnapshot = latestContextSnapshot
+                        if (contextSnapshot != null) {
+                            emit(contextSnapshot[key]?.value)
+                        }
                         registerListener(listener)
                     }
                     .onCompletion {
