@@ -114,7 +114,7 @@ class IOSWebSocketClient(
                         }
                     }
                 } else if (error != null) {
-                    result.completeExceptionally(ConnectionClosedException("Received a socket error: ${error.localizedDescription}.", NSErrorThrowable(error)))
+                    result.completeExceptionally(ConnectionClosedException("Received a socket error: ${error.localizedDescription}."))
                 } else {
                     error("No result or error received from iOS websocket!")
                 }
