@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive
 
+import co.touchlab.stately.freeze
 import org.brightify.hyperdrive.utils.AtomicReference
 import kotlin.reflect.KClass
 
@@ -79,13 +80,12 @@ public class Logger private constructor(
             public fun build(): Configuration = Configuration(
                 minLogLevel = minLogLevel,
                 destinations = destinations,
-            )
+            ).freeze()
         }
     }
 
     public companion object {
-        private val defaultConfiguration = Configuration.Builder().build()
-        private val configurationReference = AtomicReference(defaultConfiguration)
+        private val configurationReference = AtomicReference(Configuration.Builder().build())
         private val mainLogger = Logger("o.b.h.l.Logger")
 
         public val configuration: Configuration
