@@ -15,19 +15,6 @@ import platform.posix.errno
 import platform.posix.memcpy
 import kotlin.native.concurrent.freeze
 
-private fun NSData.toByteArray(): ByteArray = ByteArray(length.toInt()).apply {
-    usePinned {
-        memcpy(it.addressOf(0), bytes, length)
-    }
-}
-
-private fun ByteArray.toNSData(): NSData {
-    val pinned = this.pin()
-    return NSData.create(bytesNoCopy = pinned.addressOf(0), length = size.toULong()) { _, _ ->
-        pinned.unpin()
-    }
-}
-
 class IOSWebSocketClient(
     private val endpointUrl: NSURL
 ): RPCClientConnector {
@@ -128,7 +115,7 @@ class IOSWebSocketClient(
 
             val message = when (frame) {
                 is SerializedFrame.Binary -> NSURLSessionWebSocketMessage(data = frame.binary.toNSData())
-                is SerializedFrame.Text -> NSURLSessionWebSocketMessage(string = frame.text)
+                is SerializedFrame.Text -> NSURLSessionWebSocketMessage(string = frame.text.freeze())
             }.freeze()
             websocket.sendMessage(message) { error ->
                 if (error != null) {
@@ -138,6 +125,19 @@ class IOSWebSocketClient(
                 }
             }
             return result.await()
+        }
+
+        private fun NSData.toByteArray(): ByteArray = ByteArray(length.toInt()).apply {
+            usePinned {
+                memcpy(it.addressOf(0), bytes, length)
+            }
+        }
+
+        private fun ByteArray.toNSData(): NSData {
+            val pinned = this.freeze().pin().freeze()
+            return NSData.create(bytesNoCopy = pinned.addressOf(0).freeze(), length = size.toULong()) { _, _ ->
+                pinned.unpin()
+            }.freeze()
         }
     }
 }
