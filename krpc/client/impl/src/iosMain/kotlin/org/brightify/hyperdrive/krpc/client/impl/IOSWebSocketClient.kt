@@ -1,17 +1,32 @@
 package org.brightify.hyperdrive.krpc.client.impl
 
 import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.pin
 import kotlinx.cinterop.usePinned
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.plus
+import kotlinx.coroutines.withContext
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.SerializedFrame
 import org.brightify.hyperdrive.krpc.client.RPCClientConnector
 import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
-import platform.CoreFoundation.kCFSocketError
-import platform.Foundation.*
+import platform.Foundation.NSData
+import platform.Foundation.NSError
+import platform.Foundation.NSOperationQueue
+import platform.Foundation.NSURL
+import platform.Foundation.NSURLSession
+import platform.Foundation.NSURLSessionConfiguration
+import platform.Foundation.NSURLSessionTask
+import platform.Foundation.NSURLSessionWebSocketCloseCode
+import platform.Foundation.NSURLSessionWebSocketDelegateProtocol
+import platform.Foundation.NSURLSessionWebSocketMessage
+import platform.Foundation.NSURLSessionWebSocketTask
+import platform.Foundation.create
 import platform.darwin.NSObject
-import platform.posix.errno
 import platform.posix.memcpy
 import kotlin.native.concurrent.freeze
 
@@ -114,7 +129,7 @@ class IOSWebSocketClient(
             val result = CompletableDeferred<Unit>()
 
             val message = when (frame) {
-                is SerializedFrame.Binary -> NSURLSessionWebSocketMessage(data = frame.binary.toNSData())
+                is SerializedFrame.Binary -> NSURLSessionWebSocketMessage(data = frame.binary.toNSData().freeze())
                 is SerializedFrame.Text -> NSURLSessionWebSocketMessage(string = frame.text.freeze())
             }.freeze()
             websocket.sendMessage(message) { error ->
@@ -133,11 +148,8 @@ class IOSWebSocketClient(
             }
         }
 
-        private fun ByteArray.toNSData(): NSData {
-            val pinned = this.freeze().pin().freeze()
-            return NSData.create(bytesNoCopy = pinned.addressOf(0).freeze(), length = size.toULong()) { _, _ ->
-                pinned.unpin()
-            }.freeze()
+        private fun ByteArray.toNSData(): NSData = usePinned {
+            NSData.create(bytes = it.addressOf(0), length = size.toULong().freeze())
         }
     }
 }
