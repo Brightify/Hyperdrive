@@ -63,7 +63,7 @@ public class Logger private constructor(
 
         public class Builder {
             private var minLogLevel: LoggingLevel? = LoggingLevel.Warn
-            private val destinations = mutableListOf<Destination>(PrintlnDestination())
+            private val destinations = mutableListOf<Destination>()
 
             public fun setMinLevel(level: LoggingLevel) {
                 minLogLevel = level
@@ -73,8 +73,12 @@ public class Logger private constructor(
                 minLogLevel = null
             }
 
-            public fun output(destination: Destination) {
+            public fun destination(destination: Destination) {
                 destinations.add(destination)
+            }
+
+            public fun clearDestinations() {
+                destinations.clear()
             }
 
             public fun build(): Configuration = Configuration(
@@ -85,7 +89,7 @@ public class Logger private constructor(
     }
 
     public companion object {
-        private val configurationReference = AtomicReference(Configuration.Builder().build())
+        private val configurationReference = AtomicReference(Configuration.Builder().apply { destination(PrintlnDestination()) }.build())
         private val mainLogger = Logger("o.b.h.l.Logger")
 
         public val configuration: Configuration
