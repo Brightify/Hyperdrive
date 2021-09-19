@@ -3,6 +3,7 @@
 package org.brightify.hyperdrive.multiplatformx
 
 import co.touchlab.stately.ensureNeverFrozen
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -11,7 +12,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.plus
 import org.brightify.hyperdrive.multiplatformx.util.bridge.NonNullFlowWrapper
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 public fun <T: Any> NonNullFlowWrapper<T>.collectWhileAttached(lifecycle: Lifecycle, collection: (T) -> Unit) {
@@ -28,6 +31,10 @@ public fun LifecycleGraph.Root.attachToMultiplatformGlobalScope(): CancellationT
     = attach(MultiplatformGlobalScope)
 
 public fun LifecycleGraph.Root.attachToMainScope(): CancellationToken = attach(MainScope())
+
+public fun LifecycleGraph.Root.attachToMainScope(unhandledExceptionHandler: (CoroutineContext, Throwable) -> Unit): CancellationToken {
+    return attach(MainScope() + CoroutineExceptionHandler(unhandledExceptionHandler))
+}
 
 private typealias RunnerId = ULong
 
