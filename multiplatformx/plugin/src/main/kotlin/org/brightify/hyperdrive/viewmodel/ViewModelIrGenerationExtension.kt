@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.backend.common.runOnFilePostfix
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isSubtypeOfClass
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPropertyGetter
@@ -35,7 +36,9 @@ open class ViewModelIrGenerationExtension(
         if (!viewModelEnabled) { return null }
         val lazy = referenceClass(ViewModelNames.Kotlin.lazy) ?: return logDisabledReason("could not resolve Lazy<T> class")
         val observableObject = referenceClass(ViewModelNames.API.baseObservableObject) ?: return logDisabledReason("could not resolve BaseObservableObject class")
-        val observe = observableObject.functions.singleOrNull { it.owner.name == Name.identifier("observe") } ?: return logDisabledReason("could not resolve `observe` method for `ObservableObject` class")
+        val observe = observableObject.functions.singleOrNull {
+            it.owner.name == Name.identifier("observe") && it.owner.valueParameters.singleOrNull()?.type?.classOrNull == symbols.kproperty0()
+        } ?: return logDisabledReason("could not resolve `observe` method for `ObservableObject` class")
 
         val types = ViewModelIrGenerator.Types(
             lazy = lazy,
