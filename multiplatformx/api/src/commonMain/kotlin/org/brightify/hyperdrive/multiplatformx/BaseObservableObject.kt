@@ -13,6 +13,7 @@ import org.brightify.hyperdrive.multiplatformx.property.toKotlinProperty
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
 
@@ -62,15 +63,27 @@ public abstract class BaseObservableObject: ObservableObject {
     }
 
     /**
-     * Returns [StateFlow] for the given property.
+     * Returns [ObservableProperty] for the given property.
      *
      * **NOTE**: Although this method can be called manually, it's not recommended due to a risk of runtime crashes. The property passed in
      * is matched by its name, so when called with a property from a different class, but a same name and different type, it will return
-     * the stored [StateFlow] and crash later when its [value][StateFlow.value] is accessed or the flow is collected.
+     * the stored [ObservableProperty] and crash later when its [value][ObservableProperty.value] is accessed or observed.
      */
     @Suppress("UNCHECKED_CAST")
     protected fun <T> observe(property: KProperty0<T>): Lazy<ObservableProperty<T>> = lazy {
         properties.getValue(property.name) as ObservableProperty<T>
+    }
+
+    /**
+     * Returns [MutableObservableProperty] for the given property.
+     *
+     * **NOTE**: Although this method can be called manually, it's not recommended due to a risk of runtime crashes. The property passed in
+     * is matched by its name, so when called with a property from a different class, but a same name and different type, it will return
+     * the stored [MutableObservableProperty] and crash later when its [value][MutableObservableProperty.value] is accessed or observed.
+     */
+    @Suppress("UNCHECKED_CAST")
+    protected fun <T> observe(property: KMutableProperty0<T>): Lazy<MutableObservableProperty<T>> = lazy {
+        properties.getValue(property.name) as MutableObservableProperty<T>
     }
 
     /**
