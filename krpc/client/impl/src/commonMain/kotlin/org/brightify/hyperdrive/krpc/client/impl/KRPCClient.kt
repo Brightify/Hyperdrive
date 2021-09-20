@@ -33,6 +33,7 @@ import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.session.Session
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import org.brightify.hyperdrive.krpc.transport.TransportFrameSerializer
+import kotlin.coroutines.cancellation.CancellationException
 
 // class KrpcClientBuilder(
 // )
@@ -119,10 +120,17 @@ class KRPCClient(
                 logger.info { "Client connection completed. Trying to reconnect soon." }
                 activeNode.value = null
                 delay(500)
+            } catch (t: CancellationException) {
+                if (isActive) {
+                    logger.warning(t) { "Client connection cancelled. Client is still active, will reconnect in 500ms." }
+                    delay(500)
+                } else {
+                    throw t
+                }
             } catch (t: Throwable) {
                 activeNode.value = null
                 if (t is ConnectionClosedException || connector.isConnectionCloseException(t)) {
-                    logger.warning(t) { "Client connection disconnected. Trying to reconnect soon." }
+                    logger.warning(t) { "Client connection disconnected. Trying to reconnect in 500ms." }
                     // Disconnected from server, wait and then try again
                     delay(500)
                 } else {
