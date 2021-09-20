@@ -19,6 +19,7 @@ kotlin {
                 implementation(project(":kotlin-utils"))
 
                 implementation(libs.coroutines.core)
+                implementation(libs.stately.concurrency)
                 implementation(libs.bundles.serialization)
             }
         }

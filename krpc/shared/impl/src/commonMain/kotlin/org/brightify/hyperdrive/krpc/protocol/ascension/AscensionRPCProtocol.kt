@@ -1,5 +1,7 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
+import co.touchlab.stately.concurrency.Lock
+import co.touchlab.stately.concurrency.withLock
 import kotlinx.coroutines.*
 import kotlinx.serialization.SerializationException
 import org.brightify.hyperdrive.Logger
@@ -261,8 +263,16 @@ class AscensionRPCProtocol(
 
     override val version = RPCProtocol.Version.Ascension
 
-    private val pendingCallees = mutableMapOf<RPCReference, PendingRPC.Callee<*, *>>()
-    private val pendingCallers = mutableMapOf<RPCReference, PendingRPC.Caller<*, *>>()
+    private class SynchronizedAccess<T>(private val value: T) {
+        private val lock = Lock()
+
+        inline fun <U> access(block: T.() -> U): U = lock.withLock {
+            value.block()
+        }
+    }
+
+    private val pendingCallees = SynchronizedAccess(mutableMapOf<RPCReference, PendingRPC.Callee<*, *>>())
+    private val pendingCallers = SynchronizedAccess(mutableMapOf<RPCReference, PendingRPC.Caller<*, *>>())
 
     // TODO: Replace with AtomicInt
     private var callReferenceCounter: RPCReference = RPCReference(UInt.MIN_VALUE)
@@ -298,11 +308,11 @@ class AscensionRPCProtocol(
                             handleDownstreamEvent(frame)
                         }
                         is AscensionRPCFrame.InternalProtocolError.Caller -> {
-                            pendingCallees.remove(frame.callReference)
+                            pendingCallees.access { remove(frame.callReference) }
                                 ?.cancel("Internal protocol error on caller.", frame.throwable.toThrowable())
                         }
                         is AscensionRPCFrame.InternalProtocolError.Callee -> {
-                            pendingCallers.remove(frame.callReference)
+                            pendingCallers.access { remove(frame.callReference) }
                                 ?.cancel("Internal protocol error on callee.", frame.throwable.toThrowable())
                         }
                         is AscensionRPCFrame.SingleCall -> error("PROTOCOL ERROR! Instances of AscensionRPCFrame.SingleCall should either be Upstream or Downstream!")
@@ -330,12 +340,48 @@ class AscensionRPCProtocol(
     }
 
     private fun cancelPendingRPCs(cause: CancellationException) {
-        logger.trace { "Cancelling pending callers." }
+        try {
+            logger.trace { "Cancelling pending callers." }
+            val copiedPendingCallers = pendingCallers.access {
+                val list = values.toList()
+                clear()
+                list
+            }
+            copiedPendingCallers.forEach {
+                try {
+                    it.cancel(cause)
+                } catch (t: Throwable) {
+                    logger.warning(t) { "Couldn't cancel caller $it." }
+                }
+            }
 
-        pendingCallers.values.forEach { it.cancel(cause) }
-        pendingCallers.clear()
-        pendingCallees.values.forEach { it.cancel(cause) }
-        pendingCallees.clear()
+            logger.trace { "Pending callers canceled." }
+        } catch (t: Throwable) {
+            logger.warning(t) { "Couldn't cancel callers!" }
+        }
+
+        try {
+            logger.trace { "Cancelling pending callees." }
+
+            val copiedPendingCallees = pendingCallees.access {
+                val list = values.toList()
+                clear()
+                list
+            }
+
+            copiedPendingCallees.forEach {
+                try {
+                    it.cancel(cause)
+                } catch (t: Throwable) {
+                    logger.warning(t) { "Couldn't cancel calee $it." }
+                }
+            }
+
+            logger.trace { "Pending callees canceled." }
+        } catch (t: Throwable) {
+            logger.warning(t) { "Couldn't cancel callees!" }
+        }
+
     }
 
     suspend fun send(frame: AscensionRPCFrame) {
@@ -349,7 +395,7 @@ class AscensionRPCProtocol(
     }
 
     private suspend fun <T> handleDownstreamEvent(frame: T) where T: AscensionRPCFrame, T: AscensionRPCFrame.Downstream {
-        val pendingCaller = pendingCallers[frame.callReference] ?: return run {
+        val pendingCaller = pendingCallers.access { this[frame.callReference] } ?: return run {
             sendUnknownReferenceError(frame.callReference)
         }
         @Suppress("UNCHECKED_CAST")
@@ -358,7 +404,7 @@ class AscensionRPCProtocol(
 
     private suspend fun <T> handleUpstreamEvent(frame: T) where T: AscensionRPCFrame, T: AscensionRPCFrame.Upstream {
         val reference = frame.callReference
-        val existingPendingCallee = pendingCallees[reference]
+        val existingPendingCallee = pendingCallees.access { this[reference] }
         val pendingCallee = when {
             existingPendingCallee != null -> existingPendingCallee
             frame is AscensionRPCFrame.Upstream.Open -> {
@@ -389,7 +435,7 @@ class AscensionRPCProtocol(
                     )
                     else -> TODO()
                 }
-                pendingCallees[reference] = newPendingCallee
+                pendingCallees.access { this[reference] = newPendingCallee }
                 newPendingCallee.invokeOnCompletion {
                     try {
                         if (it != null && it !is CancellationException) {
@@ -407,7 +453,7 @@ class AscensionRPCProtocol(
                             logger.debug { "Callee job ($reference) completed." }
                         }
                     } finally {
-                        pendingCallees.remove(reference)
+                        pendingCallees.access { remove(reference) }
                     }
                 }
                 newPendingCallee
@@ -425,7 +471,7 @@ class AscensionRPCProtocol(
     private suspend fun <T: PendingRPC.Caller<*, *>> managedCaller(factory: (RPCReference) -> T): T {
         val reference = nextCallReference()
         val pendingRpc = factory(reference)
-        pendingCallers[reference] = pendingRpc
+        pendingCallers.access { this[reference] = pendingRpc }
         pendingRpc.invokeOnCompletion {
             try {
                 if (it != null && it !is CancellationException) {
@@ -443,7 +489,7 @@ class AscensionRPCProtocol(
                     logger.debug { "Caller job completed for reference $reference." }
                 }
             } finally {
-                pendingCallers.remove(reference)
+                pendingCallers.access { remove(reference) }
             }
         }
         return pendingRpc
