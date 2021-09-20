@@ -331,14 +331,11 @@ class AscensionRPCProtocol(
 
     private fun cancelPendingRPCs(cause: CancellationException) {
         logger.trace { "Cancelling pending callers." }
-        val pendingCallerKeysCopy = pendingCallers.keys.toSet()
-        pendingCallerKeysCopy.forEach { key ->
-            pendingCallers.remove(key)?.cancel(cause)
-        }
-        val pendingCalleeKeysCopy = pendingCallees.keys.toSet()
-        pendingCalleeKeysCopy.forEach { key ->
-            pendingCallees.remove(key)?.cancel(cause)
-        }
+
+        pendingCallers.values.forEach { it.cancel(cause) }
+        pendingCallers.clear()
+        pendingCallees.values.forEach { it.cancel(cause) }
+        pendingCallees.clear()
     }
 
     suspend fun send(frame: AscensionRPCFrame) {
