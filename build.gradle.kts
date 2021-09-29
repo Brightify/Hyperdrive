@@ -172,14 +172,14 @@ subprojects {
                 // Not using `dokkaJavadoc`, because that's not supported for multiplatform targets.
                 val htmlDokkaExists = tasks.any { it.name == "dokkaHtml" }
                 val javadocJar by if (htmlDokkaExists) {
-                    println("Creating Javadoc jar for ${project}.")
+                    logger.info("Creating Javadoc jar for ${project}.")
                     tasks.registering(Jar::class) {
                         dependsOn(tasks.dokkaHtml)
                         archiveClassifier.set("javadoc")
                         from(tasks.dokkaHtml)
                     }
                 } else {
-                    println("Creating empty Javadoc jar for ${project}, `dokkaHtml` task not found.")
+                    logger.info("Creating empty Javadoc jar for ${project}, `dokkaHtml` task not found.")
                     tasks.registering(Jar::class) {
                         archiveClassifier.set("javadoc")
                         from(file("$buildDir/emptyJavadoc").also { it.mkdirs() })
