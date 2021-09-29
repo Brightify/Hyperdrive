@@ -39,11 +39,15 @@ open class ViewModelIrGenerationExtension(
         val observe = observableObject.functions.singleOrNull {
             it.owner.name == Name.identifier("observe") && it.owner.valueParameters.singleOrNull()?.type?.classOrNull == symbols.kproperty0()
         } ?: return logDisabledReason("could not resolve `observe` method for `ObservableObject` class")
+        val mutableObserve = observableObject.functions.singleOrNull {
+            it.owner.name == Name.identifier("observe") && it.owner.valueParameters.singleOrNull()?.type?.classOrNull == symbols.kmutableproperty0()
+        } ?: return logDisabledReason("could not resolve mutable `observe` method for `ObservableObject` class")
 
         val types = ViewModelIrGenerator.Types(
             lazy = lazy,
             lazyValue = lazy.getPropertyGetter(ViewModelNames.Kotlin.Lazy.value.identifier) ?: return logDisabledReason("could not resolve `value` getter for `Lazy<T>` class"),
             observe = observe,
+            mutableObserve = mutableObserve,
         )
         return ViewModelIrGenerator(this, types)
     }

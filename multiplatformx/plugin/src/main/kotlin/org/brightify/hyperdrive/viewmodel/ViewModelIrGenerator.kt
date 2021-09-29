@@ -18,14 +18,20 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irReturn
+import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.builders.parent
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
 import org.jetbrains.kotlin.ir.declarations.lazy.IrLazyField
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrPropertyReference
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
+import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrPropertyReferenceImpl
+import org.jetbrains.kotlin.ir.interpreter.toIrConst
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrDelegatingPropertySymbolImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
@@ -56,6 +62,7 @@ class ViewModelIrGenerator(
         val lazy: IrClassSymbol,
         val lazyValue: IrSimpleFunctionSymbol,
         val observe: IrSimpleFunctionSymbol,
+        val mutableObserve: IrSimpleFunctionSymbol,
     )
 
     @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -87,16 +94,22 @@ class ViewModelIrGenerator(
                 isExternal = false,
                 isStatic = false,
             ).also { field ->
+                val (observeMethod, kpropertySymbol) = if (referencedProperty.isVar) {
+                    types.mutableObserve to pluginContext.symbols.kmutableproperty0()
+                } else {
+                    types.observe to pluginContext.symbols.kproperty0()
+                }
+
                 field.parent = irClass
                 field.initializer = declarationBuilder.irExprBody(
-                    declarationBuilder.irCall(types.observe, field.type).apply {
+                    declarationBuilder.irCall(observeMethod, field.type).apply {
                         putTypeArgument(0, referencedProperty.getter!!.returnType)
                         dispatchReceiver = irClass.thisReceiver?.let { declarationBuilder.irGet(it) }
                         putValueArgument(0,
                             IrPropertyReferenceImpl(
                                 referencedProperty.startOffset,
                                 referencedProperty.endOffset,
-                                pluginContext.symbols.kproperty0().typeWith(referencedProperty.getter!!.returnType),
+                                kpropertySymbol.typeWith(referencedProperty.getter!!.returnType),
                                 referencedProperty.symbol,
                                 0,
                                 null,
