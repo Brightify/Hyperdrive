@@ -8,15 +8,18 @@ import org.gradle.kotlin.dsl.provideDelegate
 import org.gradle.kotlin.dsl.getValue
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
-fun KotlinMultiplatformExtension.configurePlatforms() {
+fun KotlinMultiplatformExtension.configurePlatforms(appleSilicon: Boolean = false) {
     jvm()
     ios()
-    // iosSimulatorArm64()
     tvos()
-    // tvosSimulatorArm64()
     macosX64()
-    // macosArm64()
-    js {
+
+    if (appleSilicon) {
+        iosSimulatorArm64()
+        tvosSimulatorArm64()
+        macosArm64()
+    }
+    js(BOTH) {
         browser {
             testTask {
                 enabled = false
@@ -42,25 +45,12 @@ fun KotlinMultiplatformExtension.configurePlatforms() {
             dependsOn(nativeTest)
         }
 
-        // val iosSimulatorArm64Main by getting {
-        //     dependsOn(iosMain)
-        // }
-        // val iosSimulatorArm64Test by getting {
-        //     dependsOn(iosTest)
-        // }
-
         val tvosMain by getting {
             dependsOn(nativeMain)
         }
         val tvosTest by getting {
             dependsOn(nativeTest)
         }
-        // val tvosSimulatorArm64Main by getting {
-        //     dependsOn(tvosMain)
-        // }
-        // val tvosSimulatorArm64Test by getting {
-        //     dependsOn(tvosTest)
-        // }
 
         val macosMain by creating {
             dependsOn(nativeMain)
@@ -74,11 +64,26 @@ fun KotlinMultiplatformExtension.configurePlatforms() {
         val macosX64Test by getting {
             dependsOn(macosTest)
         }
-        // val macosArm64Main by getting {
-        //     dependsOn(macosMain)
-        // }
-        // val macosArm64Test by getting {
-        //     dependsOn(macosTest)
-        // }
+
+        if (appleSilicon) {
+            val iosSimulatorArm64Main by getting {
+                dependsOn(iosMain)
+            }
+            val iosSimulatorArm64Test by getting {
+                dependsOn(iosTest)
+            }
+            val tvosSimulatorArm64Main by getting {
+                dependsOn(tvosMain)
+            }
+            val tvosSimulatorArm64Test by getting {
+                dependsOn(tvosTest)
+            }
+            val macosArm64Main by getting {
+                dependsOn(macosMain)
+            }
+            val macosArm64Test by getting {
+                dependsOn(macosTest)
+            }
+        }
     }
 }
