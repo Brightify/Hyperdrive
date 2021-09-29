@@ -70,7 +70,9 @@ public class DefaultSession internal constructor(
         context.copy()
     }
 
-    override fun observeModifications(): Flow<Set<Session.Context.Key<*>>> = modifiedKeysFlow
+    override fun observeModifications(): Flow<Set<Session.Context.Key<*>>> = modifiedKeysFlow.onStart {
+        emit(sessionContextKeyRegistry.allKeys.toSet() + context.keys)
+    }
 
     override suspend fun contextTransaction(block: Session.Context.Mutator.() -> Unit) {
         val ourJob = Job()
