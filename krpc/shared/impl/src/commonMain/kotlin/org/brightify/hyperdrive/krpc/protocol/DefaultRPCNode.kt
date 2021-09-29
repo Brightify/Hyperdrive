@@ -19,7 +19,6 @@ import org.brightify.hyperdrive.krpc.protocol.ascension.ColdUpstreamRunner
 import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.protocol.ascension.SingleCallRunner
-import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
 class HandshakeFailedException(val rpcMesage: String): Exception("Handshake has failed: $rpcMesage")
@@ -119,7 +118,7 @@ class DefaultRPCNode(
 
         val runningParallelWork = launch(parallelWorkContext) {
             extensions.map { extension ->
-                async { extension.parallelWork() }
+                async { extension.whileConnected() }
             }.awaitAll()
         }
 

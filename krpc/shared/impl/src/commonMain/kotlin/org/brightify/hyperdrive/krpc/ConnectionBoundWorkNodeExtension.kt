@@ -8,7 +8,7 @@ class ConnectionBoundWorkNodeExtension(
 ): RPCNodeExtension {
     override suspend fun bind(transport: RPCTransport, contract: RPCNode.Contract) { }
 
-    override suspend fun parallelWork() {
+    override suspend fun whileConnected() {
         parallelWork.invoke()
     }
 }

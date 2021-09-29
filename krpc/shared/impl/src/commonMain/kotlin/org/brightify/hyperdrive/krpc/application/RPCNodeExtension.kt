@@ -24,7 +24,7 @@ interface RPCNodeExtension: RPCIncomingInterceptor, RPCOutgoingInterceptor {
 
     suspend fun enhanceParallelWorkContext(context: CoroutineContext): CoroutineContext = context
 
-    suspend fun parallelWork() { }
+    suspend fun whileConnected() { }
 
     interface Factory<E: RPCNodeExtension> {
         /**

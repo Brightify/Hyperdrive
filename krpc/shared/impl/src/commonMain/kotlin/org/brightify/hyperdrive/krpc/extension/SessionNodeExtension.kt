@@ -57,7 +57,7 @@ class SessionNodeExtension internal constructor(
 
         override fun create(): SessionNodeExtension {
             return SessionNodeExtension(
-                DefaultSession(payloadSerializerFactory,sessionContextKeyRegistry),
+                DefaultSession(payloadSerializerFactory, sessionContextKeyRegistry),
                 plugins
             )
         }
@@ -80,7 +80,7 @@ class SessionNodeExtension internal constructor(
         }
     }
 
-    override suspend fun parallelWork() {
+    override suspend fun whileConnected() {
         session.observeModifications()
             .collect {
                 notifyPluginsContextChanged(it)
