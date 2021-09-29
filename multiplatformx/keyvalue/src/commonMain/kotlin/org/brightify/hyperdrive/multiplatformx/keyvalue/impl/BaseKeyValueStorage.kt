@@ -38,7 +38,7 @@ public abstract class BaseKeyValueStorage: KeyValueStorage {
             Int.serializer() -> setInt(key as KeyValueStorage.Key<Int>, value as Int?)
             Long.serializer() -> setLong(key as KeyValueStorage.Key<Long>, value as Long?)
             String.serializer() -> setString(key as KeyValueStorage.Key<String>, value as String?)
-            else -> getSerializable(key)
+            else -> setSerializable(key, value)
         }
     }
 
