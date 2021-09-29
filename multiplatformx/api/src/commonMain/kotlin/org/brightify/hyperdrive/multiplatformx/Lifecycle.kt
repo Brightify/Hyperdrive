@@ -360,6 +360,10 @@ public sealed class LifecycleGraph {
                 }
             }
         }
+
+        override fun toString(): String {
+            return debugDescription
+        }
     }
 
 }

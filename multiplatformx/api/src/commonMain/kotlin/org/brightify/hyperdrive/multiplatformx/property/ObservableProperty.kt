@@ -73,6 +73,8 @@ public interface ObservableProperty<T> {
          */
         public fun isEqual(oldValue: T, newValue: T): Boolean
     }
+
+    public companion object
 }
 
 /**

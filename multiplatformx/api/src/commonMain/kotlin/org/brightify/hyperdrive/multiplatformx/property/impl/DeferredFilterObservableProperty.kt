@@ -18,6 +18,7 @@ internal class DeferredFilterObservableProperty<T>(
     private var pendingValue: Optional<T> = Optional.None
 
     private val listeners = DeferredObservablePropertyListeners(this)
+    // FIXME: This won't support identityEqualityPolicy/neverEqualityPolicy!
     private val storage = MutableStateFlow(filtered.value.let {
         if (predicate(it)) {
             Optional.Some(it)

@@ -24,6 +24,7 @@ internal class AsyncMapDeferredObservableProperty<T, U>(
         get() = storage.value
 
     private val listeners = DeferredObservablePropertyListeners(this)
+    // FIXME: This won't support identityEqualityPolicy/neverEqualityPolicy!
     private val storage = MutableStateFlow<Optional<U>>(Optional.None)
 
     private val queue = AsyncQueue<T>(overflowPolicy, lifecycle) {

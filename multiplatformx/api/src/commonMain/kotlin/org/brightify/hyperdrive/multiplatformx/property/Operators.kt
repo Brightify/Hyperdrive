@@ -3,21 +3,44 @@
 package org.brightify.hyperdrive.multiplatformx.property
 
 import org.brightify.hyperdrive.multiplatformx.property.impl.CombineLatestObservableProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.ConstantObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.DeferredFilterObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.DeferredToImmediateObservablePropertyWrapper
 import org.brightify.hyperdrive.multiplatformx.property.impl.FilterObservableProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.FlatMapLatestDeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.FlatMapLatestObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.ImmediateToDeferredObservablePropertyWrapper
+import org.brightify.hyperdrive.multiplatformx.property.impl.MapDeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.MapObservableProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.NeverDeferredObservableProperty
+import kotlin.js.JsName
+
+public fun <T> ObservableProperty.Companion.constant(value: T): ObservableProperty<T> {
+    return ConstantObservableProperty(value)
+}
+
+public fun <T> ObservableProperty.Companion.never(): DeferredObservableProperty<T> {
+    return NeverDeferredObservableProperty()
+}
 
 /**
  * A mapping function applied to each element collected from the [ObservableProperty].
  */
 public fun <T, U> ObservableProperty<T>.map(
     equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
-    transform: (T) -> U
+    transform: (T) -> U,
 ): ObservableProperty<U> {
     return MapObservableProperty(this, transform, equalityPolicy)
+}
+
+/**
+ * A mapping function applied to each element collected from the [DeferredObservableProperty].
+ */
+public fun <T, U> DeferredObservableProperty<T>.map(
+    equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+    transform: (T) -> U,
+): DeferredObservableProperty<U> {
+    return MapDeferredObservableProperty(this, transform, equalityPolicy)
 }
 
 /**
@@ -28,6 +51,16 @@ public fun <T, U> ObservableProperty<T>.flatMapLatest(
     transform: (T) -> ObservableProperty<U>,
 ): ObservableProperty<U> {
     return FlatMapLatestObservableProperty(this, transform, equalityPolicy)
+}
+
+/**
+ * A mapping function applied to each element collected from the [ObsrvableProperty] to return a [DeferredObservableProperty].
+ */
+public fun <T, U> DeferredObservableProperty<T>.flatMapLatest(
+    equalityPolicy: ObservableProperty.EqualityPolicy<DeferredObservableProperty<U>> = identityEqualityPolicy(),
+    transform: (T) -> DeferredObservableProperty<U>,
+): DeferredObservableProperty<U> {
+    return FlatMapLatestDeferredObservableProperty(this, transform, equalityPolicy)
 }
 
 /**
@@ -49,6 +82,15 @@ public fun <T> ObservableProperty<T>.filter(
     predicate: (T) -> Boolean,
 ): ObservableProperty<T> {
     return FilterObservableProperty(this, initialValue, predicate, equalityPolicy)
+}
+
+/**
+ * Keep each non-null element collected from the [ObservableProperty].
+ */
+public fun <T: Any> ObservableProperty<T?>.filterNotNull(
+    equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+): DeferredObservableProperty<T> {
+    return filter { it != null }.map(equalityPolicy) { it!! }
 }
 
 /**
