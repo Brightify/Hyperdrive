@@ -37,7 +37,11 @@ class SessionContextSnapshotPlugin: SessionNodeExtension.Plugin {
     }
 
     override suspend fun onBindComplete(session: Session) {
-        latestContextSnapshot = session.copyOfContext()
+        val contextSnapshot = session.copyOfContext()
+        latestContextSnapshot = contextSnapshot
+        for (listener in listeners) {
+            listener.notify(contextSnapshot)
+        }
     }
 
     override suspend fun onContextChanged(session: Session, modifiedKeys: Set<Session.Context.Key<*>>) {
