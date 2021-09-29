@@ -2,7 +2,6 @@ package org.brightify.hyperdrive.krpc.session
 
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -13,10 +12,7 @@ import kotlinx.serialization.descriptors.mapSerialDescriptor
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
-import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
-import kotlin.reflect.KClass
+import kotlinx.serialization.Serializable
 
 @OptIn(ExperimentalSerializationApi::class)
 private object ContextUpdateSerializerDescriptor {
@@ -42,14 +38,6 @@ private object ContextUpdateSerializerDescriptor {
     @Serializable
     enum class ModificationType {
         Set, Remove
-    }
-}
-
-interface SessionContextKeyRegistry {
-    fun getKeyByQualifiedName(keyQualifiedName: String): Session.Context.Key<*>?
-
-    object Empty: SessionContextKeyRegistry {
-        override fun getKeyByQualifiedName(keyQualifiedName: String): Session.Context.Key<*>? = null
     }
 }
 
