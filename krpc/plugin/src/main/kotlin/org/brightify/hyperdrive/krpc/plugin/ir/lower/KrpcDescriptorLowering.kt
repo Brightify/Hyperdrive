@@ -130,16 +130,16 @@ class KrpcDescriptorLowering(
                                         call.dispatchReceiver = irCall(descriptorCallClass.property(name).getter!!).also {
                                             it.dispatchReceiver = irGetObject(descriptorCallClass.symbol)
                                         }
+                                        val suspendFunctionTypeArguments = listOfNotNull(
+                                            requestWrapperType,
+                                            rpcCall.upstreamFlowType?.element,
+                                            rpcCall.returnType
+                                        )
+                                        val suspendFunctionsName = "kotlin.coroutines.SuspendFunction${suspendFunctionTypeArguments.count() - 1}"
                                         call.putValueArgument(0, IrFunctionExpressionImpl(
                                             irClass.startOffset,
                                             irClass.endOffset,
-                                            pluginContext.referenceClass(FqName("kotlin.coroutines.SuspendFunction1"))!!.typeWith(
-                                                listOfNotNull(
-                                                    requestWrapperType,
-                                                    rpcCall.upstreamFlowType?.element,
-                                                    rpcCall.returnType
-                                                )
-                                            ),
+                                            pluginContext.referenceClass(FqName(suspendFunctionsName))!!.typeWith(suspendFunctionTypeArguments),
                                             caller,
                                             IrStatementOrigin.LAMBDA
                                         ))
