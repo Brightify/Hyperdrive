@@ -31,10 +31,19 @@ plugins {
     id("io.alcide.gradle-semantic-build-versioning") version "4.2.2"
 }
 
+enableFeaturePreview("VERSION_CATALOGS")
+
+dependencyResolutionManagement {
+    val kotlinVersion: String by settings
+    versionCatalogs {
+        create("libs") {
+            version("kotlin", kotlinVersion)
+        }
+    }
+}
+
 apply(from = "compose-check.gradle.kts")
 val enableCompose: Boolean by extra
-
-enableFeaturePreview("VERSION_CATALOGS")
 
 rootProject.name = "Hyperdrive"
 
@@ -43,7 +52,7 @@ val pluginModules = listOf(
     "impl",
     "impl-native",
     "gradle",
-    "idea"
+    "idea",
 )
 
 val pluginProjects = pluginModules.map {
@@ -63,17 +72,17 @@ val krpcModules = listOf(
     "shared" to listOf(
         "api",
         "impl",
-        "impl-ktor"
+        "impl-ktor",
     ),
     "client" to listOf(
         "api",
         "impl",
-        "impl-ktor"
+        "impl-ktor",
     ),
     "server" to listOf(
         "api",
         "impl",
-        "impl-ktor"
+        "impl-ktor",
     ),
     "plugin" to emptyList(),
     "integration" to emptyList(),
