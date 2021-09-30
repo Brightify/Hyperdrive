@@ -6,7 +6,7 @@ plugins {
 }
 
 kotlin {
-    configurePlatforms()
+    configurePlatforms(appleSilicon = true)
     explicitApi()
 
     sourceSets {

@@ -8,7 +8,7 @@ kotlin-compile-testing = "1.4.4"
 jupiter = "5.7.2"
 kotest = "4.6.3"
 compose = "1.0.3"
-compose-compiler = "1.1.0-alpha05"
+compose-compiler = "1.0.3"
 multiplatformSettings = "0.8.1"
 kodein = "7.8.0"
 

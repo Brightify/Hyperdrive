@@ -9,7 +9,7 @@ plugins {
 }
 
 kotlin {
-    configurePlatforms()
+    configurePlatforms(appleSilicon = true)
 
     sourceSets {
         val commonMain by getting {
