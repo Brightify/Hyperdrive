@@ -21,6 +21,8 @@ open class HyperdriveExtension {
         private set
     var krpc: KrpcSettings? = null
         private set
+    var debug: DebugSettings? = null
+        private set
 
     fun multiplatformx() {
         multiplatformx = MultiplatformxSettings()
@@ -42,6 +44,16 @@ open class HyperdriveExtension {
         this.krpc = krpc
     }
 
+    fun debug() {
+        debug = DebugSettings()
+    }
+
+    fun debug(configure: DebugSettings.() -> Unit) {
+        val debug = DebugSettings()
+        configure(debug)
+        this.debug = debug
+    }
+
     class MultiplatformxSettings {
         var isAutoFactoryEnabled: Boolean = true
         var isViewModelEnabled: Boolean = true
@@ -51,5 +63,10 @@ open class HyperdriveExtension {
     class KrpcSettings {
         var printIR: Boolean = false
         var printKotlinLike: Boolean = false
+    }
+
+    class DebugSettings {
+        var disablePrintIR: Boolean = false
+        var disablePrintKotlinLike: Boolean = false
     }
 }

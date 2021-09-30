@@ -53,6 +53,7 @@ rootProject.name = "Hyperdrive"
 
 val pluginModules = listOf(
     "api",
+    "debug",
     "impl",
     "impl-native",
     "gradle",

@@ -10,6 +10,7 @@ class HyperdriveGradlePlugin: Plugin<Project> {
         project.extensions.create<HyperdriveExtension>(EXTENSION_NAME)
         project.apply<KrpcGradleSubplugin>()
         project.apply<MultiplatformXGradleSubplugin>()
+        project.apply<DebugGradleSubplugin>()
     }
 
     companion object {

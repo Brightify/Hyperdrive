@@ -20,7 +20,7 @@ class KrpcCommandLineProcessor: CommandLineProcessor {
         Options.printIR,
         Options.printKotlinLike,
     )
-    private val optionsMap = options.map { it.optionName to it }.toMap()
+    private val optionsMap = options.associateBy { it.optionName }
     override val pluginOptions: Collection<AbstractCliOption> = options.map { it.toCliOption() }
 
     object Options {
