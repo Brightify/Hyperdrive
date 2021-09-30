@@ -44,3 +44,5 @@ org.brightify.hyperdrive.multiplatformx.util.bridge
 module:Singularity Key-Value Storage (multiplatformx-keyvalue)
 org.brightify.hyperdrive.multiplatformx.keyvalue
 org.brightify.hyperdrive.multiplatformx.keyvalue.impl
+module:Plugin Debug Annotations (plugin-debug)
+org.brightify.hyperdrive.debug
