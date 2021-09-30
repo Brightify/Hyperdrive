@@ -6,6 +6,7 @@ pluginManagement {
     }
 
     val kotlinVersion: String by settings
+    val kvisionVersion: String by settings
     plugins {
         id("org.jetbrains.dokka") version "1.5.0"
         id("com.github.johnrengelman.shadow") version "7.0.0"
@@ -17,6 +18,7 @@ pluginManagement {
         id("com.github.gmazzo.buildconfig") version "3.0.1"
         id("org.jetbrains.intellij") version "1.1.2"
         id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+        id("io.kvision") version kvisionVersion
     }
     resolutionStrategy {
         eachPlugin {
@@ -35,9 +37,11 @@ enableFeaturePreview("VERSION_CATALOGS")
 
 dependencyResolutionManagement {
     val kotlinVersion: String by settings
+    val kvisionVersion: String by settings
     versionCatalogs {
         create("libs") {
             version("kotlin", kotlinVersion)
+            version("kvision", kvisionVersion)
         }
     }
 }
