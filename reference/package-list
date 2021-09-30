@@ -23,6 +23,7 @@ org.brightify.hyperdrive.krpc.error
 org.brightify.hyperdrive.krpc.frame
 org.brightify.hyperdrive.krpc.protocol
 org.brightify.hyperdrive.krpc.session
+org.brightify.hyperdrive.krpc.session.impl
 org.brightify.hyperdrive.krpc.transport
 org.brightify.hyperdrive.krpc.util
 module:Tachyon Shared Implementation (krpc-shared-impl)
