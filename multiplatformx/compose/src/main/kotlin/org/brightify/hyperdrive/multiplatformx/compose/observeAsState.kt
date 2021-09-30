@@ -41,7 +41,7 @@ fun <T: ManageableViewModel> T.observeAsState(): State<T> {
 fun <T> ObservableProperty<T>.observeAsState(): State<T> {
     val result = remember { mutableStateOf(value, neverEqualPolicy()) }
     val listener = remember {
-        object: ObservableProperty.ValueChangeListener<T> {
+        object: ObservableProperty.Listener<T> {
             override fun valueDidChange(oldValue: T, newValue: T) {
                 result.value = newValue
             }

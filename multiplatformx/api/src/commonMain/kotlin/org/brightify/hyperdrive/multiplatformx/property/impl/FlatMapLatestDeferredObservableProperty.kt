@@ -18,7 +18,7 @@ internal class FlatMapLatestDeferredObservableProperty<T, U>(
     private val switchMapped: DeferredObservableProperty<T>,
     private val transform: (T) -> DeferredObservableProperty<U>,
     private val equalityPolicy: ObservableProperty.EqualityPolicy<DeferredObservableProperty<U>>,
-): DeferredObservableProperty<U>, DeferredObservableProperty.ValueChangeListener<T> {
+): DeferredObservableProperty<U>, DeferredObservableProperty.Listener<T> {
     private var activeBacking: DeferredObservableProperty<U>? = switchMapped.latestValue.mapToKotlin(transform)
     private var pendingActiveBacking: DeferredObservableProperty<U>? = null
 
@@ -26,7 +26,7 @@ internal class FlatMapLatestDeferredObservableProperty<T, U>(
         private set
 
     private val valueFlow = MutableSharedFlow<U>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    private val listeners = DeferredObservablePropertyListeners(this)
+    private val listeners = ValueChangeListenerHandler(this)
     private val passthroughListener = PassthroughValueChangeListener()
     @Suppress("JoinDeclarationAndAssignment")
     private val switchMappingSubscriptionCancellation: CancellationToken
@@ -78,11 +78,11 @@ internal class FlatMapLatestDeferredObservableProperty<T, U>(
         activeBackingSubscriptionCancellation = newActiveBacking.addListener(passthroughListener)
     }
 
-    override fun addListener(listener: DeferredObservableProperty.ValueChangeListener<U>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: DeferredObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: DeferredObservableProperty.ValueChangeListener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: DeferredObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
 
-    inner class PassthroughValueChangeListener: DeferredObservableProperty.ValueChangeListener<U> {
+    inner class PassthroughValueChangeListener: DeferredObservableProperty.Listener<U> {
         override fun valueWillChange(oldValue: Optional<U>, newValue: U) {
             if (oldValue is Optional.None) {
                 listeners.notifyValueWillChange(latestValue, newValue)

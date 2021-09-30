@@ -7,14 +7,14 @@ internal class FlatMapLatestObservableProperty<T, U>(
     private val switchMapped: ObservableProperty<T>,
     private val transform: (T) -> ObservableProperty<U>,
     private val equalityPolicy: ObservableProperty.EqualityPolicy<ObservableProperty<U>>,
-): ObservableProperty<U>, ObservableProperty.ValueChangeListener<T> {
+): ObservableProperty<U>, ObservableProperty.Listener<T> {
     private var activeBacking: ObservableProperty<U> = transform(switchMapped.value)
     private var pendingActiveBacking: ObservableProperty<U>? = null
 
     override val value: U
         get() = activeBacking.value
 
-    private val listeners = ObservablePropertyListeners(this)
+    private val listeners = ValueChangeListenerHandler(this)
     private val passthroughListener = PassthroughValueChangeListener()
     @Suppress("JoinDeclarationAndAssignment")
     private val switchMappingSubscriptionCancellation: CancellationToken
@@ -43,11 +43,11 @@ internal class FlatMapLatestObservableProperty<T, U>(
         activeBackingSubscriptionCancellation = activeBacking.addListener(passthroughListener)
     }
 
-    override fun addListener(listener: ObservableProperty.ValueChangeListener<U>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.ValueChangeListener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
 
-    inner class PassthroughValueChangeListener: ObservableProperty.ValueChangeListener<U> {
+    inner class PassthroughValueChangeListener: ObservableProperty.Listener<U> {
         override fun valueWillChange(oldValue: U, newValue: U) {
             listeners.notifyValueWillChange(oldValue, newValue)
         }

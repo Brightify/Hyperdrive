@@ -12,17 +12,17 @@ internal class CombineLatestObservableProperty<T>(
     override var value: List<T> = sources.map { it.value }
         private set
 
-    private val listeners = ObservablePropertyListeners(this)
+    private val listeners = ValueChangeListenerHandler(this)
 
     init {
         sources.mapIndexed { index, property -> property.addListener(IndexListener(index)) }.concat()
     }
 
-    override fun addListener(listener: ObservableProperty.ValueChangeListener<List<T>>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.Listener<List<T>>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.ValueChangeListener<List<T>>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<List<T>>): Boolean = listeners.removeListener(listener)
 
-    private inner class IndexListener(private val index: Int): ObservableProperty.ValueChangeListener<T> {
+    private inner class IndexListener(private val index: Int): ObservableProperty.Listener<T> {
         override fun valueWillChange(oldValue: T, newValue: T) {
             val pendingList = pendingValue ?: value.toMutableList().also { pendingValue = it }
             pendingList[index] = newValue

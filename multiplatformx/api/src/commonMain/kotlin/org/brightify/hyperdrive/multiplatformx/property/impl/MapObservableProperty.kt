@@ -8,12 +8,12 @@ internal class MapObservableProperty<T, U>(
     private val mapped: ObservableProperty<T>,
     private val transform: (T) -> U,
     private val equalityPolicy: ObservableProperty.EqualityPolicy<U>,
-): ObservableProperty<U>, ObservableProperty.ValueChangeListener<T> {
+): ObservableProperty<U>, ObservableProperty.Listener<T> {
     override var value: U = transform(mapped.value)
         private set
     private var pendingValue: Optional<U> = Optional.None
 
-    private val listeners = ObservablePropertyListeners(this)
+    private val listeners = ValueChangeListenerHandler(this)
 
     init {
         mapped.addListener(this)
@@ -33,8 +33,8 @@ internal class MapObservableProperty<T, U>(
         listeners.notifyValueDidChange(oldTransformedValue, it)
     }
 
-    override fun addListener(listener: ObservableProperty.ValueChangeListener<U>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.ValueChangeListener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
 }
 

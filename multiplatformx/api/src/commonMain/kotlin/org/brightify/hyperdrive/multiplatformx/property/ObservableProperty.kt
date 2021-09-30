@@ -7,7 +7,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
-import org.brightify.hyperdrive.multiplatformx.Lifecycle
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -31,35 +30,19 @@ public interface ObservableProperty<T> {
      * @return Cancellation token to cancel the listening.
      * Alternatively you can call [removeListener] with the same listener object as passed into this method.
      */
-    public fun addListener(listener: ValueChangeListener<T>): CancellationToken
+    public fun addListener(listener: Listener<T>): CancellationToken
 
     /**
      * Remove a [ValueChangeListener] from listeners to value change on this property.
      *
      * @return Whether the listener was present at the time of removal.
      */
-    public fun removeListener(listener: ValueChangeListener<T>): Boolean
+    public fun removeListener(listener: Listener<T>): Boolean
 
     /**
      * Implemented by listeners to [ObservableProperty] value changes.
      */
-    public interface ValueChangeListener<T> {
-        /**
-         * Listener method called before [ObservableProperty] value changes.
-         *
-         * @param oldValue current value
-         * @param newValue next value
-         */
-        public fun valueWillChange(oldValue: T, newValue: T) { }
-
-        /**
-         * Listener method called after [ObservableProperty] value changes.
-         *
-         * @param oldValue previous value
-         * @param newValue current value
-         */
-        public fun valueDidChange(oldValue: T, newValue: T) { }
-    }
+    public interface Listener<T>: ValueChangeListener<T, T>
 
     /**
      * This interface is used to provide custom equality for various [ObservableProperty] operators
@@ -74,7 +57,19 @@ public interface ObservableProperty<T> {
         public fun isEqual(oldValue: T, newValue: T): Boolean
     }
 
-    public companion object
+    public companion object {
+        public fun <T> valueWillChange(block: Listener<T>.(oldValue: T, newValue: T) -> Unit): Listener<T> = object: Listener<T> {
+            override fun valueWillChange(oldValue: T, newValue: T) {
+                block(oldValue, newValue)
+            }
+        }
+
+        public fun <T> valueDidChange(block: Listener<T>.(oldValue: T, newValue: T) -> Unit): Listener<T> = object: Listener<T> {
+            override fun valueDidChange(oldValue: T, newValue: T) {
+                block(oldValue, newValue)
+            }
+        }
+    }
 }
 
 /**
@@ -82,11 +77,9 @@ public interface ObservableProperty<T> {
  */
 public suspend fun <T> ObservableProperty<T>.nextValue(): T {
     val completable = CompletableDeferred<T>()
-    val listener = object: ObservableProperty.ValueChangeListener<T> {
-        override fun valueDidChange(oldValue: T, newValue: T) {
-            completable.complete(oldValue)
-            removeListener(this)
-        }
+    val listener = ObservableProperty.valueDidChange<T> { _, newValue ->
+        completable.complete(newValue)
+        removeListener(this)
     }
     addListener(listener)
     completable.invokeOnCompletion {
@@ -115,10 +108,8 @@ internal fun <OWNER, T> MutableObservableProperty<T>.toKotlinMutableProperty(): 
 public fun <T> ObservableProperty<T>.asChannel(): Channel<T> {
     val channel = Channel<T>(Channel.CONFLATED)
 
-    val listener = object: ObservableProperty.ValueChangeListener<T> {
-        override fun valueDidChange(oldValue: T, newValue: T) {
-            channel.trySend(newValue)
-        }
+    val listener = ObservableProperty.valueDidChange<T> { _, newValue ->
+        channel.trySend(newValue)
     }
 
     // TODO: If the value changes between the next two lines, it won't get delivered since the listener is not added yet.

@@ -30,7 +30,7 @@ internal class AsyncBindingObservableProperty<T, U>(
             }
         }
 
-    private val listeners = ObservablePropertyListeners(this)
+    private val listeners = ValueChangeListenerHandler(this)
     private val queue = AsyncQueue(action = asyncSetter, overflowPolicy = overflowPolicy, lifecycle = lifecycle)
 
     init {
@@ -48,7 +48,7 @@ internal class AsyncBindingObservableProperty<T, U>(
         }
     }
 
-    override fun addListener(listener: ObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.Listener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<T>): Boolean = listeners.removeListener(listener)
 }

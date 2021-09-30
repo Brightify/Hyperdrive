@@ -9,8 +9,8 @@ import org.brightify.hyperdrive.utils.someOrDefault
 internal class DeferredToImmediateObservablePropertyWrapper<T>(
     private val initialValue: T,
     private val wrapped: DeferredObservableProperty<T>,
-): ObservableProperty<T>, DeferredObservableProperty.ValueChangeListener<T> {
-    private val listeners = ObservablePropertyListeners(this)
+): ObservableProperty<T>, DeferredObservableProperty.Listener<T> {
+    private val listeners = ValueChangeListenerHandler(this)
 
     override var value: T = initialValue
         private set
@@ -32,7 +32,7 @@ internal class DeferredToImmediateObservablePropertyWrapper<T>(
         listeners.notifyValueDidChange(oldValue.someOrDefault { initialValue }, value)
     }
 
-    override fun addListener(listener: ObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.Listener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<T>): Boolean = listeners.removeListener(listener)
 }

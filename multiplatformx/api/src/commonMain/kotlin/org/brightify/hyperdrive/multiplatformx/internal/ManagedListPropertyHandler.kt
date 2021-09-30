@@ -17,7 +17,7 @@ internal class ManagedListPropertyHandler<VM: ManageableViewModel?>(
 
     init {
         addChildren(property.value)
-        property.addListener(object: ObservableProperty.ValueChangeListener<List<VM>> {
+        property.addListener(object: ObservableProperty.Listener<List<VM>> {
             override fun valueDidChange(oldValue: List<VM>, newValue: List<VM>) {
                 removeChildren()
                 addChildren(property.value)

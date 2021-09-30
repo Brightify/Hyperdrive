@@ -12,12 +12,12 @@ internal class DeferredFilterObservableProperty<T>(
     private val filtered: ObservableProperty<T>,
     private val predicate: (T) -> Boolean,
     private val equalityPolicy: ObservableProperty.EqualityPolicy<T>,
-): DeferredObservableProperty<T>, ObservableProperty.ValueChangeListener<T> {
+): DeferredObservableProperty<T>, ObservableProperty.Listener<T> {
     override val latestValue: Optional<T>
         get() = storage.value
     private var pendingValue: Optional<T> = Optional.None
 
-    private val listeners = DeferredObservablePropertyListeners(this)
+    private val listeners = ValueChangeListenerHandler(this)
     // FIXME: This won't support identityEqualityPolicy/neverEqualityPolicy!
     private val storage = MutableStateFlow(filtered.value.let {
         if (predicate(it)) {
@@ -60,7 +60,7 @@ internal class DeferredFilterObservableProperty<T>(
         listeners.notifyValueDidChange(oldFilteredValue, newFilteredValue)
     }
 
-    override fun addListener(listener: DeferredObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: DeferredObservableProperty.Listener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: DeferredObservableProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: DeferredObservableProperty.Listener<T>): Boolean = listeners.removeListener(listener)
 }

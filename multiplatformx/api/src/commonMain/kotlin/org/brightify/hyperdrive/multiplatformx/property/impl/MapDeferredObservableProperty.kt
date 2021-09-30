@@ -14,8 +14,8 @@ internal class MapDeferredObservableProperty<T, U>(
     private val mapped: DeferredObservableProperty<T>,
     private val transform: (T) -> U,
     private val equalityPolicy: ObservableProperty.EqualityPolicy<U>,
-): DeferredObservableProperty<U>, DeferredObservableProperty.ValueChangeListener<T> {
-    private val listeners = DeferredObservablePropertyListeners(this)
+): DeferredObservableProperty<U>, DeferredObservableProperty.Listener<T> {
+    private val listeners = ValueChangeListenerHandler(this)
 
     override var latestValue: Optional<U> = mapped.latestValue.map(transform)
 
@@ -52,8 +52,8 @@ internal class MapDeferredObservableProperty<T, U>(
         listeners.notifyValueDidChange(oldTransformedValue, it)
     }
 
-    override fun addListener(listener: DeferredObservableProperty.ValueChangeListener<U>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: DeferredObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: DeferredObservableProperty.ValueChangeListener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: DeferredObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
 }
 

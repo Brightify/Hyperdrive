@@ -9,13 +9,13 @@ internal class FilterObservableProperty<T>(
     initialValue: T,
     private val predicate: (T) -> Boolean,
     private val equalityPolicy: ObservableProperty.EqualityPolicy<T>,
-): ObservableProperty<T>, ObservableProperty.ValueChangeListener<T> {
+): ObservableProperty<T>, ObservableProperty.Listener<T> {
 
     override var value: T = initialValue
         private set
     private var pendingValue: Optional<T> = Optional.None
 
-    private val listeners = ObservablePropertyListeners(this)
+    private val listeners = ValueChangeListenerHandler(this)
 
     init {
         filtered.addListener(this)
@@ -39,7 +39,7 @@ internal class FilterObservableProperty<T>(
         listeners.notifyValueDidChange(oldFilteredValue, it)
     }
 
-    override fun addListener(listener: ObservableProperty.ValueChangeListener<T>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: ObservableProperty.Listener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.ValueChangeListener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<T>): Boolean = listeners.removeListener(listener)
 }

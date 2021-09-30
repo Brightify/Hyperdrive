@@ -19,11 +19,11 @@ internal class AsyncMapDeferredObservableProperty<T, U>(
     private val lifecycle: Lifecycle,
     private val equalityPolicy: ObservableProperty.EqualityPolicy<U>,
     private val overflowPolicy: AsyncQueue.OverflowPolicy,
-): DeferredObservableProperty<U>, ObservableProperty.ValueChangeListener<T> {
+): DeferredObservableProperty<U>, ObservableProperty.Listener<T> {
     override val latestValue: Optional<U>
         get() = storage.value
 
-    private val listeners = DeferredObservablePropertyListeners(this)
+    private val listeners = ValueChangeListenerHandler(this)
     // FIXME: This won't support identityEqualityPolicy/neverEqualityPolicy!
     private val storage = MutableStateFlow<Optional<U>>(Optional.None)
 
@@ -54,7 +54,7 @@ internal class AsyncMapDeferredObservableProperty<T, U>(
         return storage.drop(1).filterSome().first()
     }
 
-    override fun addListener(listener: DeferredObservableProperty.ValueChangeListener<U>): CancellationToken = listeners.addListener(listener)
+    override fun addListener(listener: DeferredObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: DeferredObservableProperty.ValueChangeListener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: DeferredObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
 }

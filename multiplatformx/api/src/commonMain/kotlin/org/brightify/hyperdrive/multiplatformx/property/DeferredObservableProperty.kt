@@ -14,14 +14,14 @@ public interface DeferredObservableProperty<T> {
      * @return Cancellation token to cancel the listening.
      * Alternatively you can call [removeListener] with the same listener object as passed into this method.
      */
-    public fun addListener(listener: ValueChangeListener<T>): CancellationToken
+    public fun addListener(listener: Listener<T>): CancellationToken
 
     /**
      * Remove a [ValueChangeListener] from listeners to value change on this property.
      *
      * @return Whether the listener was present at the time of removal.
      */
-    public fun removeListener(listener: ValueChangeListener<T>): Boolean
+    public fun removeListener(listener: Listener<T>): Boolean
 
     /**
      * Returns the latest value if any was emitted, `null` otherwise.
@@ -46,21 +46,19 @@ public interface DeferredObservableProperty<T> {
     /**
      * Implemented by listeners to [DeferredObservableProperty] value changes.
      */
-    public interface ValueChangeListener<T> {
-        /**
-         * Listener method called before [DeferredObservableProperty] value changes.
-         *
-         * @param oldValue current value
-         * @param newValue next value
-         */
-        public fun valueWillChange(oldValue: Optional<T>, newValue: T) { }
+    public interface Listener<T>: ValueChangeListener<Optional<T>, T>
 
-        /**
-         * Listener method called after [DeferredObservableProperty] value changes.
-         *
-         * @param oldValue previous value
-         * @param newValue current value
-         */
-        public fun valueDidChange(oldValue: Optional<T>, newValue: T) { }
+    public companion object {
+        public fun <T> valueWillChange(block: Listener<T>.(oldValue: Optional<T>, newValue: T) -> Unit): Listener<T> = object: Listener<T> {
+            override fun valueWillChange(oldValue: Optional<T>, newValue: T) {
+                block(oldValue, newValue)
+            }
+        }
+
+        public fun <T> valueDidChange(block: Listener<T>.(oldValue: Optional<T>, newValue: T) -> Unit): Listener<T> = object: Listener<T> {
+            override fun valueDidChange(oldValue: Optional<T>, newValue: T) {
+                block(oldValue, newValue)
+            }
+        }
     }
 }

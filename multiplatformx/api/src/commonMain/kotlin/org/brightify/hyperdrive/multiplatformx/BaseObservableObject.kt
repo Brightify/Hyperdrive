@@ -135,7 +135,7 @@ public abstract class BaseObservableObject: ObservableObject {
             "ViewModelProperty for name ${property.name} (property: $property) already registered!"
         }
         properties[property.name] = observableProperty
-        observableProperty.addListener(object: ObservableProperty.ValueChangeListener<T> {
+        observableProperty.addListener(object: ObservableProperty.Listener<T> {
             override fun valueWillChange(oldValue: T, newValue: T) {
                 changeTrackingTrigger.notifyObjectWillChange()
             }

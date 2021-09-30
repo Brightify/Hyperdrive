@@ -8,7 +8,7 @@ internal class PublishedPropertyProvider<OWNER: BaseObservableObject, T>(
     initialValue: T,
     equalityPolicy: ObservableProperty.EqualityPolicy<T>,
 ): MutableObservablePropertyProvider<OWNER, T>(
-    observablePropertyFactory = { _ ->
+    observablePropertyFactory = {
         ValueObservableProperty(initialValue, equalityPolicy)
     }
 )

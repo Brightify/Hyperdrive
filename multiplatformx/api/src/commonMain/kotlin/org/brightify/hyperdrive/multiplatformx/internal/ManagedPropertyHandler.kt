@@ -9,7 +9,7 @@ internal class ManagedPropertyHandler<VM: ManageableViewModel?>(
     private val owner: BaseObservableManageableObject,
     private val property: ObservableProperty<VM>,
     private val publishedChanges: Boolean,
-): ObservableProperty.ValueChangeListener<VM> {
+): ObservableProperty.Listener<VM> {
     private var publishJobCancellation: CancellationToken? = null
 
     init {
