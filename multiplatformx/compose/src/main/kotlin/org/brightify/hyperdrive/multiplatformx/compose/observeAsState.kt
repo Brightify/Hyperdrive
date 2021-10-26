@@ -14,8 +14,8 @@ import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 @NoAutoObserve
 @Composable
 fun <T: ManageableViewModel> T.observeAsState(): State<T> {
-    val result = remember { mutableStateOf(this, neverEqualPolicy()) }
-    val listener = remember {
+    val result = remember(this) { mutableStateOf(this, neverEqualPolicy()) }
+    val listener = remember(this) {
         object: ObservableObject.ChangeTracking.Listener {
             override fun onObjectDidChange() {
                 result.value = this@observeAsState
@@ -24,7 +24,7 @@ fun <T: ManageableViewModel> T.observeAsState(): State<T> {
     }
     DisposableEffect(this) {
         val token = changeTracking.addListener(listener)
-        result.value = this
+        result.value = this@observeAsState
 
         onDispose {
             token.cancel()
@@ -41,8 +41,8 @@ fun <T: ManageableViewModel> T.observeAsState(): State<T> {
 @NoAutoObserve
 @Composable
 fun <T> ObservableProperty<T>.observeAsState(): State<T> {
-    val result = remember { mutableStateOf(value, neverEqualPolicy()) }
-    val listener = remember {
+    val result = remember(this) { mutableStateOf(value, neverEqualPolicy()) }
+    val listener = remember(this) {
         object: ObservableProperty.Listener<T> {
             override fun valueDidChange(oldValue: T, newValue: T) {
                 result.value = newValue
