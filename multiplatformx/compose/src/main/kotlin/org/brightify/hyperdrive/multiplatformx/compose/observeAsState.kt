@@ -24,6 +24,8 @@ fun <T: ManageableViewModel> T.observeAsState(): State<T> {
     }
     DisposableEffect(this) {
         val token = changeTracking.addListener(listener)
+        result.value = this
+
         onDispose {
             token.cancel()
         }
@@ -49,6 +51,7 @@ fun <T> ObservableProperty<T>.observeAsState(): State<T> {
     }
     DisposableEffect(this) {
         val token = addListener(listener)
+        result.value = value
 
         onDispose {
             token.cancel()
