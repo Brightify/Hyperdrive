@@ -1,13 +1,23 @@
 package org.brightify.hyperdrive.krpc.extension.session
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.brightify.hyperdrive.krpc.RPCTransport
@@ -33,15 +43,56 @@ public class DefaultSession internal constructor(
     override val key: CoroutineContext.Key<*> get() = Session
     private val context = Session.Context(mutableMapOf())
     private val contextModificationLock = Mutex()
+    // Keys modified during context transactions.
     private val modifiedKeysFlow = MutableSharedFlow<Set<Session.Context.Key<*>>>()
+    // Modified keys ready to be observed.
+    private val modifiedKeysForObserve = MutableSharedFlow<Set<Session.Context.Key<*>>>()
     private var runningContextUpdate: Job? = null
 
     private lateinit var contractPayloadSerializer: PayloadSerializer
     private lateinit var client: ContextUpdateService.Client
 
-    fun bind(transport: RPCTransport, contract: RPCNode.Contract) {
+    suspend fun bind(transport: RPCTransport, contract: RPCNode.Contract) {
         contractPayloadSerializer = contract.payloadSerializer
         client = ContextUpdateService.Client(transport)
+    }
+
+    suspend fun whileConnected() = coroutineScope {
+        /*
+         * The observing code can be slower to collect the keys, so we need to buffer all modified keys to a set that can be consumed by the
+         * observers later. As a benefit emitters to modifiedKeysFlow can continue without waiting for the observers. This is important
+         * to avoid deadlocks when the context is updated and one of the observers triggers a context transaction.
+         */
+        val lock = Mutex()
+        val trigger = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        var modifiedKeysToNotify = mutableSetOf<Session.Context.Key<*>>()
+
+        launch {
+            // Collect keys modified during context transactions.
+            modifiedKeysFlow.collect {
+                lock.withLock {
+                    // Add modified keys to the current buffer.
+                    modifiedKeysToNotify.addAll(it)
+                }
+                // Notify the keys are ready to collect.
+                trigger.tryEmit(Unit)
+            }
+        }
+
+        launch {
+            // When keys are ready to collect ...
+            trigger.collect {
+                // .. consume the modified keys buffer.
+                val keysToNotify = lock.withLock {
+                    val keysToNotify = modifiedKeysToNotify
+                    modifiedKeysToNotify = mutableSetOf()
+                    keysToNotify
+                }
+
+                // Notify all observers and wait for them to complete.
+                modifiedKeysForObserve.emit(keysToNotify)
+            }
+        }
     }
 
     override fun <VALUE: Any> get(key: Session.Context.Key<VALUE>): VALUE? {
@@ -49,7 +100,7 @@ public class DefaultSession internal constructor(
     }
 
     override fun <VALUE : Any> observe(key: Session.Context.Key<VALUE>): Flow<VALUE?> {
-        return modifiedKeysFlow
+        return modifiedKeysForObserve
             .flatMapConcat {
                 if (it.contains(key)) {
                     flowOf(context[key]?.value)
@@ -66,11 +117,11 @@ public class DefaultSession internal constructor(
 
     override fun copyOfContext(): Session.Context = context.copy()
 
-    override fun observeContextSnapshots(): Flow<Session.Context> = modifiedKeysFlow.map {
+    override fun observeContextSnapshots(): Flow<Session.Context> = modifiedKeysForObserve.map {
         context.copy()
     }
 
-    override fun observeModifications(): Flow<Set<Session.Context.Key<*>>> = modifiedKeysFlow.onStart {
+    override fun observeModifications(): Flow<Set<Session.Context.Key<*>>> = modifiedKeysForObserve.onStart {
         emit(sessionContextKeyRegistry.allKeys.toSet() + context.keys)
     }
 

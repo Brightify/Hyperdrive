@@ -1,8 +1,10 @@
 package org.brightify.hyperdrive.krpc.extension
 
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -80,7 +82,11 @@ class SessionNodeExtension internal constructor(
         }
     }
 
-    override suspend fun whileConnected() {
+    override suspend fun whileConnected() = coroutineScope {
+        launch {
+            _session.whileConnected()
+        }
+
         session.observeModifications()
             .collect {
                 notifyPluginsContextChanged(it)
