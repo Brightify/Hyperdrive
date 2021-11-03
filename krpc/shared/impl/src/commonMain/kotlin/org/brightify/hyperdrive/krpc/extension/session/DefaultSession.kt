@@ -189,7 +189,7 @@ public class DefaultSession internal constructor(
     }
 
     suspend fun update(request: ContextUpdateRequest): ContextUpdateResult {
-        return contextModificationLock.withLock {
+        val (modifiedKeys, result) = contextModificationLock.withLock {
             SessionNodeExtension.logger.debug { "Received a session context update request: $request." }
             val modificationsWithKeys = request.modifications.mapKeys { getKeyOrUnsupported(it.key) }
             val rejectedItems = modificationsWithKeys.filter { (key, modification) ->
@@ -214,14 +214,11 @@ public class DefaultSession internal constructor(
                         }
                     }
                 }
-
-                modifiedKeysFlow.emit(modifiedKeys)
-
-                ContextUpdateResult.Accepted
+                modifiedKeys to ContextUpdateResult.Accepted
             } else {
                 SessionNodeExtension.logger.debug { "Found potential conflict in update request. Rejected items: $rejectedItems." }
 
-                ContextUpdateResult.Rejected(
+                null to ContextUpdateResult.Rejected(
                     rejectedItems.mapValues { (key, _) ->
                         context[key]?.let {
                             ContextUpdateResult.Rejected.Reason.Updated(it.toDto())
@@ -230,15 +227,23 @@ public class DefaultSession internal constructor(
                 )
             }
         }
+
+        if (modifiedKeys != null) {
+            modifiedKeysFlow.emit(modifiedKeys)
+        }
+
+        return result
     }
 
     suspend fun clear() {
-        contextModificationLock.withLock {
+        val modifiedKeys = contextModificationLock.withLock {
             SessionNodeExtension.logger.debug { "Received a session context clear request." }
             val modifiedKeys = context.keys.toSet()
             context.clear()
-            modifiedKeysFlow.emit(modifiedKeys)
+            modifiedKeys
         }
+
+        modifiedKeysFlow.emit(modifiedKeys)
     }
 
     override suspend fun awaitCompletedContextSync() {
