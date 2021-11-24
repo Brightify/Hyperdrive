@@ -5,6 +5,7 @@ import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.RPCTransport
 import org.brightify.hyperdrive.krpc.ServiceRegistry
+import org.brightify.hyperdrive.krpc.api.throwable
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
@@ -141,7 +142,7 @@ class DefaultRPCImplementationRegistry(
             is RunnableCallDescription.ColdUpstream<*, *, *> -> ColdUpstreamRunner.Callee(payloadSerializer, runnableCall) as T
             is RunnableCallDescription.ColdDownstream<*, *> -> ColdDownstreamRunner.Callee(payloadSerializer, runnableCall) as T
             is RunnableCallDescription.ColdBistream<*, *, *> -> ColdBistreamRunner.Callee(payloadSerializer, runnableCall) as T
-            null -> throw RPCNotFoundError(id)
+            null -> throw RPCNotFoundError(id).throwable()
         }
     }
 }

@@ -121,6 +121,7 @@ class KRPCClient(
                 activeNode.value = null
                 delay(500)
             } catch (t: CancellationException) {
+                activeNode.value = null
                 if (isActive) {
                     logger.warning(t) { "Client connection cancelled. Client is still active, will reconnect in 500ms." }
                     delay(500)

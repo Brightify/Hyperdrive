@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.brightify.hyperdrive.Logger
+import org.brightify.hyperdrive.krpc.api.throwable
 import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
 import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
 import org.brightify.hyperdrive.krpc.util.RPCReference
@@ -53,7 +54,7 @@ abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFra
     }
 
     private suspend fun rejectAsProtocolViolation(message: String) {
-        val error = RPCProtocolViolationError(message)
+        val error = RPCProtocolViolationError(message).throwable()
         logger.error(error) { "Incoming frame $this has been rejected as protocol violation." }
         protocol.send(AscensionRPCFrame.ProtocolViolationError(reference, message))
     }

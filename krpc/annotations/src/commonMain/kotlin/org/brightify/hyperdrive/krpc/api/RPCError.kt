@@ -2,6 +2,8 @@ package org.brightify.hyperdrive.krpc.api
 
 import kotlinx.serialization.Serializable
 
+class RPCErrorException(val error: RPCError): Throwable(error.debugMessage)
+
 interface RPCError {
     val statusCode: StatusCode
     val debugMessage: String
@@ -64,24 +66,21 @@ interface RPCError {
 }
 
 fun RPCError.throwable(): Throwable {
-    return this as? Throwable ?: error("RPCError has to be implemented by a class extending the Throwable type!")
+    return this as? Throwable ?: RPCErrorException(this)
 }
 
 @Serializable
 abstract class BaseRPCError(
     override val statusCode: RPCError.StatusCode,
     override val debugMessage: String
-): Throwable(debugMessage), RPCError {
+): RPCError {
     override fun toString(): String {
         return super.toString() + "#status = $statusCode & message = $debugMessage"
     }
 }
 
 @Serializable
-abstract class InternalRPCError(
-    override val statusCode: RPCError.StatusCode,
-    override val debugMessage: String
-): Throwable(debugMessage), RPCError {
+class InternalRPCError(override val statusCode: RPCError.StatusCode, override val debugMessage: String): RPCError {
     override fun toString(): String {
         return "Internal kRPC error. Please report this along with a reproducer. Status code: $statusCode. Debug message: $debugMessage. Super: ${super.toString()}"
     }

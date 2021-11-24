@@ -151,7 +151,7 @@ object ColdUpstreamPendingRPC {
                     upstreamJob = launch {
                         if (!::stream.isInitialized) {
                             // This probably means we called `open` before setting the prepared stream, see `perform` method.
-                            throw RPCProtocolViolationError("Upstream Client cannot start collecting before stream is prepared!.")
+                            throw RPCProtocolViolationError("Upstream Client cannot start collecting before stream is prepared!.").throwable()
                         }
 
                         stream.collect {
@@ -164,7 +164,7 @@ object ColdUpstreamPendingRPC {
                 }
                 is AscensionRPCFrame.ColdUpstream.Downstream.StreamOperation.Close -> {
                     if (!this::upstreamJob.isInitialized) {
-                        throw RPCProtocolViolationError("Upstream Client's stream was not started. Cannot close.")
+                        throw RPCProtocolViolationError("Upstream Client's stream was not started. Cannot close.").throwable()
                     }
                     upstreamJob.cancelAndJoin()
                 }

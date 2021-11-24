@@ -16,8 +16,8 @@ plugins {
 buildscript {
     apply(from = "compose-check.gradle.kts")
 
-    val enableCompose: Boolean by extra
-    if (enableCompose) {
+    val isComposeEnabled: Boolean by extra
+    if (isComposeEnabled) {
         dependencies {
             classpath("com.android.tools.build:gradle:7.0.2")
         }
@@ -25,7 +25,7 @@ buildscript {
 }
 
 apply(from = "compose-check.gradle.kts")
-val enableCompose: Boolean by extra
+val isComposeEnabled: Boolean by extra
 
 allprojects {
     apply(plugin = "maven-publish")

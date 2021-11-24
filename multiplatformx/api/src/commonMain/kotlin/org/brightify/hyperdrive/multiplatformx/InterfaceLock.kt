@@ -51,7 +51,7 @@ public class InterfaceLock(
      * While the supplied `work` is running, this lock is considered taken and all other invocations of this method will just return, doing nothing.
      */
     public fun runExclusively(work: suspend () -> Unit) {
-        lifecycle.runOnceIfAttached {
+        val willRun = lifecycle.runOnceIfAttached {
             group.runExclusively {
                 mutableState.value = State.Running
                 mutableState.value = try {
@@ -67,6 +67,9 @@ public class InterfaceLock(
                     State.Failed(t)
                 }
             }
+        }
+        if (!willRun) {
+            logger.warning { "Can't run exclusively because $lifecycle is not attached.\n${lifecycle.dumpBranchToRoot()}" }
         }
     }
 

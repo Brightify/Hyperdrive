@@ -112,7 +112,7 @@ object ColdBistreamPendingRPC {
 
                             // If the stream wasn't started by this time, we send the timeout error frame.
                             if (didTimeout) {
-                                throw RPCStreamTimeoutError(flowStartTimeoutInMillis)
+                                throw RPCStreamTimeoutError(flowStartTimeoutInMillis).throwable()
                             }
                         }
                         is RPC.StreamOrError.Error -> {
@@ -133,15 +133,15 @@ object ColdBistreamPendingRPC {
                                 it.start()
                             }
                         }
-                        StreamState.Created -> throw RPCProtocolViolationError("Stream is not ready. Cannot be started.")
-                        is StreamState.Started -> throw RPCProtocolViolationError("Stream is already started. Cannot start again.")
-                        StreamState.Closed -> throw RPCProtocolViolationError("Stream has been closed. Cannot start again.")
+                        StreamState.Created -> throw RPCProtocolViolationError("Stream is not ready. Cannot be started.").throwable()
+                        is StreamState.Started -> throw RPCProtocolViolationError("Stream is already started. Cannot start again.").throwable()
+                        StreamState.Closed -> throw RPCProtocolViolationError("Stream has been closed. Cannot start again.").throwable()
                     }
                 }
                 is AscensionRPCFrame.ColdBistream.Upstream.StreamOperation.Close -> {
                     Do exhaustive when (val state = serverStreamState.value) {
                         is StreamState.Started -> state.job.cancelAndJoin()
-                        StreamState.Created -> throw RPCProtocolViolationError("Stream not ready, cannot close.")
+                        StreamState.Created -> throw RPCProtocolViolationError("Stream not ready, cannot close.").throwable()
                         is StreamState.Opened -> {
                             logger.info { "Stream closed without starting it." }
                             serverStreamState.value = StreamState.Closed
@@ -192,10 +192,13 @@ object ColdBistreamPendingRPC {
             Do exhaustive when (frame) {
                 is AscensionRPCFrame.ColdBistream.Downstream.Opened -> {
                     if (responseDeferred.isCompleted) {
-                        throw RPCProtocolViolationError("Response already received, cannot pass stream!")
+                        throw RPCProtocolViolationError("Response already received, cannot pass stream!").throwable()
                     }
                     val job = Job(coroutineContext.job)
                     val channel = Channel<SerializedPayload>()
+                    job.invokeOnCompletion {
+                        channel.close(it)
+                    }
                     serverChannelDeferred.complete(channel)
                     responseDeferred.complete(
                         channel.consumeAsFlow()
@@ -213,7 +216,7 @@ object ColdBistreamPendingRPC {
                 is AscensionRPCFrame.ColdBistream.Downstream.StreamOperation.Start -> clientStreamJob = launch {
                     if (!::clientStream.isInitialized) {
                         // This probably means we called `open` before setting the prepared stream, see `perform` method.
-                        throw RPCProtocolViolationError("Upstream Client cannot start collecting before stream is prepared!.")
+                        throw RPCProtocolViolationError("Upstream Client cannot start collecting before stream is prepared!.").throwable()
                     }
 
                     clientStream.collect {
@@ -222,13 +225,13 @@ object ColdBistreamPendingRPC {
                 }
                 is AscensionRPCFrame.ColdBistream.Downstream.StreamOperation.Close -> {
                     if (!this::clientStreamJob.isInitialized) {
-                        throw RPCProtocolViolationError("Upstream Client's stream was not started. Cannot close.")
+                        throw RPCProtocolViolationError("Upstream Client's stream was not started. Cannot close.").throwable()
                     }
                     clientStreamJob.cancelAndJoin()
                 }
                 is AscensionRPCFrame.ColdBistream.Downstream.Error -> {
                     if (responseDeferred.isCompleted) {
-                        throw RPCProtocolViolationError("Response already received, cannot pass error!")
+                        throw RPCProtocolViolationError("Response already received, cannot pass error!").throwable()
                     }
                     responseDeferred.complete(RPC.StreamOrError.Error(frame.payload))
                 }
@@ -236,7 +239,7 @@ object ColdBistreamPendingRPC {
                     val channel = serverChannelDeferred.getCompleted()
                     channel.send(frame.event)
                 } else {
-                    throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!")
+                    throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!").throwable()
                 }
             }
         }

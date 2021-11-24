@@ -31,32 +31,32 @@ fun KotlinMultiplatformExtension.configurePlatforms(appleSilicon: Boolean = fals
     sourceSets.apply {
         val commonMain by getting
         val commonTest by getting
-        val nativeMain by creating {
+        val darwinMain by creating {
             dependsOn(commonMain)
         }
-        val nativeTest by creating {
+        val darwinTest by creating {
             dependsOn(commonTest)
         }
 
         val iosMain by getting {
-            dependsOn(nativeMain)
+            dependsOn(darwinMain)
         }
         val iosTest by getting {
-            dependsOn(nativeTest)
+            dependsOn(darwinTest)
         }
 
         val tvosMain by getting {
-            dependsOn(nativeMain)
+            dependsOn(darwinMain)
         }
         val tvosTest by getting {
-            dependsOn(nativeTest)
+            dependsOn(darwinTest)
         }
 
         val macosMain by creating {
-            dependsOn(nativeMain)
+            dependsOn(darwinMain)
         }
         val macosTest by creating {
-            dependsOn(nativeTest)
+            dependsOn(darwinTest)
         }
         val macosX64Main by getting {
             dependsOn(macosMain)

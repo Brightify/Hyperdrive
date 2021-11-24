@@ -31,6 +31,7 @@ import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
 import org.brightify.hyperdrive.krpc.error.RPCError
 import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
 import org.brightify.hyperdrive.krpc.error.RPCStreamTimeoutError
+import org.brightify.hyperdrive.krpc.error.asRPCError
 import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
 import org.brightify.hyperdrive.krpc.protocol.RPC
 import org.brightify.hyperdrive.krpc.util.RPCReference
@@ -75,7 +76,7 @@ object ColdDownstreamPendingRPC {
 
                             // If the stream wasn't started by this time, we send the timeout error frame.
                             if (didTimeout) {
-                                throw RPCStreamTimeoutError(flowStartTimeoutInMillis)
+                                throw RPCStreamTimeoutError(flowStartTimeoutInMillis).throwable()
                             }
                         }
                         is RPC.StreamOrError.Error -> {
@@ -96,15 +97,15 @@ object ColdDownstreamPendingRPC {
                                 it.start()
                             }
                         }
-                        StreamState.Created -> throw RPCProtocolViolationError("Stream is not ready. Cannot be started.")
-                        is StreamState.Started -> throw RPCProtocolViolationError("Stream is already started. Cannot start again.")
-                        StreamState.Closed -> throw RPCProtocolViolationError("Stream has been closed. Cannot start again.")
+                        StreamState.Created -> throw RPCProtocolViolationError("Stream is not ready. Cannot be started.").throwable()
+                        is StreamState.Started -> throw RPCProtocolViolationError("Stream is already started. Cannot start again.").throwable()
+                        StreamState.Closed -> throw RPCProtocolViolationError("Stream has been closed. Cannot start again.").throwable()
                     }
                 }
                 is AscensionRPCFrame.ColdDownstream.Upstream.StreamOperation.Close -> {
                     Do exhaustive when (val state = serverStreamState.value) {
                         is StreamState.Started -> state.job.cancelAndJoin()
-                        StreamState.Created -> throw RPCProtocolViolationError("Stream not ready, cannot close.")
+                        StreamState.Created -> throw RPCProtocolViolationError("Stream not ready, cannot close.").throwable()
                         is StreamState.Opened -> {
                             logger.info { "Stream closed without starting it." }
                             serverStreamState.value = StreamState.Closed
@@ -140,10 +141,14 @@ object ColdDownstreamPendingRPC {
             Do exhaustive when (frame) {
                 is AscensionRPCFrame.ColdDownstream.Downstream.Opened -> {
                     if (responseDeferred.isCompleted) {
-                        throw RPCProtocolViolationError("Response already received, cannot pass stream!")
+                        throw RPCProtocolViolationError("Response already received, cannot pass stream!").throwable()
                     }
                     val job = Job(coroutineContext.job)
-                    val channel = Channel<SerializedPayload>()
+                    val channel = Channel<SerializedPayload>().also { channel ->
+                        job.invokeOnCompletion {
+                            channel.close(it)
+                        }
+                    }
                     channelDeferred.complete(channel)
                     responseDeferred.complete(
                         channel.consumeAsFlow()
@@ -160,7 +165,7 @@ object ColdDownstreamPendingRPC {
                 }
                 is AscensionRPCFrame.ColdDownstream.Downstream.Error -> {
                     if (responseDeferred.isCompleted) {
-                        throw RPCProtocolViolationError("Response already received, cannot pass error!")
+                        throw RPCProtocolViolationError("Response already received, cannot pass error!").throwable()
                     }
                     responseDeferred.complete(RPC.StreamOrError.Error(frame.payload))
                 }
@@ -168,7 +173,7 @@ object ColdDownstreamPendingRPC {
                     val channel = channelDeferred.getCompleted()
                     channel.send(frame.event)
                 } else {
-                    throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!")
+                    throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!").throwable()
                 }
             }
         }
@@ -210,7 +215,7 @@ object ColdDownstreamRunner {
                     }
                 }.let(RPC.StreamOrError::Stream)
             } catch (t: Throwable) {
-                RPC.StreamOrError.Error(serializer.serialize(call.errorSerializer, t.RPCError()))
+                RPC.StreamOrError.Error(serializer.serialize(call.errorSerializer, t.asRPCError()))
             }
         }
     }

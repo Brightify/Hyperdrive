@@ -8,5 +8,5 @@ class UnrecognizedRPCError(
     override val statusCode: RPCError.StatusCode,
     override val debugMessage: String,
     val errorType: String,
-): Throwable(), RPCError
+): RPCError
 

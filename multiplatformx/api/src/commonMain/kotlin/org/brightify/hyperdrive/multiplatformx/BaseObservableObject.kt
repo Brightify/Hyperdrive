@@ -120,12 +120,12 @@ public abstract class BaseObservableObject: ObservableObject {
         property.map(equalityPolicy, mapping)
     }
 
-    protected operator fun <OWNER: BaseViewModel, T> ObservableProperty<T>.provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadOnlyProperty<OWNER, T> {
+    protected operator fun <OWNER: ObservableObject, T> ObservableProperty<T>.provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadOnlyProperty<OWNER, T> {
         registerViewModelProperty(property, this)
         return toKotlinProperty()
     }
 
-    protected operator fun <OWNER: BaseViewModel, T> MutableObservableProperty<T>.provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, T> {
+    protected operator fun <OWNER: ObservableObject, T> MutableObservableProperty<T>.provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, T> {
         registerViewModelProperty(property, this)
         return toKotlinMutableProperty()
     }

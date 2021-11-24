@@ -47,7 +47,7 @@ dependencyResolutionManagement {
 }
 
 apply(from = "compose-check.gradle.kts")
-val enableCompose: Boolean by extra
+val isComposeEnabled: Boolean by extra
 
 rootProject.name = "Hyperdrive"
 
@@ -115,7 +115,7 @@ val multiplatformXModules = listOf(
     "api",
     "core",
     "plugin"
-) + if (enableCompose) listOf("compose") else emptyList()
+) + if (isComposeEnabled) listOf("compose") else emptyList()
 
 val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" } + listOf(
     "multiplatformx-keyvalue" to "multiplatformx/keyvalue",
