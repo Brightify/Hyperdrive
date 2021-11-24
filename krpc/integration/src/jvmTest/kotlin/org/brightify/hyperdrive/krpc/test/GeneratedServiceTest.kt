@@ -5,6 +5,8 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.data.row
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.property.checkAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -23,6 +25,9 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.withIndex
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
+import org.brightify.hyperdrive.krpc.api.RPCError
+import org.brightify.hyperdrive.krpc.api.RPCErrorException
+import org.brightify.hyperdrive.krpc.api.throwable
 import org.brightify.hyperdrive.krpc.application.CallLoggingNodeExtension
 import org.brightify.hyperdrive.krpc.client.impl.KRPCClient
 import org.brightify.hyperdrive.krpc.client.impl.ktor.WebSocketClient
@@ -35,6 +40,13 @@ import org.brightify.hyperdrive.krpc.server.impl.KRPCServer
 import org.brightify.hyperdrive.krpc.server.impl.ktor.KtorServerFrontend
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import kotlin.coroutines.EmptyCoroutineContext
+
+inline fun <reified T : RPCError> shouldThrowExactly(block: () -> Any?): T {
+    val exception = shouldThrowExactly<RPCErrorException> { block() }
+    val error = exception.error
+    error.shouldBeInstanceOf<T>()
+    return error
+}
 
 @OptIn(ObsoleteCoroutinesApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GeneratedServiceTest: BehaviorSpec({
@@ -51,7 +63,7 @@ class GeneratedServiceTest: BehaviorSpec({
         }
 
         override suspend fun singleCallError() {
-            throw IllegalArgumentError("source cannot be zero")
+            throw IllegalArgumentError("source cannot be zero").throwable()
         }
 
         override suspend fun singleCallUnexpectedError() {
@@ -75,8 +87,10 @@ class GeneratedServiceTest: BehaviorSpec({
             try {
                 stream.collect()
                 error("Expected exception not thrown!")
-            } catch (e: IllegalArgumentError) {
-                throw e
+            } catch (e: RPCErrorException) {
+                if (e.error is IllegalArgumentError) {
+                    throw e
+                }
             }
         }
 
@@ -191,7 +205,9 @@ class GeneratedServiceTest: BehaviorSpec({
 
                     Then("`clientStreamError` fails") {
                         shouldThrowExactly<IllegalArgumentError> {
-                            service.clientStreamError(flow<Unit> { throw IllegalArgumentError("Expected error") })
+                            service.clientStreamError(flow<Unit> {
+                                throw IllegalArgumentError("Expected error").throwable()
+                            })
                         }
                     }
                 }
