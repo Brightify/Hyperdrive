@@ -2,6 +2,7 @@ package org.brightify.hyperdrive.krpc.error
 
 import kotlinx.serialization.Serializable
 import org.brightify.hyperdrive.krpc.api.RPCError
+import org.brightify.hyperdrive.krpc.api.RPCErrorException
 
 @Serializable
 class InternalServerError private constructor(
@@ -18,9 +19,13 @@ class InternalServerError private constructor(
 
 @Deprecated("Use asRPCError method instead", ReplaceWith("asRPCError()"))
 fun Throwable.RPCError(): RPCError {
-    return this as? RPCError ?: InternalServerError(this)
+    return asRPCError()
 }
 
 fun Throwable.asRPCError(): RPCError {
-    return this as? RPCError ?: InternalServerError(this)
+    return when (this) {
+        is RPCError -> this
+        is RPCErrorException -> error
+        else -> InternalServerError(this)
+    }
 }

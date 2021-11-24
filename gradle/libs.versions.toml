@@ -2,7 +2,7 @@
 kotlin-coroutines = "1.5.2-native-mt"
 kotlin-serialization = "1.3.0"
 stately = "1.1.10"
-ktor = "1.6.5"
+ktor = "1.6.4"
 auto-service = "1.0"
 kotlin-compile-testing = "1.4.5"
 jupiter = "5.7.2"

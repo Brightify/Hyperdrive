@@ -9,6 +9,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.property.checkAll
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.Flow
@@ -48,7 +49,7 @@ inline fun <reified T : RPCError> shouldThrowExactly(block: () -> Any?): T {
     return error
 }
 
-@OptIn(ObsoleteCoroutinesApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class GeneratedServiceTest: BehaviorSpec({
     Logger.configure { setMinLevel(LoggingLevel.Info) }
 
