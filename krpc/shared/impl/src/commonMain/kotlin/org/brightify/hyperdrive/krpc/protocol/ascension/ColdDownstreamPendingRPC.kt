@@ -97,15 +97,15 @@ object ColdDownstreamPendingRPC {
                                 it.start()
                             }
                         }
-                        StreamState.Created -> throw RPCProtocolViolationError("Stream is not ready. Cannot be started.").throwable()
-                        is StreamState.Started -> throw RPCProtocolViolationError("Stream is already started. Cannot start again.").throwable()
-                        StreamState.Closed -> throw RPCProtocolViolationError("Stream has been closed. Cannot start again.").throwable()
+                        StreamState.Created -> throw RPCProtocolViolationError("Stream is not ready. Cannot be started.")
+                        is StreamState.Started -> throw RPCProtocolViolationError("Stream is already started. Cannot start again.")
+                        StreamState.Closed -> throw RPCProtocolViolationError("Stream has been closed. Cannot start again.")
                     }
                 }
                 is AscensionRPCFrame.ColdDownstream.Upstream.StreamOperation.Close -> {
                     Do exhaustive when (val state = serverStreamState.value) {
                         is StreamState.Started -> state.job.cancelAndJoin()
-                        StreamState.Created -> throw RPCProtocolViolationError("Stream not ready, cannot close.").throwable()
+                        StreamState.Created -> throw RPCProtocolViolationError("Stream not ready, cannot close.")
                         is StreamState.Opened -> {
                             logger.info { "Stream closed without starting it." }
                             serverStreamState.value = StreamState.Closed
@@ -141,7 +141,7 @@ object ColdDownstreamPendingRPC {
             Do exhaustive when (frame) {
                 is AscensionRPCFrame.ColdDownstream.Downstream.Opened -> {
                     if (responseDeferred.isCompleted) {
-                        throw RPCProtocolViolationError("Response already received, cannot pass stream!").throwable()
+                        throw RPCProtocolViolationError("Response already received, cannot pass stream!")
                     }
                     val job = Job(coroutineContext.job)
                     val channel = Channel<SerializedPayload>().also { channel ->
@@ -165,7 +165,7 @@ object ColdDownstreamPendingRPC {
                 }
                 is AscensionRPCFrame.ColdDownstream.Downstream.Error -> {
                     if (responseDeferred.isCompleted) {
-                        throw RPCProtocolViolationError("Response already received, cannot pass error!").throwable()
+                        throw RPCProtocolViolationError("Response already received, cannot pass error!")
                     }
                     responseDeferred.complete(RPC.StreamOrError.Error(frame.payload))
                 }
@@ -173,7 +173,7 @@ object ColdDownstreamPendingRPC {
                     val channel = channelDeferred.getCompleted()
                     channel.send(frame.event)
                 } else {
-                    throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!").throwable()
+                    throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!")
                 }
             }
         }

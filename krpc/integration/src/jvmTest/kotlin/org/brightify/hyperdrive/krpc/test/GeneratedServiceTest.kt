@@ -64,7 +64,7 @@ class GeneratedServiceTest: BehaviorSpec({
         }
 
         override suspend fun singleCallError() {
-            throw IllegalArgumentError("source cannot be zero").throwable()
+            throw IllegalArgumentError("source cannot be zero")
         }
 
         override suspend fun singleCallUnexpectedError() {
@@ -207,7 +207,7 @@ class GeneratedServiceTest: BehaviorSpec({
                     Then("`clientStreamError` fails") {
                         shouldThrowExactly<IllegalArgumentError> {
                             service.clientStreamError(flow<Unit> {
-                                throw IllegalArgumentError("Expected error").throwable()
+                                throw IllegalArgumentError("Expected error")
                             })
                         }
                     }

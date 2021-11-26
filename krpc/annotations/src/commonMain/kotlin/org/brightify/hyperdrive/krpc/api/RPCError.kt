@@ -73,14 +73,14 @@ fun RPCError.throwable(): Throwable {
 abstract class BaseRPCError(
     override val statusCode: RPCError.StatusCode,
     override val debugMessage: String
-): RPCError {
+): Throwable(debugMessage), RPCError {
     override fun toString(): String {
         return super.toString() + "#status = $statusCode & message = $debugMessage"
     }
 }
 
 @Serializable
-class InternalRPCError(override val statusCode: RPCError.StatusCode, override val debugMessage: String): RPCError {
+class InternalRPCError(override val statusCode: RPCError.StatusCode, override val debugMessage: String): Throwable(debugMessage), RPCError {
     override fun toString(): String {
         return "Internal kRPC error. Please report this along with a reproducer. Status code: $statusCode. Debug message: $debugMessage. Super: ${super.toString()}"
     }

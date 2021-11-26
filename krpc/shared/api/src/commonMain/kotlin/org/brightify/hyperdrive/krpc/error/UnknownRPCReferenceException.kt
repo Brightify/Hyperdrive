@@ -8,7 +8,13 @@ import org.brightify.hyperdrive.krpc.util.RPCReference
 @Serializable
 class UnknownRPCReferenceException(
     val reference: RPCReference
-): RPCError {
+): Throwable(message(reference)), RPCError {
     override val statusCode: RPCError.StatusCode = RPCError.StatusCode.ProtocolViolation
-    override val debugMessage: String = "Unknown RPC reference <$reference>!"
+    override val debugMessage: String = message(reference)
+
+    companion object {
+        fun message(reference: RPCReference): String {
+            return "Unknown RPC reference <$reference>!"
+        }
+    }
 }

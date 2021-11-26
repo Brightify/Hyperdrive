@@ -142,7 +142,7 @@ class DefaultRPCImplementationRegistry(
             is RunnableCallDescription.ColdUpstream<*, *, *> -> ColdUpstreamRunner.Callee(payloadSerializer, runnableCall) as T
             is RunnableCallDescription.ColdDownstream<*, *> -> ColdDownstreamRunner.Callee(payloadSerializer, runnableCall) as T
             is RunnableCallDescription.ColdBistream<*, *, *> -> ColdBistreamRunner.Callee(payloadSerializer, runnableCall) as T
-            null -> throw RPCNotFoundError(id).throwable()
+            null -> throw RPCNotFoundError(id)
         }
     }
 }

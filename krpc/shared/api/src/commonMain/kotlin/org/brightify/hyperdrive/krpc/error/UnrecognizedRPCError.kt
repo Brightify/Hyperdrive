@@ -8,5 +8,11 @@ class UnrecognizedRPCError(
     override val statusCode: RPCError.StatusCode,
     override val debugMessage: String,
     val errorType: String,
-): RPCError
+): Throwable(message(statusCode, debugMessage, errorType)), RPCError {
+    companion object {
+        fun message(statusCode: RPCError.StatusCode, debugMessage: String, errorType: String): String {
+            return "[${statusCode.code}] Unrecognized RPC error: ${errorType}. $debugMessage"
+        }
+    }
+}
 

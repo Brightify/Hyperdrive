@@ -19,13 +19,14 @@ import org.brightify.hyperdrive.krpc.api.RPCError
 import org.brightify.hyperdrive.krpc.error.InternalServerError
 import org.brightify.hyperdrive.krpc.error.RPCError
 import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
+import org.brightify.hyperdrive.krpc.error.asRPCError
 import org.brightify.hyperdrive.utils.Do
 
 sealed class StreamEvent<ELEMENT> {
     class Element<ELEMENT>(val element: ELEMENT): StreamEvent<ELEMENT>()
     class Complete<ELEMENT>: StreamEvent<ELEMENT>()
     class Error<ELEMENT>(val error: RPCError): StreamEvent<ELEMENT>() {
-        constructor(throwable: Throwable): this(throwable.RPCError())
+        constructor(throwable: Throwable): this(throwable.asRPCError())
     }
 }
 

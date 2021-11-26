@@ -9,7 +9,7 @@ class InternalServerError private constructor(
     override val statusCode: RPCError.StatusCode,
     override val debugMessage: String,
     val stacktrace: String,
-): RPCError {
+): Throwable(debugMessage), RPCError {
     constructor(throwable: Throwable): this(
         RPCError.StatusCode.InternalServerError,
         "Unregistered Error Thrown: ${throwable.message} - $throwable",

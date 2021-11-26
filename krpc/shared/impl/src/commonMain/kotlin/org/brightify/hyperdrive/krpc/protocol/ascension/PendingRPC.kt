@@ -54,7 +54,7 @@ abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFra
     }
 
     private suspend fun rejectAsProtocolViolation(message: String) {
-        val error = RPCProtocolViolationError(message).throwable()
+        val error = RPCProtocolViolationError(message)
         logger.error(error) { "Incoming frame $this has been rejected as protocol violation." }
         protocol.send(AscensionRPCFrame.ProtocolViolationError(reference, message))
     }
