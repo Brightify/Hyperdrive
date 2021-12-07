@@ -53,6 +53,7 @@ public object ColdDownstreamPendingRPC {
                             val timeoutJob = completionTracker.launch(start = CoroutineStart.LAZY) {
                                 // The client should subscribe to the stream right away. They have 60 seconds before we close it.
                                 delay(flowStartTimeoutInMillis)
+
                                 // If the stream wasn't started by this time, we send the timeout error frame.
                                 send(AscensionRPCFrame.ColdDownstream.Downstream.StreamEvent.Timeout(flowStartTimeoutInMillis, reference))
                                 serverStreamState = StreamState.Closed
@@ -70,12 +71,12 @@ public object ColdDownstreamPendingRPC {
                 is AscensionRPCFrame.ColdDownstream.Upstream.StreamOperation.Start -> {
                     when (val state = serverStreamState) {
                         is StreamState.Opened -> {
-                            state.timeoutJob.cancel()
                             completionTracker.launch(start = CoroutineStart.LAZY) {
                                 state.flow.collect {
                                     send(AscensionRPCFrame.ColdDownstream.Downstream.StreamEvent.Data(it, reference))
                                 }
                             }.also {
+                                state.timeoutJob.cancel()
                                 serverStreamState = StreamState.Started(it)
                                 it.start()
                             }

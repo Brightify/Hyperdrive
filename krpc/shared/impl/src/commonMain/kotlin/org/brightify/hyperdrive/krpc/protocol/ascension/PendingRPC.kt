@@ -107,7 +107,7 @@ public abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: Ascensio
             private var isReleased = false
 
             public fun release() {
-                require(!isReleased) { "Token cannot be released multiple times." }
+                check(!isReleased) { "Token cannot be released multiple times." }
                 this@CompletionTracker.release()
             }
         }

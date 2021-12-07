@@ -4,6 +4,7 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.TestCoroutineExceptionHandler
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.serialization.builtins.serializer
@@ -38,14 +40,17 @@ import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class KRPCNodeTest: BehaviorSpec({
-    val testScope = TestCoroutineScope(TestCoroutineExceptionHandler())
+    val delayController = TestCoroutineDispatcher()
+    val exceptionHandler = TestCoroutineExceptionHandler()
+    val testScope = CoroutineScope(exceptionHandler + delayController)
 
     beforeSpec {
         Logger.configure { setMinLevel(LoggingLevel.Trace) }
     }
 
     afterTest {
-        testScope.cleanupTestCoroutines()
+        delayController.cleanupTestCoroutines()
+        exceptionHandler.cleanupTestCoroutines()
     }
 
     Given("KRPCNode") {
@@ -149,8 +154,11 @@ class KRPCNodeTest: BehaviorSpec({
             When("Calling it with any flow") {
                 Then("Returns the same value and doesn't subscribe the client stream") {
                     client.clientStream(flowOf(1, 2, 3, 4, 5).onStart { error("Should not start") }) shouldBe "Hello World!"
+                    delayController.advanceTimeBy(61 * 1000L)
                     client.clientStream(emptyFlow<Int>().onStart { error("Should not start") }) shouldBe "Hello World!"
+                    delayController.advanceTimeBy(61 * 1000L)
                     client.clientStream(flowOf(1, 2, 3, 4, 5).take(2).onStart { error("Should not start") }) shouldBe "Hello World!"
+                    delayController.advanceTimeBy(61 * 1000L)
                 }
             }
         }
