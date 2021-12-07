@@ -4,7 +4,6 @@ plugins {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
     compileOnly(kotlin("compiler-embeddable"))
     api(project(":plugin-api"))
     implementation(project(":multiplatformx-api"))

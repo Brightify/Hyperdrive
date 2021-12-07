@@ -18,7 +18,6 @@ kotlin {
             resources.setSrcDirs(listOf("src/main/resources"))
 
             dependencies {
-                implementation(kotlin("stdlib"))
                 implementation(project(":multiplatformx-api"))
                 implementation(libs.coroutines.core)
                 implementation(libs.serialization.protobuf)

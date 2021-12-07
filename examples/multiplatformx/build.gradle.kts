@@ -80,12 +80,6 @@ kotlin {
         val iosTest by getting
     }
 
-    sourceSets.all {
-        languageSettings.apply {
-            progressiveMode = true
-        }
-    }
-
     targets.all {
         compilations.all {
             kotlinOptions {

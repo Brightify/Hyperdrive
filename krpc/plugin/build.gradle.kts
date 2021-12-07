@@ -5,7 +5,6 @@ plugins {
 
 dependencies {
     api(project(":plugin-api"))
-    implementation(kotlin("stdlib"))
     compileOnly(kotlin("compiler-embeddable"))
     implementation(kotlin("serialization"))
     implementationWorkaround(project(":krpc-shared-api"))

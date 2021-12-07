@@ -36,7 +36,6 @@ gradlePlugin {
 }
 
 dependencies {
-    compileOnly(kotlin("stdlib"))
     compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin-api")
     compileOnly(kotlin("gradle-plugin"))
     implementation(project(":plugin-impl"))
