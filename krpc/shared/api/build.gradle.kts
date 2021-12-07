@@ -9,6 +9,8 @@ plugins {
 }
 
 kotlin {
+    explicitApi()
+
     configurePlatforms(appleSilicon = true)
 
     sourceSets {
@@ -42,7 +44,10 @@ kotlin {
 
     sourceSets {
         all {
-            languageSettings.useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
+            languageSettings {
+                optIn("kotlin.RequiresOptIn")
+                optIn("kotlinx.serialization.ExperimentalSerializationApi")
+            }
         }
     }
 }

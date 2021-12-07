@@ -7,15 +7,15 @@ import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
 import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
-import org.brightify.hyperdrive.krpc.protocol.ascension.ColdBistreamRunner
-import org.brightify.hyperdrive.krpc.protocol.ascension.ColdDownstreamRunner
-import org.brightify.hyperdrive.krpc.protocol.ascension.ColdUpstreamRunner
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
-import org.brightify.hyperdrive.krpc.protocol.ascension.SingleCallRunner
+import org.brightify.hyperdrive.krpc.application.runner.ColdBistreamRunner
+import org.brightify.hyperdrive.krpc.application.runner.ColdDownstreamRunner
+import org.brightify.hyperdrive.krpc.application.runner.ColdUpstreamRunner
+import org.brightify.hyperdrive.krpc.application.PayloadSerializer
+import org.brightify.hyperdrive.krpc.application.runner.SingleCallRunner
 
-class ProtocolBasedRPCTransport(
-    val protocol: RPCProtocol,
-    val payloadSerializer: PayloadSerializer,
+public class ProtocolBasedRPCTransport(
+    public val protocol: RPCProtocol,
+    public val payloadSerializer: PayloadSerializer,
 ): RPCTransport {
     override suspend fun <REQUEST, RESPONSE> singleCall(serviceCall: SingleCallDescription<REQUEST, RESPONSE>, request: REQUEST): RESPONSE {
         return SingleCallRunner.Caller(

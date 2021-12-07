@@ -9,6 +9,7 @@ plugins {
 
 kotlin {
     configurePlatforms(appleSilicon = true)
+    explicitApi()
 
     sourceSets {
         val commonMain by getting {

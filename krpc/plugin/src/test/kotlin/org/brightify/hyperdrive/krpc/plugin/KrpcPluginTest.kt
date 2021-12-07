@@ -21,9 +21,9 @@ import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
 import org.brightify.hyperdrive.krpc.impl.JsonCombinedSerializer
 import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
-import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
+import org.brightify.hyperdrive.krpc.application.impl.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
+import org.brightify.hyperdrive.krpc.application.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationComponentRegistrar

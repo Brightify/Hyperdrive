@@ -4,8 +4,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import org.brightify.hyperdrive.krpc.SerializedPayload
 import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
-import org.brightify.hyperdrive.krpc.extension.UnsupportedKey
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
+import org.brightify.hyperdrive.krpc.extension.session.UnsupportedKey
+import org.brightify.hyperdrive.krpc.application.PayloadSerializer
 import org.brightify.hyperdrive.krpc.session.Session
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 

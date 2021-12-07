@@ -42,7 +42,7 @@ private object ContextUpdateSerializerDescriptor {
 }
 
 @OptIn(ExperimentalSerializationApi::class)
-class IncomingContextUpdateSerializer(
+public class IncomingContextUpdateSerializer(
     private val sessionContextKeyRegistry: SessionContextKeyRegistry,
 ): DeserializationStrategy<IncomingContextUpdate> {
     override val descriptor: SerialDescriptor = ContextUpdateSerializerDescriptor.descriptor
@@ -101,7 +101,7 @@ class IncomingContextUpdateSerializer(
         builder[key] = value
     }
 
-    inner class ModificationDeserializer<VALUE: Any>(
+    public inner class ModificationDeserializer<VALUE: Any>(
         private val valueDeserializer: DeserializationStrategy<VALUE>,
     ): DeserializationStrategy<IncomingContextUpdate.Modification> {
         override val descriptor: SerialDescriptor = ContextUpdateSerializerDescriptor.modificationDescriptor
@@ -131,7 +131,7 @@ class IncomingContextUpdateSerializer(
 }
 
 @OptIn(ExperimentalSerializationApi::class)
-class OutgoingContextUpdateSerializer: SerializationStrategy<OutgoingContextUpdate> {
+public class OutgoingContextUpdateSerializer: SerializationStrategy<OutgoingContextUpdate> {
     override val descriptor: SerialDescriptor = ContextUpdateSerializerDescriptor.descriptor
 
     override fun serialize(encoder: Encoder, value: OutgoingContextUpdate) {
@@ -147,7 +147,7 @@ class OutgoingContextUpdateSerializer: SerializationStrategy<OutgoingContextUpda
         composite.endStructure(descriptor)
     }
 
-    class ModificationSerializer<VALUE: Any>(
+    public class ModificationSerializer<VALUE: Any>(
         private val valueSerializer: SerializationStrategy<VALUE>,
     ): SerializationStrategy<OutgoingContextUpdate.Modification<VALUE>> {
         override val descriptor: SerialDescriptor = ContextUpdateSerializerDescriptor.modificationDescriptor

@@ -12,23 +12,19 @@ import kotlinx.serialization.builtins.serializer
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.MutableServiceRegistry
-import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.RPCTransport
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
-import org.brightify.hyperdrive.krpc.extension.session.DefaultSession
-import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
+import org.brightify.hyperdrive.krpc.application.impl.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
+import org.brightify.hyperdrive.krpc.application.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.session.Session
 import org.brightify.hyperdrive.krpc.session.impl.DefaultSessionContextKeyRegistry
 import org.brightify.hyperdrive.krpc.session.withSession
-import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 import org.brightify.hyperdrive.krpc.test.TestConnection
 import kotlin.reflect.KClass
 import kotlin.test.expect
-import kotlin.test.fail
 
 object DeadlockTestKey : Session.Context.Key<Int> {
     override val qualifiedName: String = "test:deadlock"

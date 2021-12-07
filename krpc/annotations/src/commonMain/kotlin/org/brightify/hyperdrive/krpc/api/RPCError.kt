@@ -2,14 +2,14 @@ package org.brightify.hyperdrive.krpc.api
 
 import kotlinx.serialization.Serializable
 
-class RPCErrorException(val error: RPCError): Throwable(error.debugMessage)
+public class RPCErrorException(public val error: RPCError): Throwable(error.debugMessage)
 
-interface RPCError {
-    val statusCode: StatusCode
-    val debugMessage: String
+public interface RPCError {
+    public val statusCode: StatusCode
+    public val debugMessage: String
 
     @Serializable
-    enum class StatusCode(val code: Int) {
+    public enum class StatusCode(public val code: Int) {
 
         Continue(100),
         SwitchingProtocol(101),
@@ -65,12 +65,12 @@ interface RPCError {
     }
 }
 
-fun RPCError.throwable(): Throwable {
+public fun RPCError.throwable(): Throwable {
     return this as? Throwable ?: RPCErrorException(this)
 }
 
 @Serializable
-abstract class BaseRPCError(
+public abstract class BaseRPCError(
     override val statusCode: RPCError.StatusCode,
     override val debugMessage: String
 ): Throwable(debugMessage), RPCError {
@@ -80,7 +80,10 @@ abstract class BaseRPCError(
 }
 
 @Serializable
-class InternalRPCError(override val statusCode: RPCError.StatusCode, override val debugMessage: String): Throwable(debugMessage), RPCError {
+public class InternalRPCError(
+    override val statusCode: RPCError.StatusCode,
+    override val debugMessage: String,
+): Throwable(debugMessage), RPCError {
     override fun toString(): String {
         return "Internal kRPC error. Please report this along with a reproducer. Status code: $statusCode. Debug message: $debugMessage. Super: ${super.toString()}"
     }

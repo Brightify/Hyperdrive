@@ -1,5 +1,5 @@
 package org.brightify.hyperdrive.krpc.description
 
-interface DownstreamCallDescription<PAYLOAD>: CallDescription<PAYLOAD> {
+public interface DownstreamCallDescription<PAYLOAD>: CallDescription<PAYLOAD> {
 
 }

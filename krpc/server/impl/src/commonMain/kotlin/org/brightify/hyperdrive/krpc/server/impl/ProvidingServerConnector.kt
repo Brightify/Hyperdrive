@@ -5,7 +5,7 @@ import kotlinx.coroutines.job
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.server.ServerConnector
 
-abstract class ProvidingServerConnector: ServerConnector {
+public abstract class ProvidingServerConnector: ServerConnector {
 
     private val connectionChannel = Channel<RPCConnection>()
 

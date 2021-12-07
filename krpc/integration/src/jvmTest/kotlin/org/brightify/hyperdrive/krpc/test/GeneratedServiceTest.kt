@@ -6,11 +6,9 @@ import io.kotest.data.row
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.property.checkAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -28,8 +26,7 @@ import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.api.RPCError
 import org.brightify.hyperdrive.krpc.api.RPCErrorException
-import org.brightify.hyperdrive.krpc.api.throwable
-import org.brightify.hyperdrive.krpc.application.CallLoggingNodeExtension
+import org.brightify.hyperdrive.krpc.extension.CallLoggingNodeExtension
 import org.brightify.hyperdrive.krpc.client.impl.KRPCClient
 import org.brightify.hyperdrive.krpc.client.impl.ktor.WebSocketClient
 import org.brightify.hyperdrive.krpc.error.InternalServerError

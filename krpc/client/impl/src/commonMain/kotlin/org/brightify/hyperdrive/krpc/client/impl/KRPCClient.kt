@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
@@ -26,10 +28,10 @@ import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
 import org.brightify.hyperdrive.krpc.impl.SerializerRegistry
-import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
+import org.brightify.hyperdrive.krpc.application.impl.DefaultRPCNode
 import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
-import org.brightify.hyperdrive.krpc.protocol.ascension.DefaultRPCHandshakePerformer
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
+import org.brightify.hyperdrive.krpc.application.impl.DefaultRPCHandshakePerformer
+import org.brightify.hyperdrive.krpc.application.PayloadSerializer
 import org.brightify.hyperdrive.krpc.session.Session
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import org.brightify.hyperdrive.krpc.transport.TransportFrameSerializer
@@ -102,7 +104,8 @@ class KRPCClient(
     private var activeConnection: RPCConnection? = null
     private val activeNode = MutableStateFlow<DefaultRPCNode?>(null)
 
-    suspend fun run() = withContext(coroutineContext) {
+    // FIXME: Do we need `supervisorScope` instead of `coroutineScope`?
+    suspend fun run() = coroutineScope {
         while (isActive) {
             try {
                 logger.info { "Will create connection." }

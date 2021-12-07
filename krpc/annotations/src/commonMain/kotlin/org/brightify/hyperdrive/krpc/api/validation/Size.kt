@@ -19,7 +19,7 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class Size(
+public annotation class Size(
     val min: Int = 0,
     val max: Int = Int.MAX_VALUE,
     val message: String = "",
@@ -37,7 +37,7 @@ annotation class Size(
     )
     @Retention(AnnotationRetention.SOURCE)
     @MustBeDocumented
-    annotation class List(
+    public annotation class List(
         val value: Array<Size>,
     )
 }

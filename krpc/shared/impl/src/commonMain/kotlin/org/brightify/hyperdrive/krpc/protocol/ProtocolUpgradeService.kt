@@ -9,12 +9,13 @@ import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
 
-interface ProtocolUpgradeService {
-    suspend fun upgradeIfPossible(supportedProtocols: List<RPCProtocol.Version>): RPCProtocol.Version
+// TODO: Currently unused, let's see if can be removed.
+public interface ProtocolUpgradeService {
+    public suspend fun upgradeIfPossible(supportedProtocols: List<RPCProtocol.Version>): RPCProtocol.Version
 
-    suspend fun confirmProtocolSelected()
+    public suspend fun confirmProtocolSelected()
 
-    class Client(private val transport: RPCTransport): ProtocolUpgradeService {
+    public class Client(private val transport: RPCTransport): ProtocolUpgradeService {
         override suspend fun upgradeIfPossible(supportedProtocols: List<RPCProtocol.Version>): RPCProtocol.Version {
             return transport.singleCall(Descriptor.upgradeIfPossible, supportedProtocols)
         }
@@ -24,17 +25,17 @@ interface ProtocolUpgradeService {
         }
     }
 
-    object Descriptor: ServiceDescriptor<ProtocolUpgradeService> {
-        val serviceId = "hyperdrive.ProtocolUpgradeService"
+    public object Descriptor: ServiceDescriptor<ProtocolUpgradeService> {
+        public const val serviceId: String = "hyperdrive.ProtocolUpgradeService"
 
-        val upgradeIfPossible = SingleCallDescription(
+        public val upgradeIfPossible: SingleCallDescription<List<RPCProtocol.Version>, RPCProtocol.Version> = SingleCallDescription(
             ServiceCallIdentifier(serviceId, ProtocolUpgradeService::upgradeIfPossible.name),
             ListSerializer(RPCProtocol.Version.serializer()),
             RPCProtocol.Version.serializer(),
             RPCErrorSerializer(),
         )
 
-        val confirmProtocolSelected = SingleCallDescription(
+        public val confirmProtocolSelected: SingleCallDescription<Unit, Unit> = SingleCallDescription(
             ServiceCallIdentifier(serviceId, ProtocolUpgradeService::confirmProtocolSelected.name),
             Unit.serializer(),
             Unit.serializer(),

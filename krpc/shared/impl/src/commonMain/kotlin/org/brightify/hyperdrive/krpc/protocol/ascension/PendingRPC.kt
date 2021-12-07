@@ -2,24 +2,19 @@ package org.brightify.hyperdrive.krpc.protocol.ascension
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.brightify.hyperdrive.Logger
-import org.brightify.hyperdrive.krpc.api.throwable
 import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
 import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
 import org.brightify.hyperdrive.krpc.util.RPCReference
 
 // TODO: Add timeout between "Created" and "Ready" to close inactive connections.
-abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFrame>(
-    val protocol: AscensionRPCProtocol,
+public abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFrame>(
+    public val protocol: AscensionRPCProtocol,
     scope: CoroutineScope,
-    val reference: RPCReference,
+    public val reference: RPCReference,
     private val logger: Logger,
 ): CoroutineScope by scope + CoroutineName("PendingRPC") {
-    private val acceptLock = Mutex()
-
     protected abstract suspend fun handle(frame: INCOMING)
 
     // TODO: Increase buffer capacity so the `accept` doesn't wait for the handler unless buffer's full.
@@ -33,9 +28,9 @@ abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFra
         }
     }
 
-    fun invokeOnCompletion(handler: CompletionHandler) = runningJob.invokeOnCompletion(handler)
+    public fun invokeOnCompletion(handler: CompletionHandler): DisposableHandle = runningJob.invokeOnCompletion(handler)
 
-    suspend fun accept(frame: INCOMING) {
+    public suspend fun accept(frame: INCOMING) {
         runningJob.ensureActive()
         logger.debug { "Accepting frame: $frame" }
         require(frame.callReference == reference) {
@@ -59,7 +54,7 @@ abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFra
         protocol.send(AscensionRPCFrame.ProtocolViolationError(reference, message))
     }
 
-    abstract class Callee<INCOMING, OUTGOING>(
+    public abstract class Callee<INCOMING, OUTGOING>(
         protocol: AscensionRPCProtocol,
         scope: CoroutineScope,
         reference: RPCReference,
@@ -68,7 +63,7 @@ abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFra
         where INCOMING: AscensionRPCFrame, INCOMING: AscensionRPCFrame.Upstream,
               OUTGOING: AscensionRPCFrame, OUTGOING: AscensionRPCFrame.Downstream
 
-    abstract class Caller<INCOMING, OUTGOING>(
+    public abstract class Caller<INCOMING, OUTGOING>(
         protocol: AscensionRPCProtocol,
         scope: CoroutineScope,
         reference: RPCReference,

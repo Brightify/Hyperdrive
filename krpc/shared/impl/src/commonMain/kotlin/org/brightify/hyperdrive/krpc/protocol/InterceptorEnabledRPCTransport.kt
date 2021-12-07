@@ -7,9 +7,9 @@ import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
 
-class InterceptorEnabledRPCTransport(
-    val transport: RPCTransport,
-    val interceptor: RPCOutgoingInterceptor,
+public class InterceptorEnabledRPCTransport(
+    public val transport: RPCTransport,
+    public val interceptor: RPCOutgoingInterceptor,
 ): RPCTransport {
     override suspend fun <REQUEST, RESPONSE> singleCall(serviceCall: SingleCallDescription<REQUEST, RESPONSE>, request: REQUEST): RESPONSE =
         interceptor.interceptOutgoingSingleCall(request, serviceCall) { newRequest ->

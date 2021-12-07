@@ -1,6 +1,6 @@
 package org.brightify.hyperdrive.krpc.description
 
-interface ServiceDescriptor<S> {
-    fun describe(service: S): ServiceDescription
+public interface ServiceDescriptor<S> {
+    public fun describe(service: S): ServiceDescription
 }
 

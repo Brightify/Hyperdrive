@@ -24,7 +24,7 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class Max(
+public annotation class Max(
     val value: Long,
     val message: String = "",
 )

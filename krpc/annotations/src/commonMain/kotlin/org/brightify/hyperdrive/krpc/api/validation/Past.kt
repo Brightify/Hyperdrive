@@ -21,6 +21,6 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class Past(
+public annotation class Past(
     val message: String = "",
 )

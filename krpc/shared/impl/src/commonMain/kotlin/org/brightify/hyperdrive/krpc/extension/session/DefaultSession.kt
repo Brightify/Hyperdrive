@@ -1,35 +1,24 @@
 package org.brightify.hyperdrive.krpc.extension.session
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.brightify.hyperdrive.krpc.RPCTransport
 import org.brightify.hyperdrive.krpc.SerializedPayload
 import org.brightify.hyperdrive.krpc.application.RPCNode
-import org.brightify.hyperdrive.krpc.extension.ContextItemDto
-import org.brightify.hyperdrive.krpc.extension.ContextUpdateRequest
-import org.brightify.hyperdrive.krpc.extension.ContextUpdateResult
-import org.brightify.hyperdrive.krpc.extension.ContextUpdateService
 import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
-import org.brightify.hyperdrive.krpc.extension.UnsupportedKey
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
+import org.brightify.hyperdrive.krpc.application.PayloadSerializer
 import org.brightify.hyperdrive.krpc.session.Session
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import org.brightify.hyperdrive.utils.Do
@@ -52,12 +41,12 @@ public class DefaultSession internal constructor(
     private lateinit var contractPayloadSerializer: PayloadSerializer
     private lateinit var client: ContextUpdateService.Client
 
-    suspend fun bind(transport: RPCTransport, contract: RPCNode.Contract) {
+    public suspend fun bind(transport: RPCTransport, contract: RPCNode.Contract) {
         contractPayloadSerializer = contract.payloadSerializer
         client = ContextUpdateService.Client(transport)
     }
 
-    suspend fun whileConnected() = coroutineScope {
+    public suspend fun whileConnected(): Unit = coroutineScope {
         /*
          * The observing code can be slower to collect the keys, so we need to buffer all modified keys to a set that can be consumed by the
          * observers later. As a benefit emitters to modifiedKeysFlow can continue without waiting for the observers. This is important
@@ -239,7 +228,7 @@ public class DefaultSession internal constructor(
         }
     }
 
-    suspend fun update(request: ContextUpdateRequest): ContextUpdateResult {
+    public suspend fun update(request: ContextUpdateRequest): ContextUpdateResult {
         val (modifiedKeys, result) = contextModificationLock.withLock {
             SessionNodeExtension.logger.debug { "Received a session context update request: $request." }
             val modificationsWithKeys = request.modifications.mapKeys { getKeyOrUnsupported(it.key) }
@@ -286,7 +275,7 @@ public class DefaultSession internal constructor(
         return result
     }
 
-    suspend fun clear() {
+    public suspend fun clear() {
         val modifiedKeys = contextModificationLock.withLock {
             SessionNodeExtension.logger.debug { "Received a session context clear request." }
             val modifiedKeys = context.keys.toSet()

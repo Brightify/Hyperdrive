@@ -4,6 +4,6 @@ import kotlinx.serialization.Serializable
 import org.brightify.hyperdrive.krpc.api.RPCError
 
 @Serializable
-class RPCProtocolViolationError(override val debugMessage: String): Throwable(debugMessage), RPCError {
+public class RPCProtocolViolationError(override val debugMessage: String): Throwable(debugMessage), RPCError {
     override val statusCode: RPCError.StatusCode = RPCError.StatusCode.ProtocolViolation
 }

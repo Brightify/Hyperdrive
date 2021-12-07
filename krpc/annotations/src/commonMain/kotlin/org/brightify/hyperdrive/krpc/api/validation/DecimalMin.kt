@@ -24,7 +24,7 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class DecimalMin(
+public annotation class DecimalMin(
     val value: String,
     val message: String = "",
 )

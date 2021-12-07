@@ -1,85 +1,80 @@
 package org.brightify.hyperdrive.krpc.session
 
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.job
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
-import kotlin.reflect.KClass
 
-suspend inline fun <T> withSession(block: Session.() -> T): T {
+public suspend inline fun <T> withSession(block: Session.() -> T): T {
     return coroutineContext.rpcSession.block()
 }
 
-val CoroutineContext.rpcSession: Session
+public val CoroutineContext.rpcSession: Session
     get() = get(Session) ?: error("Current context doesn't contain Session in it: $this")
 
-interface Session: CoroutineContext.Element {
+public interface Session: CoroutineContext.Element {
     public companion object Key: CoroutineContext.Key<Session>
 
-    operator fun <VALUE: Any> get(key: Context.Key<VALUE>): VALUE?
+    public operator fun <VALUE: Any> get(key: Context.Key<VALUE>): VALUE?
 
-    fun <VALUE: Any> observe(key: Context.Key<VALUE>): Flow<VALUE?>
+    public fun <VALUE: Any> observe(key: Context.Key<VALUE>): Flow<VALUE?>
 
-    operator fun iterator(): Iterator<Context.Item<*>>
+    public operator fun iterator(): Iterator<Context.Item<*>>
 
-    fun copyOfContext(): Context
+    public fun copyOfContext(): Context
 
-    fun observeContextSnapshots(): Flow<Context>
+    public fun observeContextSnapshots(): Flow<Context>
 
-    fun observeModifications(): Flow<Set<Context.Key<*>>>
+    public fun observeModifications(): Flow<Set<Context.Key<*>>>
 
-    suspend fun contextTransaction(block: Context.Mutator.() -> Unit)
+    public suspend fun contextTransaction(block: Context.Mutator.() -> Unit)
 
-    suspend fun clearContext()
+    public suspend fun clearContext()
 
-    suspend fun awaitCompletedContextSync()
+    public suspend fun awaitCompletedContextSync()
 
-    object Id: Context.Key<Long> {
-        override val qualifiedName = "builtin:org.brightify.hyperdrive.krpc.api.Session.Id"
-        override val serializer = Long.serializer()
+    public object Id: Context.Key<Long> {
+        override val qualifiedName: String = "builtin:org.brightify.hyperdrive.krpc.api.Session.Id"
+        override val serializer: KSerializer<Long> = Long.serializer()
     }
 
-    class Context(
+    public class Context(
         @PublishedApi
         internal val data: MutableMap<Key<*>, Item<*>>,
     ) {
-        val keys: Set<Key<*>>
+        public val keys: Set<Key<*>>
             get() = data.keys
 
         @Suppress("UNCHECKED_CAST")
-        operator fun <VALUE: Any> get(key: Key<VALUE>): Item<VALUE>? = data[key] as? Item<VALUE>
+        public operator fun <VALUE: Any> get(key: Key<VALUE>): Item<VALUE>? = data[key] as? Item<VALUE>
 
-        operator fun <VALUE: Any> set(key: Key<VALUE>, item: Item<VALUE>) {
+        public operator fun <VALUE: Any> set(key: Key<VALUE>, item: Item<VALUE>) {
             data[key] = item
         }
 
         @Suppress("UNCHECKED_CAST")
-        fun <VALUE: Any> remove(key: Key<VALUE>): Item<VALUE>? = data.remove(key) as? Item<VALUE>
+        public fun <VALUE: Any> remove(key: Key<VALUE>): Item<VALUE>? = data.remove(key) as? Item<VALUE>
 
-        fun clear() = data.clear()
+        public fun clear(): Unit = data.clear()
 
         public operator fun iterator(): Iterator<Item<*>> = data.values.iterator()
 
-        fun copy(): Context {
+        public fun copy(): Context {
             return Context(
                 data.toMutableMap()
             )
         }
 
-        interface Key<VALUE: Any> {
-            val qualifiedName: String
-            val serializer: KSerializer<VALUE>
+        public interface Key<VALUE: Any> {
+            public val qualifiedName: String
+            public val serializer: KSerializer<VALUE>
         }
 
-        class Item<T: Any>(
-            val key: Key<T>,
-            val revision: Int,
-            val value: T,
+        public class Item<T: Any>(
+            public val key: Key<T>,
+            public val revision: Int,
+            public val value: T,
         ) {
             override fun equals(other: Any?): Boolean {
                 return if (other is Item<*>) {
@@ -100,10 +95,10 @@ interface Session: CoroutineContext.Element {
             private val modifications: MutableMap<Key<Any>, Action>,
         ) {
 
-            sealed class Action {
-                class Required(val oldItem: Item<*>?): Action()
-                class Set(val oldItem: Item<*>?, val newItem: Item<*>): Action()
-                class Remove(val oldItem: Item<*>): Action()
+            public sealed class Action {
+                public class Required(public val oldItem: Item<*>?): Action()
+                public class Set(public val oldItem: Item<*>?, public val newItem: Item<*>): Action()
+                public class Remove(public val oldItem: Item<*>): Action()
             }
 
             public operator fun <VALUE: Any> get(key: Key<VALUE>): VALUE? {

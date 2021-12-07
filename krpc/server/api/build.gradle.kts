@@ -1,3 +1,4 @@
+import org.brightify.hyperdrive.configurePlatforms
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
@@ -8,7 +9,9 @@ plugins {
 }
 
 kotlin {
-    jvm()
+    explicitApi()
+
+    configurePlatforms(appleSilicon = true)
 
     sourceSets {
         val commonMain by getting {

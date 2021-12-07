@@ -19,10 +19,10 @@ public interface PingService {
     }
 
     public object Descriptor: ServiceDescriptor<PingService> {
-        public val serviceIdentifier = "builtin:hyperdrive.PingService"
+        public val serviceIdentifier: String = "builtin:hyperdrive.PingService"
 
         public object Call {
-            public val ping = SingleCallDescription(
+            public val ping: SingleCallDescription<Unit, Unit> = SingleCallDescription(
                 ServiceCallIdentifier(serviceIdentifier, "ping"),
                 Unit.serializer(),
                 Unit.serializer(),

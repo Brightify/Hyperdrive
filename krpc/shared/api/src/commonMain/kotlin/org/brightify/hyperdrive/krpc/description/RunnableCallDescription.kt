@@ -5,63 +5,63 @@ import kotlinx.serialization.KSerializer
 import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
 import org.brightify.hyperdrive.krpc.protocol.RPCIncomingInterceptor
 
-sealed class RunnableCallDescription<PAYLOAD>(
-    val identifier: ServiceCallIdentifier,
-    val payloadSerializer: KSerializer<PAYLOAD>,
-    val errorSerializer: RPCErrorSerializer,
+public sealed class RunnableCallDescription<PAYLOAD>(
+    public val identifier: ServiceCallIdentifier,
+    public val payloadSerializer: KSerializer<PAYLOAD>,
+    public val errorSerializer: RPCErrorSerializer,
 ) {
-    class Single<REQUEST, RESPONSE>(
+    public class Single<REQUEST, RESPONSE>(
         identifier: ServiceCallIdentifier,
-        val requestSerializer: KSerializer<REQUEST>,
-        val responseSerializer: KSerializer<RESPONSE>,
+        public val requestSerializer: KSerializer<REQUEST>,
+        public val responseSerializer: KSerializer<RESPONSE>,
         errorSerializer: RPCErrorSerializer,
-        val perform: suspend (REQUEST) -> RESPONSE,
+        public val perform: suspend (REQUEST) -> RESPONSE,
     ): RunnableCallDescription<REQUEST>(identifier, requestSerializer, errorSerializer) {
-        fun interceptedWith(interceptor: RPCIncomingInterceptor) = Single(
+        public fun interceptedWith(interceptor: RPCIncomingInterceptor): Single<REQUEST, RESPONSE> = Single(
             identifier, requestSerializer, responseSerializer, errorSerializer
         ) { payload ->
             interceptor.interceptIncomingSingleCall(payload, this, perform)
         }
     }
 
-    class ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>(
+    public class ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE>(
         identifier: ServiceCallIdentifier,
-        val requestSerializer: KSerializer<REQUEST>,
-        val clientStreamSerializer: KSerializer<CLIENT_STREAM>,
-        val responseSerializer: KSerializer<RESPONSE>,
+        public val requestSerializer: KSerializer<REQUEST>,
+        public val clientStreamSerializer: KSerializer<CLIENT_STREAM>,
+        public val responseSerializer: KSerializer<RESPONSE>,
         errorSerializer: RPCErrorSerializer,
-        val perform: suspend (REQUEST, Flow<CLIENT_STREAM>) -> RESPONSE,
+        public val perform: suspend (REQUEST, Flow<CLIENT_STREAM>) -> RESPONSE,
     ): RunnableCallDescription<REQUEST>(identifier, requestSerializer, errorSerializer) {
-        fun interceptedWith(interceptor: RPCIncomingInterceptor) = ColdUpstream(
+        public fun interceptedWith(interceptor: RPCIncomingInterceptor): ColdUpstream<REQUEST, CLIENT_STREAM, RESPONSE> = ColdUpstream(
             identifier, requestSerializer, clientStreamSerializer, responseSerializer, errorSerializer
         ) { payload, stream ->
             interceptor.interceptIncomingUpstreamCall(payload, stream, this, perform)
         }
     }
 
-    class ColdDownstream<REQUEST, SERVER_STREAM>(
+    public class ColdDownstream<REQUEST, SERVER_STREAM>(
         identifier: ServiceCallIdentifier,
-        val requestSerializer: KSerializer<REQUEST>,
-        val responseSerializer: KSerializer<SERVER_STREAM>,
+        public val requestSerializer: KSerializer<REQUEST>,
+        public val responseSerializer: KSerializer<SERVER_STREAM>,
         errorSerializer: RPCErrorSerializer,
-        val perform: suspend (REQUEST) -> Flow<SERVER_STREAM>,
+        public val perform: suspend (REQUEST) -> Flow<SERVER_STREAM>,
     ): RunnableCallDescription<REQUEST>(identifier, requestSerializer, errorSerializer) {
-        fun interceptedWith(interceptor: RPCIncomingInterceptor) = ColdDownstream(
+        public fun interceptedWith(interceptor: RPCIncomingInterceptor): ColdDownstream<REQUEST, SERVER_STREAM> = ColdDownstream(
             identifier, requestSerializer, responseSerializer, errorSerializer
         ) { payload ->
             interceptor.interceptIncomingDownstreamCall(payload, this, perform)
         }
     }
 
-    class ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>(
+    public class ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM>(
         identifier: ServiceCallIdentifier,
-        val requestSerializer: KSerializer<REQUEST>,
-        val clientStreamSerializer: KSerializer<CLIENT_STREAM>,
-        val responseSerializer: KSerializer<SERVER_STREAM>,
+        public val requestSerializer: KSerializer<REQUEST>,
+        public val clientStreamSerializer: KSerializer<CLIENT_STREAM>,
+        public val responseSerializer: KSerializer<SERVER_STREAM>,
         errorSerializer: RPCErrorSerializer,
-        val perform: suspend (REQUEST, Flow<CLIENT_STREAM>) -> Flow<SERVER_STREAM>,
+        public val perform: suspend (REQUEST, Flow<CLIENT_STREAM>) -> Flow<SERVER_STREAM>,
     ): RunnableCallDescription<REQUEST>(identifier, requestSerializer, errorSerializer) {
-        fun interceptedWith(interceptor: RPCIncomingInterceptor) = ColdBistream(
+        public fun interceptedWith(interceptor: RPCIncomingInterceptor): ColdBistream<REQUEST, CLIENT_STREAM, SERVER_STREAM> = ColdBistream(
             identifier, requestSerializer, clientStreamSerializer, responseSerializer, errorSerializer
         ) { payload, stream ->
             interceptor.interceptIncomingBistreamCall(payload, stream, this, perform)

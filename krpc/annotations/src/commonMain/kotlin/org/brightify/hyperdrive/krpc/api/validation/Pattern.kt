@@ -16,7 +16,7 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class Pattern(
+public annotation class Pattern(
     val regexp: String,
     val message: String = "",
     val flags: Array<Flag> = emptyArray(),
@@ -34,14 +34,14 @@ annotation class Pattern(
     )
     @Retention(AnnotationRetention.SOURCE)
     @MustBeDocumented
-    annotation class List(
+    public annotation class List(
         val value: Array<Pattern>,
     )
 
     /**
      * Possible Regexp flags
      */
-    enum class Flag {
+    public enum class Flag {
 
         /**
          * Enables Unix lines mode

@@ -5,16 +5,16 @@ import kotlinx.serialization.SerializationStrategy
 import org.brightify.hyperdrive.krpc.SerializationFormat
 import org.brightify.hyperdrive.krpc.SerializedFrame
 
-interface TransportFrameSerializer {
-    val format: SerializationFormat
+public interface TransportFrameSerializer {
+    public val format: SerializationFormat
 
-    fun <T> serialize(strategy: SerializationStrategy<T>, frame: T): SerializedFrame
+    public fun <T> serialize(strategy: SerializationStrategy<T>, frame: T): SerializedFrame
 
-    fun <T> deserialize(strategy: DeserializationStrategy<T>, frame: SerializedFrame): T
+    public fun <T> deserialize(strategy: DeserializationStrategy<T>, frame: SerializedFrame): T
 
-    interface Factory {
-        val supportedSerializationFormats: List<SerializationFormat>
+    public interface Factory {
+        public val supportedSerializationFormats: List<SerializationFormat>
 
-        fun create(format: SerializationFormat): TransportFrameSerializer
+        public fun create(format: SerializationFormat): TransportFrameSerializer
     }
 }

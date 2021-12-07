@@ -24,7 +24,7 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class Digits(
+public annotation class Digits(
     val integer: Int,
     val fraction: Int,
     val message: String = "",
@@ -42,7 +42,7 @@ annotation class Digits(
     )
     @Retention(AnnotationRetention.SOURCE)
     @MustBeDocumented
-    annotation class List(
+    public annotation class List(
         val value: Array<Digits>,
     )
 }

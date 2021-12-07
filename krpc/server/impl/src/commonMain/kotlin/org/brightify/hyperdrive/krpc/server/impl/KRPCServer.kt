@@ -9,14 +9,14 @@ import org.brightify.hyperdrive.krpc.ServiceRegistry
 import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
-import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
-import org.brightify.hyperdrive.krpc.protocol.ascension.DefaultRPCHandshakePerformer
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
+import org.brightify.hyperdrive.krpc.application.impl.DefaultRPCNode
+import org.brightify.hyperdrive.krpc.application.impl.DefaultRPCHandshakePerformer
+import org.brightify.hyperdrive.krpc.application.PayloadSerializer
 import org.brightify.hyperdrive.krpc.server.ServerConnector
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import org.brightify.hyperdrive.krpc.transport.TransportFrameSerializer
 
-class KRPCServer(
+public class KRPCServer(
     private val connector: ServerConnector,
     private val runScope: CoroutineScope,
     private val frameSerializerFactory: TransportFrameSerializer.Factory,
@@ -35,16 +35,16 @@ class KRPCServer(
         SessionNodeExtension.Factory(sessionContextKeyRegistry, payloadSerializerFactory),
     )
 
-    val connections: Set<RPCConnection>
+    public val connections: Set<RPCConnection>
         get() = nodeStorage.keys.toSet()
 
-    val nodes: Set<RPCNode>
+    public val nodes: Set<RPCNode>
         get() = nodeStorage.values.toSet()
 
     private val nodeStorage = mutableMapOf<RPCConnection, RPCNode>()
     private val nodeStorageLock = Mutex()
 
-    suspend fun run() = withContext(coroutineContext) {
+    public suspend fun run(): Unit = withContext(coroutineContext) {
         while (isActive) {
             val connection = connector.nextConnection()
             logger.debug { "New connection: $connection" }
@@ -81,11 +81,11 @@ class KRPCServer(
         }
     }
 
-    fun start() = launch {
+    public fun start(): Job = launch {
         run()
     }
 
-    suspend fun close() {
+    public suspend fun close() {
         coroutineContext.job.cancelAndJoin()
     }
 }

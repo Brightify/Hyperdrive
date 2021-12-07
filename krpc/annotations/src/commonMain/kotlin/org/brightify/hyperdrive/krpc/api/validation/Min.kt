@@ -24,7 +24,7 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class Min(
+public annotation class Min(
     val value: Long,
     val message: String = "",
 )

@@ -9,13 +9,10 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.job
@@ -25,18 +22,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.SerializedPayload
 import org.brightify.hyperdrive.krpc.api.throwable
-import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
-import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
 import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.error.RPCError
 import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
 import org.brightify.hyperdrive.krpc.error.RPCStreamTimeoutError
-import org.brightify.hyperdrive.krpc.error.asRPCError
 import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
 import org.brightify.hyperdrive.krpc.protocol.RPC
 import org.brightify.hyperdrive.krpc.util.RPCReference
 import org.brightify.hyperdrive.utils.Do
-import kotlin.coroutines.cancellation.CancellationException
 
 object ColdDownstreamPendingRPC {
     class Callee(
@@ -184,75 +176,6 @@ object ColdDownstreamPendingRPC {
 
         private suspend fun closeServerStream() {
             send(AscensionRPCFrame.ColdDownstream.Upstream.StreamOperation.Close(reference))
-        }
-    }
-}
-
-object ColdDownstreamRunner {
-    class Callee<REQUEST, SERVER_STREAM>(
-        private val serializer: PayloadSerializer,
-        private val call: RunnableCallDescription.ColdDownstream<REQUEST, SERVER_STREAM>,
-    ): RPC.Downstream.Callee.Implementation {
-        private val streamEventSerializer = StreamEventSerializer(
-            call.responseSerializer,
-            call.errorSerializer,
-        )
-
-        override suspend fun perform(payload: SerializedPayload): RPC.StreamOrError {
-            val request = serializer.deserialize(call.requestSerializer, payload)
-
-            return try {
-                val stream = call.perform(request)
-                flow {
-                    try {
-                        stream.collect {
-                            emit(serializer.serialize(streamEventSerializer, StreamEvent.Element(it)))
-                        }
-
-                        emit(serializer.serialize(streamEventSerializer, StreamEvent.Complete()))
-                    } catch (t: Throwable) {
-                        emit(serializer.serialize(streamEventSerializer, StreamEvent.Error(t)))
-                    }
-                }.let(RPC.StreamOrError::Stream)
-            } catch (t: Throwable) {
-                RPC.StreamOrError.Error(serializer.serialize(call.errorSerializer, t.asRPCError()))
-            }
-        }
-    }
-
-    class Caller<REQUEST, SERVER_STREAM>(
-        private val serializer: PayloadSerializer,
-        private val rpc: RPC.Downstream.Caller,
-        private val call: ColdDownstreamCallDescription<REQUEST, SERVER_STREAM>,
-    ) {
-        private val streamEventSerializer = StreamEventSerializer(
-            call.serverStreamSerializer,
-            call.errorSerializer,
-        )
-
-        suspend fun run(payload: REQUEST): Flow<SERVER_STREAM> {
-            val serializedPayload = serializer.serialize(call.outgoingSerializer, payload)
-
-            val serializedStreamOrError = rpc.perform(serializedPayload)
-            return when (serializedStreamOrError) {
-                is RPC.StreamOrError.Stream -> serializedStreamOrError.stream
-                    .map {
-                        return@map when (val event = serializer.deserialize(streamEventSerializer, it)) {
-                            is StreamEvent.Element -> event.element
-                            is StreamEvent.Complete -> throw CancellationException("Stream Completed")
-                            is StreamEvent.Error -> throw event.error.throwable()
-                        }
-                    }
-                    .catch { throwable ->
-                        if (throwable !is CancellationException) {
-                            throw throwable
-                        }
-                    }
-                is RPC.StreamOrError.Error -> {
-                    val error = serializer.deserialize(call.errorSerializer, serializedStreamOrError.error)
-                    throw error.throwable()
-                }
-            }
         }
     }
 }

@@ -16,6 +16,6 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class AssertFalse(
+public annotation class AssertFalse(
     val message: String = "",
 )

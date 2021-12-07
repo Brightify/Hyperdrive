@@ -9,6 +9,7 @@ plugins {
 
 kotlin {
     configurePlatforms(appleSilicon = true)
+    explicitApiWarning()
 
     sourceSets {
         val commonMain by getting {
@@ -19,6 +20,7 @@ kotlin {
                 implementation(project(":kotlin-utils"))
 
                 implementation(libs.coroutines.core)
+                implementation(libs.stately.common)
                 implementation(libs.stately.concurrency)
                 implementation(libs.bundles.serialization)
             }
@@ -45,7 +47,10 @@ kotlin {
 
     sourceSets {
         all {
-            languageSettings.useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
+            languageSettings {
+                optIn("kotlin.RequiresOptIn")
+                optIn("kotlinx.serialization.ExperimentalSerializationApi")
+            }
         }
     }
 }

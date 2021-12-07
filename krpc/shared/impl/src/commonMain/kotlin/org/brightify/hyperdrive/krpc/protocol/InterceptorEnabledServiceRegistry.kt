@@ -5,7 +5,7 @@ import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
 import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
 import kotlin.reflect.KClass
 
-class InterceptorEnabledServiceRegistry(
+public class InterceptorEnabledServiceRegistry(
     private val serviceRegistry: ServiceRegistry,
     private val interceptor: RPCIncomingInterceptor,
 ): ServiceRegistry {

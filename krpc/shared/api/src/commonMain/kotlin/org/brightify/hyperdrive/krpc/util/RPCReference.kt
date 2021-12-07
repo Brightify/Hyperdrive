@@ -7,17 +7,18 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-@Serializable(with = RPCReferenceSerializer::class)
-data class RPCReference(val reference: UInt)
+@Serializable(with = RPCReference.Serializer::class)
+public data class RPCReference(val reference: UInt) {
+    public class Serializer: KSerializer<RPCReference> {
+        override val descriptor: SerialDescriptor = Int.serializer().descriptor
 
-class RPCReferenceSerializer: KSerializer<RPCReference> {
-    override val descriptor: SerialDescriptor = Int.serializer().descriptor
+        override fun deserialize(decoder: Decoder): RPCReference {
+            return RPCReference(decoder.decodeInt().toUInt())
+        }
 
-    override fun deserialize(decoder: Decoder): RPCReference {
-        return RPCReference(decoder.decodeInt().toUInt())
-    }
-
-    override fun serialize(encoder: Encoder, value: RPCReference) {
-        encoder.encodeInt(value.reference.toInt())
+        override fun serialize(encoder: Encoder, value: RPCReference) {
+            encoder.encodeInt(value.reference.toInt())
+        }
     }
 }
+

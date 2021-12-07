@@ -27,15 +27,13 @@ import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.RPCTransport
-import org.brightify.hyperdrive.krpc.SerializationFormat
 import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
 import org.brightify.hyperdrive.krpc.description.ServiceDescription
 import org.brightify.hyperdrive.krpc.description.ServiceDescriptor
 import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.protocol.DefaultRPCNode
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
-import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
+import org.brightify.hyperdrive.krpc.application.impl.DefaultRPCNode
+import org.brightify.hyperdrive.krpc.application.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 
 @OptIn(ExperimentalCoroutinesApi::class)

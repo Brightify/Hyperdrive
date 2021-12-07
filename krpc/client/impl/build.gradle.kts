@@ -41,6 +41,13 @@ kotlin {
     }
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>() {
+    this.testLogging {
+
+        showStandardStreams = true
+    }
+}
+
 tasks.dokkaHtmlPartial.configure {
     moduleName.set("Tachyon Client Implementation (${moduleName.get()})")
 }

@@ -24,7 +24,7 @@ package org.brightify.hyperdrive.krpc.api.validation
 )
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class DecimalMax(
+public annotation class DecimalMax(
     val value: String,
     val message: String = "",
 )

@@ -1,48 +1,31 @@
-package org.brightify.hyperdrive.krpc.protocol
+package org.brightify.hyperdrive.krpc.application.impl
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.RPCTransport
 import org.brightify.hyperdrive.krpc.ServiceRegistry
-import org.brightify.hyperdrive.krpc.api.throwable
+import org.brightify.hyperdrive.krpc.application.HandshakeFailedException
+import org.brightify.hyperdrive.krpc.application.PayloadSerializer
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
-import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
-import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.error.RPCNotFoundError
-import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
 import org.brightify.hyperdrive.krpc.impl.MutableConcatServiceRegistry
 import org.brightify.hyperdrive.krpc.impl.ProtocolBasedRPCTransport
-import org.brightify.hyperdrive.krpc.protocol.ascension.ColdBistreamRunner
-import org.brightify.hyperdrive.krpc.protocol.ascension.ColdDownstreamRunner
-import org.brightify.hyperdrive.krpc.protocol.ascension.ColdUpstreamRunner
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
-import org.brightify.hyperdrive.krpc.protocol.ascension.RPCHandshakePerformer
-import org.brightify.hyperdrive.krpc.protocol.ascension.SingleCallRunner
-import kotlin.reflect.KClass
+import org.brightify.hyperdrive.krpc.protocol.DefaultRPCImplementationRegistry
+import org.brightify.hyperdrive.krpc.protocol.DefaultRPCInterceptorRegistry
+import org.brightify.hyperdrive.krpc.protocol.InterceptorEnabledRPCTransport
+import org.brightify.hyperdrive.krpc.protocol.InterceptorEnabledServiceRegistry
+import org.brightify.hyperdrive.krpc.extension.RPCExtensionServiceRegistry
+import org.brightify.hyperdrive.krpc.application.RPCHandshakePerformer
+import org.brightify.hyperdrive.krpc.protocol.RPCProtocol
 
-class HandshakeFailedException(val rpcMesage: String): Exception("Handshake has failed: $rpcMesage")
-
-class RPCExtensionServiceRegistry(extensions: List<RPCNodeExtension>): ServiceRegistry {
-    private val registry = DefaultServiceRegistry()
-
-    init {
-        for (extension in extensions) {
-            for (service in extension.providedServices) {
-                registry.register(service)
-            }
-        }
-    }
-
-    override fun <T: RunnableCallDescription<*>> getCallById(id: ServiceCallIdentifier, type: KClass<T>): T? {
-        return registry.getCallById(id, type)
-    }
-}
-
-class DefaultRPCNode(
+public class DefaultRPCNode(
     override val contract: Contract,
-    val transport: RPCTransport,
+    public val transport: RPCTransport,
 ): RPCNode {
     private companion object {
         val logger = Logger<DefaultRPCNode>()
@@ -53,19 +36,19 @@ class DefaultRPCNode(
         return contract.extensions[identifier] as? E
     }
 
-    class Contract(
+    public class Contract(
         override val payloadSerializer: PayloadSerializer,
         internal val protocol: RPCProtocol,
         internal val extensions: Map<RPCNodeExtension.Identifier<*>, RPCNodeExtension>,
     ): RPCNode.Contract
 
-    class Factory(
+    public class Factory(
         private val handshakePerformer: RPCHandshakePerformer,
         private val payloadSerializerFactory: PayloadSerializer.Factory,
         private val extensionFactories: List<RPCNodeExtension.Factory<*>>,
         private val providedServiceRegistry: ServiceRegistry,
     ) {
-        suspend fun create(connection: RPCConnection): DefaultRPCNode {
+        public suspend fun create(connection: RPCConnection): DefaultRPCNode {
             when (val handshakeResult = handshakePerformer.performHandshake(connection)) {
                 is RPCHandshakePerformer.HandshakeResult.Success -> {
                     val payloadSerializer = payloadSerializerFactory.create(handshakeResult.selectedFrameSerializer.format)
@@ -102,7 +85,7 @@ class DefaultRPCNode(
         }
     }
 
-    suspend fun run(onInitializationCompleted: suspend () -> Unit): Unit = coroutineScope {
+    public suspend fun run(onInitializationCompleted: suspend () -> Unit): Unit = coroutineScope {
         // We need the protocol to be running before we bind the extensions.
         val runningProtocol = async { contract.protocol.run() }
 
@@ -126,23 +109,6 @@ class DefaultRPCNode(
         // We want to the background work to end when the protocol does.
         runningProtocol.invokeOnCompletion {
             runningParallelWork.cancel("Protocol has completed.", it)
-        }
-    }
-}
-
-class DefaultRPCImplementationRegistry(
-    private val payloadSerializer: PayloadSerializer,
-    private val serviceRegistry: ServiceRegistry,
-): RPCImplementationRegistry {
-    override fun <T: RPC.Implementation> callImplementation(id: ServiceCallIdentifier, type: KClass<T>): T {
-        val runnableCall = serviceRegistry.getCallById(id, RunnableCallDescription::class)
-        @Suppress("UNCHECKED_CAST")
-        return when (runnableCall) {
-            is RunnableCallDescription.Single<*, *> -> SingleCallRunner.Callee(payloadSerializer, runnableCall) as T
-            is RunnableCallDescription.ColdUpstream<*, *, *> -> ColdUpstreamRunner.Callee(payloadSerializer, runnableCall) as T
-            is RunnableCallDescription.ColdDownstream<*, *> -> ColdDownstreamRunner.Callee(payloadSerializer, runnableCall) as T
-            is RunnableCallDescription.ColdBistream<*, *, *> -> ColdBistreamRunner.Callee(payloadSerializer, runnableCall) as T
-            null -> throw RPCNotFoundError(id)
         }
     }
 }

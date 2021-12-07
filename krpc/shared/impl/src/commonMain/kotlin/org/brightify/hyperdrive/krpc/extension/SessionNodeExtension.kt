@@ -6,19 +6,16 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.modules.SerializersModule
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.extension.session.DefaultSession
 import org.brightify.hyperdrive.krpc.RPCTransport
-import org.brightify.hyperdrive.krpc.SerializedPayload
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.description.*
-import org.brightify.hyperdrive.krpc.error.RPCErrorSerializer
-import org.brightify.hyperdrive.krpc.protocol.ascension.PayloadSerializer
+import org.brightify.hyperdrive.krpc.application.PayloadSerializer
+import org.brightify.hyperdrive.krpc.extension.session.ContextUpdateRequest
+import org.brightify.hyperdrive.krpc.extension.session.ContextUpdateResult
+import org.brightify.hyperdrive.krpc.extension.session.ContextUpdateService
 import org.brightify.hyperdrive.krpc.session.Session
 import org.brightify.hyperdrive.krpc.session.SessionContextKeyRegistry
 import kotlin.contracts.ExperimentalContracts
@@ -28,34 +25,34 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
-class SessionNodeExtension internal constructor(
+public class SessionNodeExtension internal constructor(
     session: DefaultSession,
     private val plugins: List<Plugin>,
 ): ContextUpdateService, RPCNodeExtension {
-    companion object {
-        val logger = Logger<SessionNodeExtension>()
-        const val maximumRejections = 10
+    public companion object {
+        public val logger: Logger = Logger<SessionNodeExtension>()
+        public const val maximumRejections: Int = 10
     }
 
-    object Identifier: RPCNodeExtension.Identifier<SessionNodeExtension> {
+    public object Identifier: RPCNodeExtension.Identifier<SessionNodeExtension> {
         override val uniqueIdentifier: String = "builtin:Session"
-        override val extensionClass = SessionNodeExtension::class
+        override val extensionClass: KClass<SessionNodeExtension> = SessionNodeExtension::class
     }
 
-    interface Plugin {
-        suspend fun onBindComplete(session: Session) { }
+    public interface Plugin {
+        public suspend fun onBindComplete(session: Session) { }
 
-        suspend fun onContextChanged(session: Session, modifiedKeys: Set<Session.Context.Key<*>>) { }
+        public suspend fun onContextChanged(session: Session, modifiedKeys: Set<Session.Context.Key<*>>) { }
     }
 
-    class Factory(
+    public class Factory(
         private val sessionContextKeyRegistry: SessionContextKeyRegistry,
         private val payloadSerializerFactory: PayloadSerializer.Factory,
         private val plugins: List<Plugin> = emptyList(),
     ): RPCNodeExtension.Factory<SessionNodeExtension> {
-        override val identifier = Identifier
+        override val identifier: Identifier = Identifier
 
-        override val isRequiredOnOtherSide = true
+        override val isRequiredOnOtherSide: Boolean = true
 
         override fun create(): SessionNodeExtension {
             return SessionNodeExtension(
@@ -66,7 +63,7 @@ class SessionNodeExtension internal constructor(
     }
 
     private val _session: DefaultSession = session
-    val session: Session = _session
+    public val session: Session = _session
 
     override val providedServices: List<ServiceDescription> = listOf(
         ContextUpdateService.Descriptor.describe(this)
@@ -82,7 +79,7 @@ class SessionNodeExtension internal constructor(
         }
     }
 
-    override suspend fun whileConnected() = coroutineScope {
+    override suspend fun whileConnected(): Unit = coroutineScope {
         launch {
             _session.whileConnected()
         }
@@ -99,7 +96,7 @@ class SessionNodeExtension internal constructor(
 
     override suspend fun update(request: ContextUpdateRequest): ContextUpdateResult = _session.update(request)
 
-    override suspend fun clear() = _session.clear()
+    override suspend fun clear(): Unit = _session.clear()
 
     private suspend fun notifyPluginsContextChanged(modifiedKeys: Set<Session.Context.Key<*>>) {
         modifiedKeysFlow.emit(modifiedKeys)
@@ -206,138 +203,3 @@ class SessionNodeExtension internal constructor(
     }
 }
 
-class RPCContribution<T: Any>(
-    val contribution: T,
-    contributionClass: KClass<T>,
-): CoroutineContext.Element {
-    data class Key<T: Any>(val contributionClass: KClass<T>): CoroutineContext.Key<RPCContribution<T>>
-
-    override val key: CoroutineContext.Key<*> = Key(contributionClass)
-}
-
-suspend fun <RESULT> withContributed(module: SerializersModule, block: suspend () -> RESULT): RESULT {
-    return withContribution(module, SerializersModule::class, block)
-}
-
-internal fun <T: Any> CoroutineContext.contribution(contributionClass: KClass<T>): T? {
-    return get(RPCContribution.Key(contributionClass))?.contribution
-}
-
-internal suspend inline fun <reified T: Any> contextContribution(): T? {
-    return coroutineContext.contribution(T::class)
-}
-
-internal suspend fun <T: Any, RESULT> withContribution(contribution: T, contributionClass: KClass<T>, block: suspend () -> RESULT): RESULT {
-    return withContext(coroutineContext + RPCContribution(contribution, contributionClass)) {
-        block()
-    }
-}
-
-@Serializable
-class ContextItemDto(
-    val revision: Int,
-    val value: SerializedPayload,
-)
-
-typealias KeyDto = String
-
-@Serializable
-class ContextUpdateRequest(
-    val modifications: Map<KeyDto, Modification> = emptyMap(),
-) {
-    @Serializable
-    sealed class Modification {
-        abstract val oldRevisionOrNull: Int?
-
-        @Serializable
-        class Required(val oldRevision: Int? = null): Modification() {
-            override val oldRevisionOrNull: Int?
-                get() = oldRevision
-        }
-
-        @Serializable
-        class Set(val oldRevision: Int? = null, val newItem: ContextItemDto): Modification() {
-            override val oldRevisionOrNull: Int?
-                get() = oldRevision
-        }
-        @Serializable
-        class Remove(val oldRevision: Int): Modification() {
-            override val oldRevisionOrNull: Int?
-                get() = oldRevision
-        }
-    }
-}
-
-@Serializable
-sealed class ContextUpdateResult {
-    @Serializable
-    object Accepted: ContextUpdateResult()
-    @Serializable
-    class Rejected(
-        val rejectedModifications: Map<KeyDto, Reason> = emptyMap(),
-    ): ContextUpdateResult() {
-        @Serializable
-        sealed class Reason {
-            @Serializable
-            object Removed: Reason()
-            @Serializable
-            class Updated(val newItem: ContextItemDto): Reason()
-        }
-    }
-}
-
-interface ContextUpdateService {
-    suspend fun update(request: ContextUpdateRequest): ContextUpdateResult
-
-    suspend fun clear()
-
-    class Client(
-        private val transport: RPCTransport,
-    ): ContextUpdateService {
-        override suspend fun update(request: ContextUpdateRequest): ContextUpdateResult {
-            return transport.singleCall(Descriptor.Call.update, request)
-        }
-
-        override suspend fun clear() {
-            return transport.singleCall(Descriptor.Call.clear, Unit)
-        }
-    }
-
-    object Descriptor: ServiceDescriptor<ContextUpdateService> {
-        const val identifier = "builtin:hyperdrive.ContextSyncService"
-
-        override fun describe(service: ContextUpdateService): ServiceDescription {
-            return ServiceDescription(
-                identifier,
-                listOf(
-                    Call.update.calling { request ->
-                        service.update(request)
-                    },
-                    Call.clear.calling { reequest ->
-                        service.clear()
-                    }
-                )
-            )
-        }
-
-        object Call {
-            val update = SingleCallDescription(
-                ServiceCallIdentifier(identifier, "update"),
-                ContextUpdateRequest.serializer(),
-                ContextUpdateResult.serializer(),
-                RPCErrorSerializer(),
-            )
-
-            val clear = SingleCallDescription(
-                ServiceCallIdentifier(identifier, "clear"),
-                Unit.serializer(),
-                Unit.serializer(),
-                RPCErrorSerializer(),
-            )
-        }
-    }
-}
-
-data class UnsupportedKey(override val qualifiedName: String): Session.Context.Key<SerializedPayload> {
-    override val serializer: KSerializer<SerializedPayload> = SerializedPayload.serializer()
-}

@@ -1,4 +1,4 @@
-package org.brightify.hyperdrive.krpc.application
+package org.brightify.hyperdrive.krpc.extension
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -10,18 +10,21 @@ import kotlinx.coroutines.flow.onStart
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.RPCTransport
+import org.brightify.hyperdrive.krpc.application.RPCNode
+import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
 import org.brightify.hyperdrive.krpc.description.ColdBistreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdDownstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.ColdUpstreamCallDescription
 import org.brightify.hyperdrive.krpc.description.RunnableCallDescription
 import org.brightify.hyperdrive.krpc.description.SingleCallDescription
+import kotlin.reflect.KClass
 
-class CallLoggingNodeExtension(
+public class CallLoggingNodeExtension(
     private val logger: Logger,
     private val levels: LoggingLevels,
 ): RPCNodeExtension {
 
-    data class LoggingLevels(
+    public data class LoggingLevels(
         val bind: LoggingLevel = LoggingLevel.Info,
         val callOpen: LoggingLevel = LoggingLevel.Info,
         val callResponse: LoggingLevel = LoggingLevel.Info,
@@ -32,47 +35,13 @@ class CallLoggingNodeExtension(
         val streamError: LoggingLevel = LoggingLevel.Warn,
     )
 
-    enum class Direction(val icon: String) {
+    public enum class Direction(public val icon: String) {
         Upstream("↑"),
         Downstream("↓");
     }
 
     override suspend fun bind(transport: RPCTransport, contract: RPCNode.Contract) {
         logger.logIfEnabled(levels.bind) { "Logging enabled for $transport" }
-    }
-
-    private suspend inline fun <T> logRequest(call: String, crossinline request: suspend () -> T): T {
-        logger.logIfEnabled(levels.callOpen) { "${Direction.Upstream.icon} REQUEST: $call" }
-        return try {
-            val response = request()
-            logger.logIfEnabled(levels.callResponse) { "${Direction.Downstream.icon} SUCCESS: $call = $response" }
-            response
-        } catch (t: Throwable) {
-            logger.logIfEnabled(levels.callError, t) { "${Direction.Downstream.icon} ERROR: $call thrown ${t.message}" }
-            throw t
-        }
-    }
-
-    private suspend inline fun <T> logStream(call: String, direction: Direction, stream: Flow<T>): Flow<T> {
-        return flow {
-            var itemIndex = 0L
-            emitAll(
-                stream
-                    .onStart {
-                        logger.logIfEnabled(levels.streamStart) { "${direction.icon} STREAM START: $call" }
-                    }
-                    .onEach {
-                        logger.logIfEnabled(levels.streamItem) { "${direction.icon} STREAM ITEM(${itemIndex++}): $call = $it" }
-                    }
-                    .onCompletion {
-                        if (it != null && it !is CancellationException) {
-                            logger.logIfEnabled(levels.streamError, it) { "${direction.icon} STREAM ERROR: $call" }
-                        } else {
-                            logger.logIfEnabled(levels.streamEnd) { "${direction.icon} STREAM END: $call" }
-                        }
-                    }
-            )
-        }
     }
 
     override suspend fun <PAYLOAD, RESPONSE> interceptIncomingSingleCall(
@@ -181,19 +150,53 @@ class CallLoggingNodeExtension(
         }
     }
 
-    object Identifier: RPCNodeExtension.Identifier<CallLoggingNodeExtension> {
-        override val uniqueIdentifier = "builtin:CallLogging"
-        override val extensionClass = CallLoggingNodeExtension::class
+    private suspend inline fun <T> logRequest(call: String, crossinline request: suspend () -> T): T {
+        logger.logIfEnabled(levels.callOpen) { "${Direction.Upstream.icon} REQUEST: $call" }
+        return try {
+            val response = request()
+            logger.logIfEnabled(levels.callResponse) { "${Direction.Downstream.icon} SUCCESS: $call = $response" }
+            response
+        } catch (t: Throwable) {
+            logger.logIfEnabled(levels.callError, t) { "${Direction.Downstream.icon} ERROR: $call thrown ${t.message}" }
+            throw t
+        }
     }
 
-    class Factory(
+    private suspend inline fun <T> logStream(call: String, direction: Direction, stream: Flow<T>): Flow<T> {
+        return flow {
+            var itemIndex = 0L
+            emitAll(
+                stream
+                    .onStart {
+                        logger.logIfEnabled(levels.streamStart) { "${direction.icon} STREAM START: $call" }
+                    }
+                    .onEach {
+                        logger.logIfEnabled(levels.streamItem) { "${direction.icon} STREAM ITEM(${itemIndex++}): $call = $it" }
+                    }
+                    .onCompletion {
+                        if (it != null && it !is CancellationException) {
+                            logger.logIfEnabled(levels.streamError, it) { "${direction.icon} STREAM ERROR: $call" }
+                        } else {
+                            logger.logIfEnabled(levels.streamEnd) { "${direction.icon} STREAM END: $call" }
+                        }
+                    }
+            )
+        }
+    }
+
+    public object Identifier: RPCNodeExtension.Identifier<CallLoggingNodeExtension> {
+        override val uniqueIdentifier: String = "builtin:CallLogging"
+        override val extensionClass: KClass<CallLoggingNodeExtension> = CallLoggingNodeExtension::class
+    }
+
+    public class Factory(
         private val logger: Logger = Logger<CallLoggingNodeExtension>(),
         private val levels: LoggingLevels = LoggingLevels(),
     ): RPCNodeExtension.Factory<CallLoggingNodeExtension> {
-        override val identifier = Identifier
-        override val isRequiredOnOtherSide = false
+        override val identifier: Identifier = Identifier
+        override val isRequiredOnOtherSide: Boolean = false
 
-        constructor(logger: Logger, level: LoggingLevel): this(
+        public constructor(logger: Logger, level: LoggingLevel): this(
             logger,
             LoggingLevels(level, level, level, level, level, level, level, level)
         )
