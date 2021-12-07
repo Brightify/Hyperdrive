@@ -1,39 +1,31 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.filterNot
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.SerializedPayload
-import org.brightify.hyperdrive.krpc.util.RPCReference
-import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
-import org.brightify.hyperdrive.krpc.error.RPCStreamTimeoutError
-import org.brightify.hyperdrive.utils.Do
+import org.brightify.hyperdrive.krpc.api.throwable
 import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
+import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
 import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
 import org.brightify.hyperdrive.krpc.protocol.RPC
+import org.brightify.hyperdrive.krpc.protocol.StreamTimeoutException
+import org.brightify.hyperdrive.krpc.util.RPCReference
 
-object ColdBistreamPendingRPC {
-    class Callee(
+public object ColdBistreamPendingRPC {
+    public class Callee(
         protocol: AscensionRPCProtocol,
         scope: CoroutineScope,
         reference: RPCReference,
@@ -45,74 +37,58 @@ object ColdBistreamPendingRPC {
             val flowStartTimeoutInMillis = 60 * 1000L
         }
 
-        private sealed class StreamState {
-            object Created: StreamState()
-            class Opened(val flow: Flow<SerializedPayload>): StreamState()
-            class Started(val job: Job): StreamState()
-            object Closed: StreamState()
+        private sealed interface StreamState {
+            object Created: StreamState
+            class Opened(val flow: Flow<SerializedPayload>, val timeoutJob: Job): StreamState
+            class Started(val job: Job): StreamState
+            object Closed: StreamState
         }
 
         private val clientStreamChannel = Channel<SerializedPayload>()
-        private val serverStreamState = MutableStateFlow<StreamState>(StreamState.Created)
-
-        init {
-            scope.launch {
-                val clientStreamClosed = CompletableDeferred<Unit>()
-                clientStreamChannel.invokeOnClose { clientStreamClosed.complete(Unit) }
-                awaitAll(
-                    clientStreamClosed,
-                    async { serverStreamState.first { it == StreamState.Closed } },
-                )
-
-                complete()
-            }
-        }
+        private var serverStreamState: StreamState = StreamState.Created
 
         override suspend fun handle(frame: AscensionRPCFrame.ColdBistream.Upstream) {
-            Do exhaustive when (frame) {
-                is AscensionRPCFrame.ColdBistream.Upstream.Open -> launch {
-                    var streamConsumptionJob: CompletableJob? = null
+            when (frame) {
+                is AscensionRPCFrame.ColdBistream.Upstream.Open -> completionTracker.launch {
+                    val serverStreamCompleted = completionTracker.acquire()
                     val clientStreamFlow = clientStreamChannel.consumeAsFlow()
                         .onStart {
-                            streamConsumptionJob = Job(coroutineContext.job)
                             startClientStream()
                         }
                         .onCompletion {
                             closeClientStream()
-                            streamConsumptionJob?.complete()
+                            serverStreamCompleted.release()
                         }
 
                     when (val serverStreamOrError = implementation.perform(frame.payload, clientStreamFlow)) {
                         is RPC.StreamOrError.Stream -> {
-                            serverStreamState.value = StreamState.Opened(serverStreamOrError.stream)
-                            send(AscensionRPCFrame.ColdBistream.Downstream.Opened(reference))
-
-                            // The client should subscribe to the stream right away. They have 60 seconds before we close it.
-                            val didTimeout = withTimeoutOrNull(flowStartTimeoutInMillis) {
-                                serverStreamState.filterNot { it is StreamState.Opened }.first()
-                                false
-                            } ?: true
-
-                            // If the stream wasn't started by this time, we send the timeout error frame.
-                            if (didTimeout) {
-                                throw RPCStreamTimeoutError(flowStartTimeoutInMillis)
+                            val timeoutJob = completionTracker.launch(start = CoroutineStart.LAZY) {
+                                // The client should subscribe to the stream right away. They have 60 seconds before we close it.
+                                delay(flowStartTimeoutInMillis)
+                                // If the stream wasn't started by this time, we send the timeout error frame.
+                                send(AscensionRPCFrame.ColdBistream.Downstream.StreamEvent.Timeout(flowStartTimeoutInMillis, reference))
+                                serverStreamState = StreamState.Closed
                             }
+                            serverStreamState = StreamState.Opened(serverStreamOrError.stream, timeoutJob)
+                            send(AscensionRPCFrame.ColdBistream.Downstream.Opened(reference))
+                            timeoutJob.start()
                         }
                         is RPC.StreamOrError.Error -> {
-                            serverStreamState.value = StreamState.Closed
+                            serverStreamState = StreamState.Closed
                             send(AscensionRPCFrame.ColdBistream.Downstream.Error(serverStreamOrError.error, reference))
                         }
                     }
                 }
                 is AscensionRPCFrame.ColdBistream.Upstream.StreamOperation.Start -> {
-                    Do exhaustive when (val state = serverStreamState.value) {
+                    when (val state = serverStreamState) {
                         is StreamState.Opened -> {
-                            launch(start = CoroutineStart.LAZY) {
+                            state.timeoutJob.cancel()
+                            completionTracker.launch(start = CoroutineStart.LAZY) {
                                 state.flow.collect {
-                                    send(AscensionRPCFrame.ColdBistream.Downstream.StreamEvent(it, reference))
+                                    send(AscensionRPCFrame.ColdBistream.Downstream.StreamEvent.Data(it, reference))
                                 }
                             }.also {
-                                serverStreamState.value = StreamState.Started(it)
+                                serverStreamState = StreamState.Started(it)
                                 it.start()
                             }
                         }
@@ -121,19 +97,23 @@ object ColdBistreamPendingRPC {
                         StreamState.Closed -> throw RPCProtocolViolationError("Stream has been closed. Cannot start again.")
                     }
                 }
-                is AscensionRPCFrame.ColdBistream.Upstream.StreamOperation.Close -> {
-                    Do exhaustive when (val state = serverStreamState.value) {
+                is AscensionRPCFrame.ColdBistream.Upstream.StreamOperation.Close -> completionTracker.launch {
+                    when (val state = serverStreamState) {
                         is StreamState.Started -> state.job.cancelAndJoin()
                         StreamState.Created -> throw RPCProtocolViolationError("Stream not ready, cannot close.")
                         is StreamState.Opened -> {
                             logger.info { "Stream closed without starting it." }
-                            serverStreamState.value = StreamState.Closed
+                            state.timeoutJob.cancel()
+                            serverStreamState = StreamState.Closed
                         }
                         StreamState.Closed -> logger.warning { "Trying to close a closed stream, ignoring." }
                     }
                 }
-                is AscensionRPCFrame.ColdBistream.Upstream.StreamEvent -> {
-                    clientStreamChannel.send(frame.event)
+                is AscensionRPCFrame.ColdBistream.Upstream.StreamEvent.Data -> {
+                    clientStreamChannel.send(frame.data)
+                }
+                is AscensionRPCFrame.ColdBistream.Upstream.StreamEvent.Timeout -> {
+                    clientStreamChannel.close(StreamTimeoutException(frame.timeoutMillis))
                 }
             }
         }
@@ -147,7 +127,7 @@ object ColdBistreamPendingRPC {
         }
     }
 
-    class Caller(
+    public class Caller(
         protocol: AscensionRPCProtocol,
         scope: CoroutineScope,
         private val serviceCallIdentifier: ServiceCallIdentifier,
@@ -155,15 +135,29 @@ object ColdBistreamPendingRPC {
     ): PendingRPC.Caller<AscensionRPCFrame.ColdBistream.Downstream, AscensionRPCFrame.ColdBistream.Upstream>(protocol, scope, reference, logger), RPC.Bistream.Caller {
         private companion object {
             val logger = Logger<ColdBistreamPendingRPC.Caller>()
+            val streamTimeoutMillis = 60_000L
         }
 
-        private lateinit var clientStream: Flow<SerializedPayload>
-        private lateinit var clientStreamJob: Job
-        private val serverChannelDeferred = CompletableDeferred<Channel<SerializedPayload>>()
-        private val responseDeferred = CompletableDeferred<RPC.StreamOrError>()
+        private var upstreamState: UpstreamState = UpstreamState.Created
+        private var downstreamState: DownstreamState = DownstreamState.Created
+        private val responseDeferred = CompletableDeferred<RPC.StreamOrError>(coroutineContext.job)
 
-        override suspend fun perform(payload: SerializedPayload, stream: Flow<SerializedPayload>): RPC.StreamOrError = withContext(this.coroutineContext) {
-            this@Caller.clientStream = stream
+        private sealed interface UpstreamState {
+            object Created: UpstreamState
+            class Ready(val stream: Flow<SerializedPayload>): UpstreamState
+            class WaitingToStart(val stream: Flow<SerializedPayload>, val timeoutJob: Job): UpstreamState
+            class Started(val upstreamJob: Job): UpstreamState
+            object Closed: UpstreamState
+        }
+
+        private sealed interface DownstreamState {
+            object Created: DownstreamState
+            class Opened(val channel: Channel<SerializedPayload>): DownstreamState
+            object Closed: DownstreamState
+        }
+
+        override suspend fun perform(payload: SerializedPayload, stream: Flow<SerializedPayload>): RPC.StreamOrError = completionTracker.tracking {
+            upstreamState = UpstreamState.Ready(stream)
 
             send(AscensionRPCFrame.ColdBistream.Upstream.Open(payload, serviceCallIdentifier, reference))
 
@@ -172,45 +166,74 @@ object ColdBistreamPendingRPC {
 
         @OptIn(ExperimentalCoroutinesApi::class)
         override suspend fun handle(frame: AscensionRPCFrame.ColdBistream.Downstream) {
-            Do exhaustive when (frame) {
-                is AscensionRPCFrame.ColdBistream.Downstream.Opened -> {
-                    if (responseDeferred.isCompleted) {
-                        throw RPCProtocolViolationError("Response already received, cannot pass stream!")
-                    }
-                    val job = Job(coroutineContext.job)
-                    val channel = Channel<SerializedPayload>()
-                    job.invokeOnCompletion {
-                        channel.close(it)
-                    }
-                    serverChannelDeferred.complete(channel)
-                    responseDeferred.complete(
-                        channel.consumeAsFlow()
-                            .onStart {
-                                startServerStream()
+            when (frame) {
+                is AscensionRPCFrame.ColdBistream.Downstream.Opened -> when (downstreamState) {
+                    is DownstreamState.Created -> {
+                        val trackingToken = completionTracker.acquire()
+                        val channel = Channel<SerializedPayload>().also { channel ->
+                            invokeOnCompletion {
+                                channel.close(it)
                             }
-                            .onCompletion {
-                                // TODO: !closedByUpstream?
-                                closeServerStream()
-                                job.complete()
-                            }
-                            .let(RPC.StreamOrError::Stream)
-                    )
-                }
-                is AscensionRPCFrame.ColdBistream.Downstream.StreamOperation.Start -> clientStreamJob = launch {
-                    if (!::clientStream.isInitialized) {
-                        // This probably means we called `open` before setting the prepared stream, see `perform` method.
-                        throw RPCProtocolViolationError("Upstream Client cannot start collecting before stream is prepared!.")
-                    }
+                        }
+                        responseDeferred.complete(
+                            channel.consumeAsFlow()
+                                .onStart {
+                                    startServerStream()
+                                }
+                                .onCompletion {
+                                    // TODO: !closedByUpstream?
+                                    closeServerStream()
+                                    trackingToken.release()
+                                }
+                                .let(RPC.StreamOrError::Stream)
+                        )
+                        downstreamState = DownstreamState.Opened(channel)
 
-                    clientStream.collect {
-                        send(AscensionRPCFrame.ColdBistream.Upstream.StreamEvent(it, reference))
+                        val upstate = upstreamState
+                        if (upstate is UpstreamState.Ready) {
+                            val timeoutJob = completionTracker.launch {
+                                delay(streamTimeoutMillis)
+                                send(AscensionRPCFrame.ColdBistream.Upstream.StreamEvent.Timeout(streamTimeoutMillis, reference))
+                                upstreamState = UpstreamState.Closed
+                            }
+                            upstreamState = UpstreamState.WaitingToStart(upstate.stream, timeoutJob)
+                        }
+                    }
+                    DownstreamState.Closed -> throw RPCProtocolViolationError("Stream closed, cannot open again!")
+                    is DownstreamState.Opened -> throw RPCProtocolViolationError("Response already received, cannot pass stream!")
+                }
+                is AscensionRPCFrame.ColdBistream.Downstream.StreamOperation.Start -> {
+                    when (val state = upstreamState) {
+                        is UpstreamState.Ready -> subscribeStream(state.stream)
+                        is UpstreamState.WaitingToStart -> {
+                            state.timeoutJob.cancel()
+                            subscribeStream(state.stream)
+                        }
+                        UpstreamState.Created -> {
+                            // This probably means we called `open` before setting the prepared stream, see `perform` method.
+                            throw RPCProtocolViolationError("Upstream Client cannot start collecting before stream is prepared!.").throwable()
+                        }
+                        UpstreamState.Closed -> throw RPCProtocolViolationError("Cannot open closed stream.")
+                        is UpstreamState.Started -> throw RPCProtocolViolationError("Cannot open an already started stream.")
                     }
                 }
                 is AscensionRPCFrame.ColdBistream.Downstream.StreamOperation.Close -> {
-                    if (!this::clientStreamJob.isInitialized) {
-                        throw RPCProtocolViolationError("Upstream Client's stream was not started. Cannot close.")
+                    when (val state = upstreamState) {
+                        is UpstreamState.Started -> {
+                            state.upstreamJob.cancelAndJoin()
+                        }
+                        UpstreamState.Closed -> logger.warning { "Trying to close an already closed upstream, ignoring." }
+                        is UpstreamState.Ready -> {
+                            logger.debug { "Closing a stream that was never started." }
+                            upstreamState = UpstreamState.Closed
+                        }
+                        is UpstreamState.WaitingToStart -> {
+                            logger.debug { "Closing a stream that was never started, but response for the call was received." }
+                            upstreamState = UpstreamState.Closed
+                            state.timeoutJob.cancelAndJoin()
+                        }
+                        UpstreamState.Created -> throw RPCProtocolViolationError("Not yet initialized! Cannot close.")
                     }
-                    clientStreamJob.cancelAndJoin()
                 }
                 is AscensionRPCFrame.ColdBistream.Downstream.Error -> {
                     if (responseDeferred.isCompleted) {
@@ -218,11 +241,25 @@ object ColdBistreamPendingRPC {
                     }
                     responseDeferred.complete(RPC.StreamOrError.Error(frame.payload))
                 }
-                is AscensionRPCFrame.ColdBistream.Downstream.StreamEvent -> if (serverChannelDeferred.isCompleted) {
-                    val channel = serverChannelDeferred.getCompleted()
-                    channel.send(frame.event)
-                } else {
-                    throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!")
+                is AscensionRPCFrame.ColdBistream.Downstream.StreamEvent.Data -> when (val state = downstreamState) {
+                    is DownstreamState.Opened -> {
+                        state.channel.send(frame.data)
+                    }
+                    DownstreamState.Closed -> throw RPCProtocolViolationError("Channel closed, can't accept more data!")
+                    DownstreamState.Created -> throw RPCProtocolViolationError("Channel wasn't open. `Opened` frame is required before streaming data!")
+                }
+                is AscensionRPCFrame.ColdBistream.Downstream.StreamEvent.Timeout -> when (val state = downstreamState) {
+                    is DownstreamState.Opened -> {
+                        logger.error { "Stream timed out while opened. Please report this to Hyperdrive team." }
+                        state.channel.close(StreamTimeoutException(frame.timeoutMillis))
+                    }
+                    DownstreamState.Closed -> {
+                        logger.info { "Stream timed out while closed. Ignoring." }
+                    }
+                    DownstreamState.Created -> {
+                        logger.warning { "Stream timed out." }
+                        downstreamState = DownstreamState.Closed
+                    }
                 }
             }
         }
@@ -233,6 +270,19 @@ object ColdBistreamPendingRPC {
 
         private suspend fun closeServerStream() {
             send(AscensionRPCFrame.ColdBistream.Upstream.StreamOperation.Close(reference))
+        }
+
+        private fun subscribeStream(stream: Flow<SerializedPayload>) {
+            val upstreamJob = completionTracker.launch(start = CoroutineStart.LAZY) {
+                stream.collect {
+                    send(AscensionRPCFrame.ColdBistream.Upstream.StreamEvent.Data(it, reference))
+                }
+            }
+            upstreamState = UpstreamState.Started(upstreamJob)
+            upstreamJob.invokeOnCompletion {
+                upstreamState = UpstreamState.Closed
+            }
+            upstreamJob.start()
         }
     }
 }

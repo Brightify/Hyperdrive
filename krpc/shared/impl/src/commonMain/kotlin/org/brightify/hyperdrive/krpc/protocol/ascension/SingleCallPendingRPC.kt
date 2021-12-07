@@ -1,22 +1,17 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.job
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.SerializedPayload
 import org.brightify.hyperdrive.krpc.description.ServiceCallIdentifier
-import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
 import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
 import org.brightify.hyperdrive.krpc.protocol.RPC
 import org.brightify.hyperdrive.krpc.util.RPCReference
-import org.brightify.hyperdrive.utils.Do
 
-object SingleCallPendingRPC {
-    class Callee(
+public object SingleCallPendingRPC {
+    public class Callee(
         protocol: AscensionRPCProtocol,
         scope: CoroutineScope,
         reference: RPCReference,
@@ -26,19 +21,17 @@ object SingleCallPendingRPC {
             val logger = Logger<SingleCallPendingRPC.Callee>()
         }
 
-        override suspend fun handle(frame: AscensionRPCFrame.SingleCall.Upstream) {
-            Do exhaustive when (frame) {
-                is AscensionRPCFrame.SingleCall.Upstream.Open -> try {
+        override suspend fun handle(frame: AscensionRPCFrame.SingleCall.Upstream): Unit = completionTracker.tracking {
+            when (frame) {
+                is AscensionRPCFrame.SingleCall.Upstream.Open -> {
                     val response = implementation.perform(frame.payload)
                     send(AscensionRPCFrame.SingleCall.Downstream.Response(response, reference))
-                } finally {
-                    complete()
                 }
             }
         }
     }
 
-    class Caller(
+    public class Caller(
         protocol: AscensionRPCProtocol,
         scope: CoroutineScope,
         private val serviceCallIdentifier: ServiceCallIdentifier,
@@ -48,21 +41,16 @@ object SingleCallPendingRPC {
             val logger = Logger<SingleCallPendingRPC.Caller>()
         }
 
-        private val responseDeferred = CompletableDeferred<SerializedPayload>()
+        private val responseDeferred = CompletableDeferred<SerializedPayload>(coroutineContext.job)
 
-        override suspend fun perform(payload: SerializedPayload): SerializedPayload = try {
-            withContext(this.coroutineContext) {
-                send(AscensionRPCFrame.SingleCall.Upstream.Open(payload, serviceCallIdentifier, reference))
+        override suspend fun perform(payload: SerializedPayload): SerializedPayload = completionTracker.tracking {
+            send(AscensionRPCFrame.SingleCall.Upstream.Open(payload, serviceCallIdentifier, reference))
 
-                responseDeferred.await()
-            }
-        } finally {
-            complete()
+            responseDeferred.await()
         }
 
         override suspend fun handle(frame: AscensionRPCFrame.SingleCall.Downstream) {
-            // TODO: Do exhaustive doesn't compile for some reason here. Investigate.
-            /*Do exhaustive*/ when (frame) {
+            when (frame) {
                 is AscensionRPCFrame.SingleCall.Downstream.Response -> responseDeferred.complete(frame.payload)
             }
         }

@@ -66,6 +66,8 @@ allprojects {
             sourceSets.all {
                 languageSettings {
                     optIn("kotlinx.serialization.ExperimentalSerializationApi")
+                    languageVersion = "1.6"
+                    progressiveMode = true
                 }
             }
         }
