@@ -90,7 +90,7 @@ public abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: Ascensio
         }
 
         public fun acquire(): Token {
-            require(acquiredTokens >= 0) { "CompletionTracker has already completed the PendingRPC!" }
+            check(acquiredTokens >= 0) { "CompletionTracker has already completed the PendingRPC!" }
             acquiredTokens += 1
             return Token()
         }
@@ -98,7 +98,7 @@ public abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: Ascensio
         private fun release() {
             acquiredTokens -= 1
             if (acquiredTokens <= 0) {
-                acquiredTokens = Int.MIN_VALUE
+                acquiredTokens = releasedTokenValue
                 complete()
             }
         }
@@ -111,6 +111,11 @@ public abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: Ascensio
                 this@CompletionTracker.release()
             }
         }
+    }
+
+    private companion object {
+        // A negative value constant to mark the tracker as released.
+        const val releasedTokenValue = -0xdead
     }
 
     public abstract class Callee<INCOMING, OUTGOING>(

@@ -194,11 +194,11 @@ public sealed class AscensionRPCFrame: RPCFrame {
 
             public sealed class StreamEvent: Upstream() {
                 @Serializable
-                @SerialName("cold-bistream:down:data")
+                @SerialName("cold-bistream:up:data")
                 public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent()
 
                 @Serializable
-                @SerialName("cold-bistream:down:timeout")
+                @SerialName("cold-bistream:up:timeout")
                 public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent()
             }
         }
