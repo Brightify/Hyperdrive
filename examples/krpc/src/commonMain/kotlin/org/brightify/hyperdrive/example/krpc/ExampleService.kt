@@ -1,18 +1,11 @@
 package org.brightify.hyperdrive.example.krpc
 
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.yield
-import org.brightify.hyperdrive.Logger
-import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.api.EnableKRPC
-import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.impl.DefaultServiceRegistry
-import org.brightify.hyperdrive.krpc.protocol.ascension.DefaultRPCHandshakePerformer
-import org.brightify.hyperdrive.krpc.test.LoopbackConnection
 
 @EnableKRPC
 interface ExampleService {
