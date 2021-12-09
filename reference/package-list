@@ -27,10 +27,12 @@ org.brightify.hyperdrive.krpc.session.impl
 org.brightify.hyperdrive.krpc.transport
 org.brightify.hyperdrive.krpc.util
 module:Tachyon Shared Implementation (krpc-shared-impl)
-org.brightify.hyperdrive.krpc
 org.brightify.hyperdrive.krpc.application
+org.brightify.hyperdrive.krpc.application.impl
+org.brightify.hyperdrive.krpc.application.runner
 org.brightify.hyperdrive.krpc.extension
 org.brightify.hyperdrive.krpc.extension.session
+org.brightify.hyperdrive.krpc.frame
 org.brightify.hyperdrive.krpc.impl
 org.brightify.hyperdrive.krpc.protocol
 org.brightify.hyperdrive.krpc.protocol.ascension
