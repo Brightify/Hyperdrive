@@ -31,7 +31,7 @@ class WebSocketSessionConnection(val webSocketSession: WebSocketSession): RPCCon
             }
             throw ConnectionClosedException()
         } catch(e: ClosedReceiveChannelException) {
-            throw ConnectionClosedException()
+            throw ConnectionClosedException(cause = e)
         }
     }
 

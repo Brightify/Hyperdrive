@@ -13,7 +13,8 @@ import org.brightify.hyperdrive.krpc.server.impl.ProvidingServerConnector
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
-class KtorServerFrontend @OptIn(ExperimentalTime::class) constructor(
+@OptIn(ExperimentalTime::class)
+class KtorServerFrontend(
     host: String = "0.0.0.0",
     port: Int = 8000,
     heartBeatInterval: Duration? = null,

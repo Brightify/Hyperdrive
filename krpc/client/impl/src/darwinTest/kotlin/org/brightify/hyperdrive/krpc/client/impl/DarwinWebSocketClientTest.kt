@@ -30,7 +30,7 @@ class DarwinWebSocketClientTest {
     fun setUp() {
     }
 
-    @Test
+    // @Test
     fun testConnectionSuccessful() {
         val mainThreadSurrogate = newSingleThreadContext("UI Thread")
 

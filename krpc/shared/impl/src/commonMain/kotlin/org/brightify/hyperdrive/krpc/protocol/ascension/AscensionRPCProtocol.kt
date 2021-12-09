@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive.krpc.protocol.ascension
 
+import co.touchlab.stately.concurrency.AtomicBoolean
 import co.touchlab.stately.ensureNeverFrozen
 import co.touchlab.stately.concurrency.Lock
 import co.touchlab.stately.concurrency.withLock
@@ -43,9 +44,16 @@ class AscensionRPCProtocol(
     // TODO: Replace with AtomicInt
     private var callReferenceCounter: RPCReference = RPCReference(UInt.MIN_VALUE)
 
+    private val _isActive = AtomicBoolean(false)
+    override var isActive: Boolean
+        get() = _isActive.value
+        private set(newValue) {
+            _isActive.value = newValue
+        }
+
     override suspend fun run() {
         logger.trace { "Receiving started" }
-
+        isActive = true
         try {
             while (connection.isActive) {
                 logger.trace { "Will receive" }
@@ -57,7 +65,7 @@ class AscensionRPCProtocol(
                     logger.error(e) { "Failed to deserialize frame $serializedFrame. Ignoring it." }
                     continue
                 }
-                logger.trace { "Did receive frame $frame" }
+                logger.trace { "Reference ${frame.callReference} did receive frame $frame" }
 
                 try {
                     when (frame) {
@@ -88,13 +96,16 @@ class AscensionRPCProtocol(
                 }
                 logger.trace { "Did handle frame $frame - ${connection.isActive}." }
             }
+            isActive = false
             logger.trace { "Receiving ended." }
             cancelPendingRPCs(ConnectionClosedException())
         } catch (t: CancellationException) {
+            isActive = false
             logger.debug { "Receiving cancelled." }
             cancelPendingRPCs(t)
             throw t
         } catch (t: Throwable) {
+            isActive = false
             logger.debug(t) { "Receiving failed." }
             cancelPendingRPCs(CancellationException("Receiving failed", t))
             throw t
@@ -143,15 +154,18 @@ class AscensionRPCProtocol(
         } catch (t: Throwable) {
             logger.warning(t) { "Couldn't cancel callees!" }
         }
-
     }
 
-    suspend fun send(frame: AscensionRPCFrame) {
+    public suspend fun send(frame: AscensionRPCFrame) {
         logger.trace { "Sending frame $frame" }
         try {
+            if (!connection.isActive) {
+                throw ConnectionClosedException()
+            }
+
             connection.send(frameSerializer.serialize(AscensionRPCFrame.serializer(), frame))
         } catch (t: Throwable) {
-            logger.error(t) { "Could not send a frame!" }
+            logger.error(t) { "Could not send frame: $frame!" }
             throw t
         }
     }
@@ -173,31 +187,31 @@ class AscensionRPCProtocol(
                 val newPendingCallee = when (frame) {
                     is AscensionRPCFrame.SingleCall -> SingleCallPendingRPC.Callee(
                         this,
-                        connection,
+                        connection.coroutineContext,
                         reference,
                         implementationRegistry.callImplementation(frame.serviceCallIdentifier),
                     )
                     is AscensionRPCFrame.ColdUpstream -> ColdUpstreamPendingRPC.Callee(
                         this,
-                        connection,
+                        connection.coroutineContext,
                         reference,
                         implementationRegistry.callImplementation(frame.serviceCallIdentifier),
                     )
                     is AscensionRPCFrame.ColdDownstream -> ColdDownstreamPendingRPC.Callee(
                         this,
-                        connection,
+                        connection.coroutineContext,
                         reference,
                         implementationRegistry.callImplementation(frame.serviceCallIdentifier),
                     )
                     is AscensionRPCFrame.ColdBistream -> ColdBistreamPendingRPC.Callee(
                         this,
-                        connection,
+                        connection.coroutineContext,
                         reference,
                         implementationRegistry.callImplementation(frame.serviceCallIdentifier),
                     )
                 }
                 pendingCallees.access { this[reference] = newPendingCallee }
-                newPendingCallee.invokeOnCompletion {
+                newPendingCallee.initialize {
                     try {
                         if (it != null && it !is CancellationException) {
                             // TODO: Don't warn when `it` is `CancellationException` or `null`.
@@ -235,7 +249,7 @@ class AscensionRPCProtocol(
         val reference = nextCallReference()
         val pendingRpc = factory(reference)
         pendingCallers.access { this[reference] = pendingRpc }
-        pendingRpc.invokeOnCompletion {
+        pendingRpc.initialize {
             try {
                 if (it != null && it !is CancellationException) {
                     // TODO: Don't warn when `it` is `CancellationException` or `null`.
@@ -261,7 +275,7 @@ class AscensionRPCProtocol(
     override fun singleCall(serviceCallIdentifier: ServiceCallIdentifier): RPC.SingleCall.Caller = managedCaller { reference ->
         SingleCallPendingRPC.Caller(
             this,
-            connection,
+            connection.coroutineContext,
             serviceCallIdentifier,
             reference,
         )
@@ -270,7 +284,7 @@ class AscensionRPCProtocol(
     override fun upstream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Upstream.Caller = managedCaller { reference ->
         ColdUpstreamPendingRPC.Caller(
             this,
-            connection,
+            connection.coroutineContext,
             serviceCallIdentifier,
             reference,
         )
@@ -279,7 +293,7 @@ class AscensionRPCProtocol(
     override fun downstream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Downstream.Caller = managedCaller { reference ->
         ColdDownstreamPendingRPC.Caller(
             this,
-            connection,
+            connection.coroutineContext,
             serviceCallIdentifier,
             reference,
         )
@@ -288,7 +302,7 @@ class AscensionRPCProtocol(
     override fun bistream(serviceCallIdentifier: ServiceCallIdentifier): RPC.Bistream.Caller = managedCaller { reference ->
         ColdBistreamPendingRPC.Caller(
             this,
-            connection,
+            connection.coroutineContext,
             serviceCallIdentifier,
             reference,
         )

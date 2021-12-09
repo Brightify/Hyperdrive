@@ -1,9 +1,12 @@
 package org.brightify.hyperdrive.krpc.application.impl
 
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
@@ -34,6 +37,36 @@ public class DefaultRPCNode(
     override fun <E: RPCNodeExtension> getExtension(identifier: RPCNodeExtension.Identifier<E>): E? {
         @Suppress("UNCHECKED_CAST")
         return contract.extensions[identifier] as? E
+    }
+
+    public val isActive: Boolean
+        get() = contract.protocol.isActive
+
+    public suspend fun run(onInitializationCompleted: suspend () -> Unit): Unit = coroutineScope {
+        // We need the protocol to be running before we bind the extensions.
+        val runningProtocol = async(start = CoroutineStart.UNDISPATCHED) { contract.protocol.run() }
+
+        val extensions = contract.extensions.values
+        for (extension in extensions) {
+            extension.bind(transport, contract)
+        }
+
+        onInitializationCompleted()
+
+        val parallelWorkContext = extensions.fold(coroutineContext) { accumulator, extension ->
+            extension.enhanceParallelWorkContext(accumulator)
+        }
+
+        val runningParallelWork = launch(parallelWorkContext) {
+            extensions.map { extension ->
+                async { extension.whileConnected() }
+            }.awaitAll()
+        }
+
+        // We want to the background work to end when the protocol does.
+        runningProtocol.invokeOnCompletion {
+            runningParallelWork.cancel("Protocol has completed.", it)
+        }
     }
 
     public class Contract(
@@ -82,33 +115,6 @@ public class DefaultRPCNode(
                     throw exception
                 }
             }
-        }
-    }
-
-    public suspend fun run(onInitializationCompleted: suspend () -> Unit): Unit = coroutineScope {
-        // We need the protocol to be running before we bind the extensions.
-        val runningProtocol = async { contract.protocol.run() }
-
-        val extensions = contract.extensions.values
-        for (extension in extensions) {
-            extension.bind(transport, contract)
-        }
-
-        onInitializationCompleted()
-
-        val parallelWorkContext = extensions.fold(coroutineContext) { accumulator, extension ->
-            extension.enhanceParallelWorkContext(accumulator)
-        }
-
-        val runningParallelWork = launch(parallelWorkContext) {
-            extensions.map { extension ->
-                async { extension.whileConnected() }
-            }.awaitAll()
-        }
-
-        // We want to the background work to end when the protocol does.
-        runningProtocol.invokeOnCompletion {
-            runningParallelWork.cancel("Protocol has completed.", it)
         }
     }
 }

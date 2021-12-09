@@ -8,6 +8,8 @@ import org.brightify.hyperdrive.krpc.transport.TransportFrameSerializer
 public interface RPCProtocol {
     public val version: Version
 
+    public val isActive: Boolean
+
     public suspend fun run()
 
     public fun singleCall(serviceCallIdentifier: ServiceCallIdentifier): RPC.SingleCall.Caller

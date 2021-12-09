@@ -53,12 +53,11 @@ class DarwinWebSocketClient(
 ): RPCClientConnector {
     var currentTask: NSURLSessionWebSocketTask? = null
 
-    override suspend fun withConnection(block: suspend RPCConnection.() -> Unit) = coroutineScope {
+    override suspend fun withConnection(block: suspend RPCConnection.() -> Unit): Unit = coroutineScope {
         val connectionJob = SupervisorJob()
         val didOpen = CompletableDeferred<Unit>(connectionJob)
         val didClose = CompletableDeferred<Unit>(connectionJob)
         val delegate = Delegate(didOpen, didClose) //.apply { freeze() }
-        println("W2: ${Worker.current.id} - ${Worker.current.name} - ${NSOperationQueue.currentQueue?.name} - ${NSOperationQueue.currentQueue?.debugDescription}")
         val urlSession = NSURLSession.sessionWithConfiguration(
             configuration = NSURLSessionConfiguration.defaultSessionConfiguration(),
             delegate = delegate,
@@ -71,18 +70,14 @@ class DarwinWebSocketClient(
         val connection = Connection(task, this)
 
         task.resume()
-        println("before open")
         didOpen.await()
-        println("after open")
 
         try {
             listOf(
                 connection.async { connection.block() },
                 didClose,
             ).awaitAll()
-            println("after wait")
         } finally {
-            println("finally")
             task.cancel()
         }
     }
@@ -98,12 +93,10 @@ class DarwinWebSocketClient(
         }
 
         override suspend fun receive(): SerializedFrame {
-            println("receiving")
             scope.ensureActive()
             val result = CompletableDeferred<SerializedFrame>()
 
             val completionHandler: (NSURLSessionWebSocketMessage?, NSError?) -> Unit = { webSocketMessage, error ->
-                println("receive handler: $webSocketMessage, $error")
                 if (webSocketMessage != null) {
                     val data = webSocketMessage.data
                     val string = webSocketMessage.string
@@ -133,12 +126,10 @@ class DarwinWebSocketClient(
             }
             websocket.receiveMessageWithCompletionHandler(completionHandler)
 
-            println("will wait for result")
             return result.await()
         }
 
         override suspend fun send(frame: SerializedFrame) {
-            println("sending: $frame")
             scope.ensureActive()
             val result = CompletableDeferred<Unit>()
 
@@ -146,16 +137,14 @@ class DarwinWebSocketClient(
                 is SerializedFrame.Binary -> NSURLSessionWebSocketMessage(data = frame.binary.toNSData().freeze())
                 is SerializedFrame.Text -> NSURLSessionWebSocketMessage(string = frame.text.freeze())
             }.freeze()
-            println(websocket.isFrozen)
+
             val completionHandler: (NSError?) -> Unit = { error ->
-                println("completionHandler: $error")
                 if (error != null) {
                     result.completeExceptionally(NSErrorThrowable(error))
                 } else {
                     result.complete(Unit)
                 }
             }
-            println("do send: $message")
             websocket.sendMessage(message, completionHandler = completionHandler)
             return result.await()
         }
@@ -201,18 +190,6 @@ class DarwinWebSocketClient(
             didOpen.completeExceptionally(exception)
             didClose.completeExceptionally(exception)
         }
-
-        // override fun URLSession(
-        //     session: NSURLSession,
-        //     didReceiveChallenge: NSURLAuthenticationChallenge,
-        //     completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> Unit,
-        // ) {
-        //     println("did receive challenge: $didReceiveChallenge")
-        //     completionHandler(
-        //         NSURLSessionAuthChallengeUseCredential,
-        //         NSURLCredential.credentialForTrust(didReceiveChallenge.protectionSpace.serverTrust.freeze())
-        //     )
-        // }
     }
 }
 @OptIn(ExperimentalStdlibApi::class)

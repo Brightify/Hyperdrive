@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.withIndex
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
+import org.brightify.hyperdrive.PrintlnDestination
 import org.brightify.hyperdrive.krpc.api.RPCError
 import org.brightify.hyperdrive.krpc.api.RPCErrorException
 import org.brightify.hyperdrive.krpc.extension.CallLoggingNodeExtension
@@ -48,7 +49,10 @@ inline fun <reified T : RPCError> shouldThrowExactly(block: () -> Any?): T {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GeneratedServiceTest: BehaviorSpec({
-    Logger.configure { setMinLevel(LoggingLevel.Info) }
+    Logger.configure {
+        setMinLevel(LoggingLevel.Trace)
+        destination(PrintlnDestination())
+    }
 
     lateinit var server: KRPCServer
     val serviceImpl = object: BasicTestService {
@@ -69,7 +73,11 @@ class GeneratedServiceTest: BehaviorSpec({
         }
 
         override suspend fun singleCallClosingConnection() {
-            server.connections.single().close()
+            try {
+                server.connections.single().close()
+            } catch (t: Throwable) {
+                // Ignore
+            }
             Logger("BasicTestService").debug { "Did close connection from service" }
         }
 
@@ -128,7 +136,7 @@ class GeneratedServiceTest: BehaviorSpec({
             registry,
             SessionContextKeyRegistry.Empty,
             additionalExtensions = listOf(
-                CallLoggingNodeExtension.Factory(Logger(KRPCServer::class)),
+                CallLoggingNodeExtension.Factory(Logger("Server")),
             )
         ).also { it.start() }
 
@@ -138,7 +146,7 @@ class GeneratedServiceTest: BehaviorSpec({
             serializers,
             registry,
             additionalExtensions = listOf(
-                CallLoggingNodeExtension.Factory(Logger(KRPCClient::class)),
+                CallLoggingNodeExtension.Factory(Logger("Client")),
             )
         ).also { it.start() }
     }
@@ -174,10 +182,12 @@ class GeneratedServiceTest: BehaviorSpec({
                     }
 
                     Then("`singleCallClosingConnection` throws ConnectionClosedException") {
-                        shouldThrowExactly<ConnectionClosedException> {
-                            service.singleCallClosingConnection()
+                        repeat(100) { number ->
+                            shouldThrowExactly<ConnectionClosedException> {
+                                service.singleCallClosingConnection()
+                            }
+                            service.multiplyByTwo(number) shouldBe number * 2
                         }
-                        service.multiplyByTwo(2) shouldBe 2 * 2
                     }
                 }
 

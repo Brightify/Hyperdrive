@@ -2,55 +2,98 @@ package org.brightify.hyperdrive.krpc.protocol.ascension
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedSendChannelException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import org.brightify.hyperdrive.Logger
+import org.brightify.hyperdrive.krpc.SerializedPayload
 import org.brightify.hyperdrive.krpc.error.RPCProtocolViolationError
 import org.brightify.hyperdrive.krpc.frame.AscensionRPCFrame
 import org.brightify.hyperdrive.krpc.util.RPCReference
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
 // TODO: Add timeout between "Created" and "Ready" to close inactive connections.
 public abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: AscensionRPCFrame>(
     public val protocol: AscensionRPCProtocol,
-    scope: CoroutineScope,
+    context: CoroutineContext,
     public val reference: RPCReference,
     private val logger: Logger,
-): CoroutineScope by scope + CoroutineName("PendingRPC") + Job(scope.coroutineContext.job) {
+): CoroutineScope {
     protected val completionTracker: CompletionTracker = CompletionTracker()
+
+    private val mainJob = Job(context[Job])
+    override val coroutineContext: CoroutineContext = context + CoroutineName("PendingRPC") + mainJob
+
+    protected abstract val shouldComplete: Flow<Boolean>
 
     protected abstract suspend fun handle(frame: INCOMING)
 
     // TODO: Increase buffer capacity so the `accept` doesn't wait for the handler unless buffer's full.
     private val acceptQueue = Channel<INCOMING>()
 
-    private val runningJob = launch {
-        for (frame in acceptQueue) {
-            logger.trace { "Will handle: $frame" }
-            handle(frame)
-            logger.trace { "Did handle: $frame" }
+    public fun initialize(onCompletion: CompletionHandler) {
+        mainJob.invokeOnCompletion(onCompletion)
+
+        launch {
+            for (frame in acceptQueue) {
+                logger.trace { "Will handle: $frame" }
+                handle(frame)
+                logger.trace { "Did handle: $frame" }
+            }
+        }
+
+        launch {
+            shouldComplete.first { it }
+            complete()
         }
     }
 
-    public fun invokeOnCompletion(handler: CompletionHandler): DisposableHandle = runningJob.invokeOnCompletion(handler)
-
     public suspend fun accept(frame: INCOMING) {
-        runningJob.ensureActive()
         logger.debug { "Accepting frame: $frame" }
         require(frame.callReference == reference) {
             "Cannot accept frame meant for another call! Frame: $frame, this.reference: $reference."
         }
 
-        acceptQueue.send(frame)
+        try {
+            acceptQueue.send(frame)
+        } catch (e: ClosedSendChannelException) {
+            logger.warning { "PendingRPC has completed, dropping frame: $frame" }
+        }
     }
 
     protected suspend fun send(frame: OUTGOING) {
         protocol.send(frame)
     }
 
+    protected val <T> CompletableDeferred<T>.isCompletedFlow: Flow<Boolean>
+        get() = flow {
+            try {
+                await()
+            } catch (t: Throwable) {
+                // Intentionally ignored as we only care about the completion state.
+            } finally {
+                emit(true)
+            }
+        }
+
+    protected fun newPayloadChannel(): Channel<SerializedPayload> {
+        return Channel<SerializedPayload>().also { channel ->
+            mainJob.invokeOnCompletion {
+                channel.close(it)
+            }
+        }
+    }
+
     private fun complete() {
+        logger.trace { "Completing RPC($reference): $this" }
         acceptQueue.close()
-        coroutineContext.job.cancel()
+        mainJob.complete()
     }
 
     protected inner class CompletionTracker {
@@ -99,7 +142,7 @@ public abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: Ascensio
             acquiredTokens -= 1
             if (acquiredTokens <= 0) {
                 acquiredTokens = releasedTokenValue
-                complete()
+                // complete()
             }
         }
 
@@ -120,19 +163,19 @@ public abstract class PendingRPC<INCOMING: AscensionRPCFrame, OUTGOING: Ascensio
 
     public abstract class Callee<INCOMING, OUTGOING>(
         protocol: AscensionRPCProtocol,
-        scope: CoroutineScope,
+        context: CoroutineContext,
         reference: RPCReference,
         logger: Logger,
-    ): PendingRPC<INCOMING, OUTGOING>(protocol, scope, reference, logger)
+    ): PendingRPC<INCOMING, OUTGOING>(protocol, context, reference, logger)
         where INCOMING: AscensionRPCFrame, INCOMING: AscensionRPCFrame.Upstream,
               OUTGOING: AscensionRPCFrame, OUTGOING: AscensionRPCFrame.Downstream
 
     public abstract class Caller<INCOMING, OUTGOING>(
         protocol: AscensionRPCProtocol,
-        scope: CoroutineScope,
+        context: CoroutineContext,
         reference: RPCReference,
         logger: Logger,
-    ): PendingRPC<INCOMING, OUTGOING>(protocol, scope, reference, logger)
+    ): PendingRPC<INCOMING, OUTGOING>(protocol, context, reference, logger)
         where INCOMING: AscensionRPCFrame, INCOMING: AscensionRPCFrame.Downstream,
               OUTGOING: AscensionRPCFrame, OUTGOING: AscensionRPCFrame.Upstream
 }
