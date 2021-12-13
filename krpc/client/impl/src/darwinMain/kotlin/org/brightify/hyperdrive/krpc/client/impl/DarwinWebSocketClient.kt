@@ -119,7 +119,7 @@ class DarwinWebSocketClient(
                         }
                     }
                 } else if (error != null) {
-                    result.completeExceptionally(ConnectionClosedException("Received a socket error: ${error.localizedDescription}."))
+                    result.completeExceptionally(ConnectionClosedException("Received a socket error: ${error.localizedDescription}.", NSErrorThrowable(error)))
                 } else {
                     error("No result or error received from iOS websocket!")
                 }
@@ -140,7 +140,7 @@ class DarwinWebSocketClient(
 
             val completionHandler: (NSError?) -> Unit = { error ->
                 if (error != null) {
-                    result.completeExceptionally(NSErrorThrowable(error))
+                    result.completeExceptionally(ConnectionClosedException("Connection closed due to an error.", NSErrorThrowable(error)))
                 } else {
                     result.complete(Unit)
                 }
@@ -183,7 +183,7 @@ class DarwinWebSocketClient(
             println("W5: ${Worker.current.id} - ${Worker.current.name}")
             println("did error/complete: $didCompleteWithError")
             val exception = if (didCompleteWithError != null) {
-                NSErrorThrowable(didCompleteWithError)
+                ConnectionClosedException("Connection closed because of an error.", NSErrorThrowable(didCompleteWithError))
             } else {
                 ConnectionClosedException()
             }
@@ -192,28 +192,3 @@ class DarwinWebSocketClient(
         }
     }
 }
-@OptIn(ExperimentalStdlibApi::class)
-suspend fun <T> runWithoutFreezingContext(block: suspend () -> T): T {
-    val result = CompletableDeferred<T>()
-    val dispatcher = requireNotNull(coroutineContext[CoroutineDispatcher]) { "CoroutineDispatcher is required to run isolated." }
-    val job = SupervisorJob()
-    val newScope = CoroutineScope(job + dispatcher)
-
-    coroutineContext.job.invokeOnCompletion {
-        newScope.cancel(it as? CancellationException)
-    }
-
-    return try {
-        newScope.launch {
-            try {
-                result.complete(block())
-            } catch (t: Throwable) {
-                result.completeExceptionally(t)
-            }
-        }
-        result.await()
-    } finally {
-        newScope.cancel()
-    }
-}
-
