@@ -23,7 +23,7 @@ pluginManagement {
     resolutionStrategy {
         eachPlugin {
             if (requested.id.namespace == "com.android" || requested.id.name == "kotlin-android-extensions") {
-                useModule("com.android.tools.build:gradle:7.0.0")
+                useModule("com.android.tools.build:gradle:7.0.3")
             }
         }
     }
@@ -45,9 +45,6 @@ dependencyResolutionManagement {
         }
     }
 }
-
-apply(from = "compose-check.gradle.kts")
-val isComposeEnabled: Boolean by extra
 
 rootProject.name = "Hyperdrive"
 
@@ -114,8 +111,9 @@ val loggingProjects = loggingModules.map { "logging-$it" to "logging/$it" }
 val multiplatformXModules = listOf(
     "api",
     "core",
-    "plugin"
-) + if (isComposeEnabled) listOf("compose") else emptyList()
+    "plugin",
+    "compose"
+)
 
 val multiplatformXProjects = multiplatformXModules.map { "multiplatformx-$it" to "multiplatformx/$it" } + listOf(
     "multiplatformx-keyvalue" to "multiplatformx/keyvalue",

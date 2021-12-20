@@ -14,18 +14,10 @@ plugins {
 }
 
 buildscript {
-    apply(from = "compose-check.gradle.kts")
-
-    val isComposeEnabled: Boolean by extra
-    if (isComposeEnabled) {
-        dependencies {
-            classpath("com.android.tools.build:gradle:7.0.2")
-        }
+    dependencies {
+        classpath("com.android.tools.build:gradle:7.0.3")
     }
 }
-
-apply(from = "compose-check.gradle.kts")
-val isComposeEnabled: Boolean by extra
 
 allprojects {
     apply(plugin = "maven-publish")
@@ -66,7 +58,6 @@ allprojects {
             sourceSets.all {
                 languageSettings {
                     optIn("kotlinx.serialization.ExperimentalSerializationApi")
-                    // languageVersion = "1.6"
                     progressiveMode = true
                 }
             }
@@ -76,7 +67,6 @@ allprojects {
             sourceSets.all {
                 languageSettings {
                     optIn("kotlinx.serialization.ExperimentalSerializationApi")
-                    // languageVersion = "1.6"
                     progressiveMode = true
                 }
             }

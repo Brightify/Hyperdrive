@@ -41,7 +41,6 @@ import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.psi.KtPureClassOrObject
-import org.jetbrains.kotlin.psi2ir.generators.ClassGenerator.Companion.sortedByRenderer
 
 class AutoFactoryFakeOverrideTransformer(val anyClass: IrClassSymbol): IrElementTransformerVoid() {
     @OptIn(ObsoleteDescriptorBasedAPI::class)

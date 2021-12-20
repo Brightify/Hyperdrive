@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
+import org.jetbrains.kotlin.ir.types.IrTypeSystemContextImpl
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isSubtypeOf
 import org.jetbrains.kotlin.ir.types.toKotlinType
@@ -188,7 +189,7 @@ class SerializerResolver(
     private fun IrTypeParameter.accepts(argument: IrTypeArgument): Boolean {
         val argumentType = argument.typeOrNull ?: return true
         return superTypes.all {
-            argumentType.isSubtypeOf(it, pluginContext.irBuiltIns)
+            argumentType.isSubtypeOf(it, IrTypeSystemContextImpl(pluginContext.irBuiltIns))
         }
     }
 }

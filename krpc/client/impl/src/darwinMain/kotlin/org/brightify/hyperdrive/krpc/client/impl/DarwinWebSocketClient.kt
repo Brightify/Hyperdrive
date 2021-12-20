@@ -113,7 +113,6 @@ class DarwinWebSocketClient(
                         string != null -> {
                             result.complete(SerializedFrame.Text(string))
                         }
-
                         else -> {
                             result.completeExceptionally(RuntimeException("Neither data nor string received!"))
                         }
