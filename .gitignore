@@ -45,3 +45,4 @@ build/
 !gradle-wrapper.jar
 *.hprof
 .vscode
+.idea/sonarlint

@@ -1,12 +1,11 @@
 [versions]
-kotlin-coroutines = "1.5.2-native-mt"
-kotlin-serialization = "1.3.1"
+kotlin-coroutines = "1.6.0-native-mt"
+kotlin-serialization = "1.3.2"
 stately = "1.2.1"
 ktor = "1.6.7"
 auto-service = "1.0"
 kotlin-compile-testing = "1.4.7"
 jupiter = "5.7.2"
-kotest = "5.0.3"
 compose = "1.0.5"
 compose-compiler = "1.1.0-rc02"
 multiplatformSettings = "0.8.1"
@@ -35,6 +34,8 @@ compile-testing = { module = "com.github.tschuchortdev:kotlin-compile-testing", 
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jupiter" }
 
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
+kotest-datatest = { module = "io.kotest:kotest-framework-datatest", version.ref = "kotest" }
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 
@@ -44,19 +45,11 @@ compose-material = { module = "androidx.compose.material:material", version.ref 
 multiplatformSettings-core = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
 multiplatformSettings-coroutinesNativeMt = { module = "com.russhwolf:multiplatform-settings-coroutines-native-mt", version.ref = "multiplatformSettings" }
 
-kvision = { module = "io.kvision:kvision", version.ref = "kvision" }
-kvision-bootstrap = { module = "io.kvision:kvision-bootstrap", version.ref = "kvision" }
-kvision-bootstrap-css = { module = "io.kvision:kvision-bootstrap-css", version.ref = "kvision" }
-kvision-i18n = { module = "io.kvision:kvision-i18n", version.ref = "kvision" }
-kvision-fontawesome = { module = "io.kvision:kvision-fontawesome", version.ref = "kvision" }
-kvision-testutils = { module = "io.kvision:kvision-testutils", version.ref = "kvision" }
-
 diff-js = { module = "io.github.petertrr:kotlin-multiplatform-diff-js", version = "0.2.0" }
 
 kodein = { module = "org.kodein.di:kodein-di", version.ref = "kodein" }
 
 [bundles]
-kotest-common = ["kotest-assertions-core", "kotest-property"]
-kotest-jvm = ["kotest-assertions-core", "kotest-property", "kotest-runner-junit5"]
+kotest-common = ["kotest-assertions-core", "kotest-engine", "kotest-datatest", "kotest-property"]
+kotest-jvm = ["kotest-runner-junit5"]
 serialization = ["serialization-core", "serialization-json", "serialization-protobuf"]
-kvision = ["kvision", "kvision-bootstrap", "kvision-bootstrap-css", "kvision-i18n", "kvision-fontawesome"]

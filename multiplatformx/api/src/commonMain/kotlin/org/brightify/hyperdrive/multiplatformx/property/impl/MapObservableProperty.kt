@@ -11,7 +11,6 @@ internal class MapObservableProperty<T, U>(
 ): ObservableProperty<U>, ObservableProperty.Listener<T> {
     override var value: U = transform(mapped.value)
         private set
-    private var pendingValue: Optional<U> = Optional.None
 
     private val listeners = ValueChangeListenerHandler(this)
 
@@ -19,18 +18,12 @@ internal class MapObservableProperty<T, U>(
         mapped.addListener(this)
     }
 
-    override fun valueWillChange(oldValue: T, newValue: T) {
+    override fun valueDidChange(oldValue: T, newValue: T) {
         val newTransformedValue = transform(newValue)
         if (equalityPolicy.isEqual(value, newTransformedValue)) { return }
-        pendingValue = Optional.Some(newTransformedValue)
-        listeners.notifyValueWillChange(value, newTransformedValue)
-    }
-
-    override fun valueDidChange(oldValue: T, newValue: T) = pendingValue.withValue {
-        val oldTransformedValue = value
-        value = it
-        pendingValue = Optional.None
-        listeners.notifyValueDidChange(oldTransformedValue, it)
+        listeners.runNotifyingListeners(newTransformedValue) {
+            value = it
+        }
     }
 
     override fun addListener(listener: ObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)

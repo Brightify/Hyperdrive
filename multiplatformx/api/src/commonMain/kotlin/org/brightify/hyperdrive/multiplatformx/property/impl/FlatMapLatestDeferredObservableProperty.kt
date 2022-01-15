@@ -20,7 +20,6 @@ internal class FlatMapLatestDeferredObservableProperty<T, U>(
     private val equalityPolicy: ObservableProperty.EqualityPolicy<DeferredObservableProperty<U>>,
 ): DeferredObservableProperty<U>, DeferredObservableProperty.Listener<T> {
     private var activeBacking: DeferredObservableProperty<U>? = switchMapped.latestValue.mapToKotlin(transform)
-    private var pendingActiveBacking: DeferredObservableProperty<U>? = null
 
     override var latestValue: Optional<U> = activeBacking.toOptional().flatMap { it.latestValue }
         private set
@@ -47,28 +46,21 @@ internal class FlatMapLatestDeferredObservableProperty<T, U>(
         activeBackingSubscriptionCancellation = activeBacking?.addListener(passthroughListener)
     }
 
-    override fun valueWillChange(oldValue: Optional<T>, newValue: T) {
-        val currentActiveBacking = activeBacking
+    override fun valueDidChange(oldValue: Optional<T>, newValue: T) {
+        val oldActiveBacking = activeBacking
         val newActiveBacking = transform(newValue)
-        if (currentActiveBacking != null && equalityPolicy.isEqual(currentActiveBacking, newActiveBacking)) { return }
+        if (oldActiveBacking != null && equalityPolicy.isEqual(oldActiveBacking, newActiveBacking)) { return }
 
         // Only remove the listener if we intend to replace the active backing.
         activeBackingSubscriptionCancellation?.cancel()
-        pendingActiveBacking = newActiveBacking
 
         val newActiveBackingLatestValue = newActiveBacking.latestValue
         if (newActiveBackingLatestValue is Optional.Some) {
             listeners.notifyValueWillChange(latestValue, newActiveBackingLatestValue.value)
         }
-    }
 
-    override fun valueDidChange(oldValue: Optional<T>, newValue: T) {
-        val oldActiveBacking = activeBacking
-        val newActiveBacking = pendingActiveBacking ?: return
         activeBacking = newActiveBacking
-        pendingActiveBacking = null
 
-        val newActiveBackingLatestValue = newActiveBacking.latestValue
         if (newActiveBackingLatestValue is Optional.Some) {
             latestValue = newActiveBackingLatestValue
             valueFlow.tryEmit(newActiveBackingLatestValue.value)

@@ -19,7 +19,6 @@ internal class MapDeferredObservableProperty<T, U>(
 
     override var latestValue: Optional<U> = mapped.latestValue.map(transform)
 
-    private var pendingValue: Optional<U> = Optional.None
     private val valueFlow = MutableSharedFlow<U>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     init {
@@ -36,20 +35,14 @@ internal class MapDeferredObservableProperty<T, U>(
         return valueFlow.first()
     }
 
-    override fun valueWillChange(oldValue: Optional<T>, newValue: T) {
+    override fun valueDidChange(oldValue: Optional<T>, newValue: T) {
         val currentValue = latestValue
         val newTransformedValue = transform(newValue)
         if (currentValue is Optional.Some && equalityPolicy.isEqual(currentValue.value, newTransformedValue)) { return }
-        pendingValue = Optional.Some(newTransformedValue)
-        listeners.notifyValueWillChange(currentValue, newTransformedValue)
-    }
-
-    override fun valueDidChange(oldValue: Optional<T>, newValue: T) = pendingValue.withValue {
-        val oldTransformedValue = latestValue
-        latestValue = Optional.Some(it)
-        pendingValue = Optional.None
-        valueFlow.tryEmit(it)
-        listeners.notifyValueDidChange(oldTransformedValue, it)
+        listeners.runNotifyingListeners(newTransformedValue) {
+            latestValue = Optional.Some(it)
+            valueFlow.tryEmit(it)
+        }
     }
 
     override fun addListener(listener: DeferredObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)

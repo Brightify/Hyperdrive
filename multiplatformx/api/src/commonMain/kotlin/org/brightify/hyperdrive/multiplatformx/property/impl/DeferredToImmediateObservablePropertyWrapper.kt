@@ -15,21 +15,14 @@ internal class DeferredToImmediateObservablePropertyWrapper<T>(
     override var value: T = initialValue
         private set
 
-    private var pendingValue: Optional<T> = Optional.None
-
     init {
         wrapped.addListener(this)
     }
 
-    override fun valueWillChange(oldValue: Optional<T>, newValue: T) {
-        pendingValue = Optional.Some(newValue)
-        listeners.notifyValueWillChange(value, newValue)
-    }
-
-    override fun valueDidChange(oldValue: Optional<T>, newValue: T) = pendingValue.withValue {
-        value = it
-        pendingValue = Optional.None
-        listeners.notifyValueDidChange(oldValue.someOrDefault { initialValue }, value)
+    override fun valueDidChange(oldValue: Optional<T>, newValue: T) {
+        listeners.runNotifyingListeners(newValue) {
+            value = it
+        }
     }
 
     override fun addListener(listener: ObservableProperty.Listener<T>): CancellationToken = listeners.addListener(listener)

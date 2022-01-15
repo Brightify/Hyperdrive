@@ -6,7 +6,7 @@ plugins {
     kotlin("kapt")
     `java-gradle-plugin`
     id("com.github.gmazzo.buildconfig")
-    id("com.gradle.plugin-publish") version "0.15.0"
+    id("com.gradle.plugin-publish")
 }
 
 buildConfig {

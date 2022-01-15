@@ -9,7 +9,6 @@ internal class FlatMapLatestObservableProperty<T, U>(
     private val equalityPolicy: ObservableProperty.EqualityPolicy<ObservableProperty<U>>,
 ): ObservableProperty<U>, ObservableProperty.Listener<T> {
     private var activeBacking: ObservableProperty<U> = transform(switchMapped.value)
-    private var pendingActiveBacking: ObservableProperty<U>? = null
 
     override val value: U
         get() = activeBacking.value
@@ -25,21 +24,19 @@ internal class FlatMapLatestObservableProperty<T, U>(
         activeBackingSubscriptionCancellation = activeBacking.addListener(passthroughListener)
     }
 
-    override fun valueWillChange(oldValue: T, newValue: T) {
+    override fun valueDidChange(oldValue: T, newValue: T) {
         val newActiveBacking = transform(newValue)
         if (equalityPolicy.isEqual(activeBacking, newActiveBacking)) { return }
-        pendingActiveBacking = newActiveBacking
-        listeners.notifyValueWillChange(activeBacking.value, newActiveBacking.value)
-    }
 
-    override fun valueDidChange(oldValue: T, newValue: T) {
-        val oldActiveBacking = activeBacking
-        activeBacking = pendingActiveBacking ?: return
-        pendingActiveBacking = null
-
-        // Only remove the listener if we replaced the active backing.
+        // Only remove the listener if we will replace the active backing.
         activeBackingSubscriptionCancellation.cancel()
-        listeners.notifyValueDidChange(oldActiveBacking.value, activeBacking.value)
+
+        val oldBackingValue = value
+        val newBackingValue = newActiveBacking.value
+        listeners.notifyValueWillChange(oldBackingValue, newBackingValue)
+        activeBacking = newActiveBacking
+        listeners.notifyValueDidChange(oldBackingValue, newBackingValue)
+
         activeBackingSubscriptionCancellation = activeBacking.addListener(passthroughListener)
     }
 
