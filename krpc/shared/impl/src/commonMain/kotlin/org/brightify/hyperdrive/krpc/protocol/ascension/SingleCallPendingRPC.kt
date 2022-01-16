@@ -70,5 +70,7 @@ public object SingleCallPendingRPC {
                 is AscensionRPCFrame.SingleCall.Downstream.Response -> responseDeferred.complete(frame.payload)
             }
         }
+
+        override fun toString(): String = "SingleCallPendingRPC.Caller(reference: $reference, identifier: $serviceCallIdentifier)"
     }
 }

@@ -4,7 +4,9 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -12,6 +14,7 @@ import kotlinx.coroutines.plus
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.krpc.RPCConnection
 import org.brightify.hyperdrive.krpc.SerializedFrame
+import org.brightify.hyperdrive.krpc.error.ConnectionClosedException
 
 class TestConnection(
     private val scope: CoroutineScope,
@@ -29,6 +32,8 @@ class TestConnection(
         logger.trace { "Closing connection $this" }
         leftToRightFlow.close()
         rightToLeftFlow.close()
+        left.cancel(ConnectionClosedException())
+        right.cancel(ConnectionClosedException())
     }
 
     val left: RPCConnection = object: RPCConnection, CoroutineScope by scope + CoroutineName("TestConnection.left") + SupervisorJob(scope.coroutineContext[Job]) {
@@ -37,8 +42,12 @@ class TestConnection(
         }
 
         override suspend fun receive(): SerializedFrame {
-            return rightToLeftFlow.receive().also {
-                logger.debug { "<- Received: $it" }
+            return try {
+                rightToLeftFlow.receive().also {
+                    logger.debug { "<- Received: $it" }
+                }
+            } catch (e: ClosedReceiveChannelException) {
+                throw ConnectionClosedException(cause = e)
             }
         }
 
@@ -55,8 +64,12 @@ class TestConnection(
         }
 
         override suspend fun receive(): SerializedFrame {
-            return leftToRightFlow.receive().also {
-                logger.debug { "-> Received: $it" }
+            return try {
+                leftToRightFlow.receive().also {
+                    logger.debug { "-> Received: $it" }
+                }
+            } catch (e: ClosedReceiveChannelException) {
+                throw ConnectionClosedException(cause = e)
             }
         }
 

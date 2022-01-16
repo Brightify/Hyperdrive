@@ -1,30 +1,29 @@
 package org.brightify.hyperdrive.krpc.impl
 
+import io.kotest.core.spec.BeforeAny
+import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestCoroutineExceptionHandler
-import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.serializer
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
 import org.brightify.hyperdrive.krpc.MutableServiceRegistry
 import org.brightify.hyperdrive.krpc.RPCTransport
+import org.brightify.hyperdrive.krpc.application.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.application.RPCNode
 import org.brightify.hyperdrive.krpc.application.RPCNodeExtension
-import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
 import org.brightify.hyperdrive.krpc.application.impl.DefaultRPCNode
+import org.brightify.hyperdrive.krpc.extension.SessionNodeExtension
 import org.brightify.hyperdrive.krpc.protocol.ascension.AscensionRPCProtocol
-import org.brightify.hyperdrive.krpc.application.RPCHandshakePerformer
 import org.brightify.hyperdrive.krpc.session.Session
 import org.brightify.hyperdrive.krpc.session.impl.DefaultSessionContextKeyRegistry
 import org.brightify.hyperdrive.krpc.session.withSession
 import org.brightify.hyperdrive.krpc.test.TestConnection
 import kotlin.reflect.KClass
-import kotlin.test.expect
 
 object DeadlockTestKey : Session.Context.Key<Int> {
     override val qualifiedName: String = "test:deadlock"
@@ -78,22 +77,19 @@ class LocalStorageMockPlugin: SessionNodeExtension.Plugin {
 @OptIn(ExperimentalCoroutinesApi::class)
 class SessionNodeExtensionTest: BehaviorSpec({
 
-    val testScope = TestCoroutineScope(TestCoroutineExceptionHandler())
-
     beforeSpec {
         Logger.configure {
             destination(object: Logger.Destination {
+                private val start = System.currentTimeMillis()
+
                 override fun log(level: LoggingLevel, throwable: Throwable?, tag: String, message: String) {
-                    println("$level: $tag: $message")
+                    println("+${System.currentTimeMillis() - start}ms\t| $level: $tag: $message")
                 }
             })
             setMinLevel(LoggingLevel.Trace)
         }
     }
 
-    afterTest {
-        testScope.cleanupTestCoroutines()
-    }
 
     Given("KRPCNode with SessionNodeExtension") {
         lateinit var registry: MutableServiceRegistry
@@ -109,7 +105,7 @@ class SessionNodeExtensionTest: BehaviorSpec({
         }
 
         beforeTest {
-            connection = TestConnection(testScope)
+            connection = TestConnection(this)
             registry = DefaultServiceRegistry()
             val serializers = SerializerRegistry(
                 JsonCombinedSerializer.Factory(),
@@ -133,7 +129,7 @@ class SessionNodeExtensionTest: BehaviorSpec({
                 ),
                 registry,
             ).create(connection.left)
-            testScope.launch { leftNode.run { } }
+            launch { leftNode.run { } }
 
             val rightNode = DefaultRPCNode.Factory(
                 RPCHandshakePerformer.NoHandshake(
@@ -152,7 +148,7 @@ class SessionNodeExtensionTest: BehaviorSpec({
                 ),
                 DefaultServiceRegistry(),
             ).create(connection.right)
-            testScope.launch { rightNode.run { } }
+            launch { rightNode.run { } }
 
             val transport = rightNode.transport
             client = KRPCNodeTest.TestService.Client(transport)
@@ -177,12 +173,15 @@ class SessionNodeExtensionTest: BehaviorSpec({
                 }
 
             })
-            expect(client.singleCall()) { "Hello world" }
+            client.singleCall() shouldBe "Hello world"
+            println("check done")
+
+            // FIXME: AfterTest is not being called if we don't close the connection here as if the test kept running indefinitely
+            connection.close()
         }
 
         afterTest {
-            connection.close()
+            // connection.close()
         }
     }
-
 })

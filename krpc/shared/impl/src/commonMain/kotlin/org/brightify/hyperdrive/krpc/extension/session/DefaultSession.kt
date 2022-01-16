@@ -131,6 +131,10 @@ public class DefaultSession internal constructor(
 
                 block(mutator)
 
+                if (modifications.isEmpty()) {
+                    break
+                }
+
                 val request = ContextUpdateRequest(
                     modifications.mapValues { (_, action) ->
                         when (action) {
@@ -191,10 +195,14 @@ public class DefaultSession internal constructor(
                 }
             } while (result != ContextUpdateResult.Accepted)
 
-            modifiedKeysFlow.emit(modifiedKeys)
+            if (modifiedKeys.isNotEmpty()) {
+                modifiedKeysFlow.emit(modifiedKeys)
+            }
             ourJob.complete()
         } catch (t: Throwable) {
-            modifiedKeysFlow.emit(modifiedKeys)
+            if (modifiedKeys.isNotEmpty()) {
+                modifiedKeysFlow.emit(modifiedKeys)
+            }
             ourJob.completeExceptionally(t)
             throw t
         } finally {

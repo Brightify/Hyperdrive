@@ -19,7 +19,7 @@ fun KotlinMultiplatformExtension.configurePlatforms(appleSilicon: Boolean = fals
         tvosSimulatorArm64()
         macosArm64()
     }
-    js(BOTH) {
+    js(IR) {
         browser {
             testTask {
                 enabled = false

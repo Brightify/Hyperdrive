@@ -27,6 +27,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(libs.coroutines.test)
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation(project(":krpc-test"))
@@ -38,7 +39,6 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit5"))
 
-                implementation(libs.coroutines.test)
                 implementation(libs.junit.jupiter)
                 implementation(libs.bundles.kotest.jvm)
             }

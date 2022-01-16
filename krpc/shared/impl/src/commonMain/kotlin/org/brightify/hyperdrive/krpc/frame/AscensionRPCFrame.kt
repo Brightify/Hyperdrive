@@ -85,13 +85,17 @@ public sealed class AscensionRPCFrame: RPCFrame {
                 public val payload: SerializedPayload,
                 override val serviceCallIdentifier: ServiceCallIdentifier,
                 override val callReference: RPCReference,
-            ): Upstream(), AscensionRPCFrame.Upstream.Open
+            ): Upstream(), AscensionRPCFrame.Upstream.Open {
+                override fun toString(): String = "Ascension.Single.Up.Open(ref: $callReference, id: $serviceCallIdentifier)"
+            }
         }
 
         public sealed class Downstream: SingleCall(), AscensionRPCFrame.Downstream {
             @Serializable
             @SerialName("single:down:response")
-            public class Response(public val payload: SerializedPayload, override val callReference: RPCReference): Downstream()
+            public class Response(public val payload: SerializedPayload, override val callReference: RPCReference): Downstream() {
+                override fun toString(): String = "Ascension.Single.Down.Response(ref: $callReference)"
+            }
         }
     }
 
@@ -103,16 +107,22 @@ public sealed class AscensionRPCFrame: RPCFrame {
                 public val payload: SerializedPayload,
                 override val serviceCallIdentifier: ServiceCallIdentifier,
                 override val callReference: RPCReference,
-            ): Upstream(), AscensionRPCFrame.Upstream.Open
+            ): Upstream(), AscensionRPCFrame.Upstream.Open {
+                override fun toString(): String = "Ascension.ColdUpstream.Up.Open(ref: $callReference, id: $serviceCallIdentifier)"
+            }
 
             public sealed class StreamEvent: Upstream() {
                 @Serializable
                 @SerialName("cold-upstream:up:data")
-                public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent()
+                public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent() {
+                    override fun toString(): String = "Ascension.ColdUpstream.Up.Event.Data(ref: $callReference)"
+                }
 
                 @Serializable
                 @SerialName("cold-upstream:up:timeout")
-                public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent()
+                public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent() {
+                    override fun toString(): String = "Ascension.ColdUpstream.Up.Event.Timeout(ref: $callReference)"
+                }
             }
         }
 
@@ -120,15 +130,21 @@ public sealed class AscensionRPCFrame: RPCFrame {
             public sealed class StreamOperation: Downstream() {
                 @Serializable
                 @SerialName("cold-upstream:down:start")
-                public class Start(override val callReference: RPCReference): StreamOperation()
+                public class Start(override val callReference: RPCReference): StreamOperation() {
+                    override fun toString(): String = "Ascension.ColdUpstream.Down.Op.Start(ref: $callReference)"
+                }
                 @Serializable
                 @SerialName("cold-upstream:down:close")
-                public class Close(override val callReference: RPCReference): StreamOperation()
+                public class Close(override val callReference: RPCReference): StreamOperation() {
+                    override fun toString(): String = "Ascension.ColdUpstream.Down.Op.Start(ref: $callReference)"
+                }
             }
 
             @Serializable
             @SerialName("cold-upstream:down:response")
-            public class Response(public val payload: SerializedPayload, override val callReference: RPCReference): Downstream()
+            public class Response(public val payload: SerializedPayload, override val callReference: RPCReference): Downstream() {
+                override fun toString(): String = "Ascension.ColdUpstream.Down.Response(ref: $callReference)"
+            }
         }
     }
 
@@ -140,35 +156,49 @@ public sealed class AscensionRPCFrame: RPCFrame {
                 public val payload: SerializedPayload,
                 override val serviceCallIdentifier: ServiceCallIdentifier,
                 override val callReference: RPCReference,
-            ): Upstream(), AscensionRPCFrame.Upstream.Open
+            ): Upstream(), AscensionRPCFrame.Upstream.Open {
+                override fun toString(): String = "Ascension.ColdDownstream.Up.Open(ref: $callReference, id: $serviceCallIdentifier)"
+            }
 
             public sealed class StreamOperation: Upstream() {
                 @Serializable
                 @SerialName("cold-downstream:up:start")
-                public class Start(override val callReference: RPCReference): StreamOperation()
+                public class Start(override val callReference: RPCReference): StreamOperation() {
+                    override fun toString(): String = "Ascension.ColdDownstream.Up.Op.Start(ref: $callReference)"
+                }
                 @Serializable
                 @SerialName("cold-downstream:up:close")
-                public class Close(override val callReference: RPCReference): StreamOperation()
+                public class Close(override val callReference: RPCReference): StreamOperation() {
+                    override fun toString(): String = "Ascension.ColdDownstream.Up.Op.Close(ref: $callReference)"
+                }
             }
         }
 
         public sealed class Downstream: ColdDownstream(), AscensionRPCFrame.Downstream {
             @Serializable
             @SerialName("cold-downstream:down:opened")
-            public class Opened(override val callReference: RPCReference): Downstream()
+            public class Opened(override val callReference: RPCReference): Downstream() {
+                override fun toString(): String = "Ascension.ColdDownstream.Down.Opened(ref: $callReference)"
+            }
 
             @Serializable
             @SerialName("cold-downstream:down:error")
-            public class Error(public val payload: SerializedPayload, override val callReference: RPCReference): Downstream()
+            public class Error(public val payload: SerializedPayload, override val callReference: RPCReference): Downstream() {
+                override fun toString(): String = "Ascension.ColdDownstream.Down.Error(ref: $callReference)"
+            }
 
             public sealed class StreamEvent: Downstream() {
                 @Serializable
                 @SerialName("cold-downstream:down:data")
-                public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent()
+                public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent() {
+                    override fun toString(): String = "Ascension.ColdDownstream.Down.Event.Data(ref: $callReference)"
+                }
 
                 @Serializable
                 @SerialName("cold-downstream:down:timeout")
-                public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent()
+                public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent() {
+                    override fun toString(): String = "Ascension.ColdDownstream.Down.Event.Timeout(ref: $callReference)"
+                }
             }
         }
     }
@@ -181,54 +211,78 @@ public sealed class AscensionRPCFrame: RPCFrame {
                 public val payload: SerializedPayload,
                 override val serviceCallIdentifier: ServiceCallIdentifier,
                 override val callReference: RPCReference,
-            ): Upstream(), AscensionRPCFrame.Upstream.Open
+            ): Upstream(), AscensionRPCFrame.Upstream.Open {
+                override fun toString(): String = "Ascension.ColdBistream.Up.Open(ref: $callReference, id: $serviceCallIdentifier)"
+            }
 
             public sealed class StreamOperation: Upstream() {
                 @Serializable
                 @SerialName("cold-bistream:up:start")
-                public class Start(override val callReference: RPCReference): StreamOperation()
+                public class Start(override val callReference: RPCReference): StreamOperation() {
+                    override fun toString(): String = "Ascension.ColdBistream.Up.Op.Open(ref: $callReference)"
+                }
+
                 @Serializable
                 @SerialName("cold-bistream:up:close")
-                public class Close(override val callReference: RPCReference): StreamOperation()
+                public class Close(override val callReference: RPCReference): StreamOperation() {
+                    override fun toString(): String = "Ascension.ColdBistream.Up.Op.Close(ref: $callReference)"
+                }
             }
 
             public sealed class StreamEvent: Upstream() {
                 @Serializable
                 @SerialName("cold-bistream:up:data")
-                public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent()
+                public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent() {
+                    override fun toString(): String = "Ascension.ColdBistream.Up.Event.Data(ref: $callReference)"
+                }
 
                 @Serializable
                 @SerialName("cold-bistream:up:timeout")
-                public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent()
+                public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent() {
+                    override fun toString(): String = "Ascension.ColdBistream.Up.Event.Timeout(ref: $callReference)"
+                }
             }
         }
 
         public sealed class Downstream: ColdBistream(), AscensionRPCFrame.Downstream {
             @Serializable
             @SerialName("cold-bistream:down:opened")
-            public class Opened(override val callReference: RPCReference): Downstream()
+            public class Opened(override val callReference: RPCReference): Downstream() {
+                override fun toString(): String = "Ascension.ColdBistream.Down.Opened(ref: $callReference)"
+            }
 
             public sealed class StreamOperation: Downstream() {
                 @Serializable
                 @SerialName("cold-bistream:down:start")
-                public class Start(override val callReference: RPCReference): StreamOperation()
+                public class Start(override val callReference: RPCReference): StreamOperation() {
+                    override fun toString(): String = "Ascension.ColdBistream.Down.Op.Start(ref: $callReference)"
+                }
+
                 @Serializable
                 @SerialName("cold-bistream:down:close")
-                public class Close(override val callReference: RPCReference): StreamOperation()
+                public class Close(override val callReference: RPCReference): StreamOperation() {
+                    override fun toString(): String = "Ascension.ColdBistream.Down.Op.Close(ref: $callReference)"
+                }
             }
 
             @Serializable
             @SerialName("cold-bistream:down:error")
-            public class Error(public val payload: SerializedPayload, override val callReference: RPCReference): Downstream()
+            public class Error(public val payload: SerializedPayload, override val callReference: RPCReference): Downstream() {
+                override fun toString(): String = "Ascension.ColdBistream.Down.Error(ref: $callReference)"
+            }
 
             public sealed class StreamEvent: Downstream() {
                 @Serializable
                 @SerialName("cold-bistream:down:data")
-                public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent()
+                public class Data(public val data: SerializedPayload, override val callReference: RPCReference): StreamEvent() {
+                    override fun toString(): String = "Ascension.ColdBistream.Down.Event.Data(ref: $callReference)"
+                }
 
                 @Serializable
                 @SerialName("cold-bistream:down:timeout")
-                public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent()
+                public class Timeout(public val timeoutMillis: Long, override val callReference: RPCReference): StreamEvent() {
+                    override fun toString(): String = "Ascension.ColdBistream.Down.Event.Timeout(ref: $callReference)"
+                }
             }
         }
     }

@@ -9,6 +9,9 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = RPCReference.Serializer::class)
 public data class RPCReference(val reference: UInt) {
+
+    override fun toString(): String = "#$reference"
+
     public class Serializer: KSerializer<RPCReference> {
         override val descriptor: SerialDescriptor = Int.serializer().descriptor
 
