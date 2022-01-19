@@ -22,8 +22,6 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(libs.coroutines.test)
-                implementation(libs.bundles.kotest.common)
                 implementation(kotlin("reflect"))
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
@@ -31,6 +29,8 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
+                implementation(libs.bundles.kotest.common)
+                implementation(libs.coroutines.test)
                 implementation(libs.bundles.kotest.jvm)
                 implementation(kotlin("test-junit5"))
                 implementation(libs.junit.jupiter)
