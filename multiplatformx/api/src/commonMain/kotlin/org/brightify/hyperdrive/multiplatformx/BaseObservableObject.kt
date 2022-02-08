@@ -1,12 +1,14 @@
 package org.brightify.hyperdrive.multiplatformx
 
 import co.touchlab.stately.ensureNeverFrozen
+import org.brightify.hyperdrive.multiplatformx.internal.ObservableObjectPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.ObservablePropertyProvider
 import org.brightify.hyperdrive.multiplatformx.internal.PublishedPropertyProvider
 import org.brightify.hyperdrive.multiplatformx.property.MutableObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.defaultEqualityPolicy
 import org.brightify.hyperdrive.multiplatformx.property.impl.ConstantObservableProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.FlatMapLatestObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.map
 import org.brightify.hyperdrive.multiplatformx.property.toKotlinMutableProperty
 import org.brightify.hyperdrive.multiplatformx.property.toKotlinProperty
@@ -103,6 +105,16 @@ public abstract class BaseObservableObject: ObservableObject {
         equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
         return PublishedPropertyProvider(initialValue, equalityPolicy)
+    }
+
+    /**
+     * Property delegate used for property mutation tracking and propagating object changes from the current value.
+     */
+    protected fun <OWNER: BaseObservableObject, T: ObservableObject> published(
+        initialValue: T,
+        equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
+        return ObservableObjectPropertyProvider(initialValue, equalityPolicy)
     }
 
     /**
