@@ -34,6 +34,8 @@ public interface ObservableObject {
 
     public class ChangeTrackingTrigger: ChangeTracking, ChangeTracking.Listener {
         private val listeners = mutableSetOf<ChangeTracking.Listener>()
+        private val pendingListenerActions = mutableListOf<ListenerAction>()
+        private var isNotifyingListeners = false
 
         init {
             ensureNeverFrozen()
@@ -41,21 +43,29 @@ public interface ObservableObject {
         }
 
         public override fun addListener(listener: ChangeTracking.Listener): CancellationToken {
-            listeners.add(listener)
+            if (isNotifyingListeners) {
+                pendingListenerActions.add(ListenerAction.Add(listener))
+            } else {
+                doAddListener(listener)
+            }
             return CancellationToken {
                 removeListener(listener)
             }
         }
 
         public override fun removeListener(listener: ChangeTracking.Listener) {
-            listeners.remove(listener)
+            if (isNotifyingListeners) {
+                pendingListenerActions.add(ListenerAction.Remove(listener))
+            } else {
+                doRemoveListener(listener)
+            }
         }
 
-        public fun notifyObjectWillChange() {
+        public fun notifyObjectWillChange(): Unit = lockingListeners {
             listeners.forEach { it.onObjectWillChange() }
         }
 
-        public fun notifyObjectDidChange() {
+        public fun notifyObjectDidChange(): Unit = lockingListeners {
             listeners.forEach { it.onObjectDidChange() }
         }
 
@@ -65,6 +75,34 @@ public interface ObservableObject {
 
         override fun onObjectDidChange() {
             notifyObjectDidChange()
+        }
+
+        private inline fun lockingListeners(block: () -> Unit) {
+            isNotifyingListeners = true
+            block()
+            if (pendingListenerActions.isNotEmpty()) {
+                for (action in pendingListenerActions) {
+                    when (action) {
+                        is ListenerAction.Add -> doAddListener(action.listener)
+                        is ListenerAction.Remove -> doRemoveListener(action.listener)
+                    }
+                }
+                pendingListenerActions.clear()
+            }
+            isNotifyingListeners = false
+        }
+
+        private fun doAddListener(listener: ChangeTracking.Listener) {
+            listeners.add(listener)
+        }
+
+        private fun doRemoveListener(listener: ChangeTracking.Listener) {
+            listeners.remove(listener)
+        }
+
+        private sealed interface ListenerAction {
+            class Add(val listener: ChangeTracking.Listener): ListenerAction
+            class Remove(val listener: ChangeTracking.Listener): ListenerAction
         }
     }
 }
