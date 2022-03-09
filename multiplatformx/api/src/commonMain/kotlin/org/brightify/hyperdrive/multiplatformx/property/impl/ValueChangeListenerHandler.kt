@@ -64,6 +64,7 @@ internal class ValueChangeListenerHandler<OLD, NEW>(private val getCurrentValue:
                         is ListenerModification.Remove -> listeners.remove(modification.listener)
                     }
                 }
+                pendingListenerModifications.clear()
             }
         }
     }
