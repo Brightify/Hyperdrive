@@ -47,6 +47,6 @@ internal class MapDeferredObservableProperty<T, U>(
 
     override fun addListener(listener: DeferredObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: DeferredObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: DeferredObservableProperty.Listener<U>) = listeners.removeListener(listener)
 }
 

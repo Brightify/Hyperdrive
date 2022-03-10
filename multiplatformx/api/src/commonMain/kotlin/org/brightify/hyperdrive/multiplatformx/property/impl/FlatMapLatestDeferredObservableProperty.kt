@@ -8,10 +8,8 @@ import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProper
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.utils.Optional
 import org.brightify.hyperdrive.utils.flatMap
-import org.brightify.hyperdrive.utils.map
 import org.brightify.hyperdrive.utils.mapToKotlin
 import org.brightify.hyperdrive.utils.someOrDefault
-import org.brightify.hyperdrive.utils.toKotlin
 import org.brightify.hyperdrive.utils.toOptional
 
 internal class FlatMapLatestDeferredObservableProperty<T, U>(
@@ -72,7 +70,7 @@ internal class FlatMapLatestDeferredObservableProperty<T, U>(
 
     override fun addListener(listener: DeferredObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: DeferredObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: DeferredObservableProperty.Listener<U>) = listeners.removeListener(listener)
 
     inner class PassthroughValueChangeListener: DeferredObservableProperty.Listener<U> {
         override fun valueWillChange(oldValue: Optional<U>, newValue: U) {

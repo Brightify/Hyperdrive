@@ -1,6 +1,5 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
-import org.brightify.hyperdrive.multiplatformx.BaseObservableObject
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.ObservableObject
 import org.brightify.hyperdrive.multiplatformx.property.MutableObservableProperty
@@ -36,5 +35,5 @@ internal class ObservableObjectObservableProperty<T: ObservableObject>(
 
     override fun addListener(listener: ObservableProperty.Listener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.Listener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<T>) = listeners.removeListener(listener)
 }

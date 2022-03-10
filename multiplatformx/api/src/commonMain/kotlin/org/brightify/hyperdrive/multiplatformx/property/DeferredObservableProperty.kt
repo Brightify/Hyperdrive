@@ -18,10 +18,8 @@ public interface DeferredObservableProperty<T> {
 
     /**
      * Remove a [ValueChangeListener] from listeners to value change on this property.
-     *
-     * @return Whether the listener was present at the time of removal.
      */
-    public fun removeListener(listener: Listener<T>): Boolean
+    public fun removeListener(listener: Listener<T>)
 
     /**
      * Returns the latest value if any was emitted, `null` otherwise.

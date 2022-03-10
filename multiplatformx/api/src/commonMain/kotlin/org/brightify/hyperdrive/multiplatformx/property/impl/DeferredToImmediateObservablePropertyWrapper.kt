@@ -4,7 +4,6 @@ import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 import org.brightify.hyperdrive.utils.Optional
-import org.brightify.hyperdrive.utils.someOrDefault
 
 internal class DeferredToImmediateObservablePropertyWrapper<T>(
     private val initialValue: T,
@@ -27,5 +26,5 @@ internal class DeferredToImmediateObservablePropertyWrapper<T>(
 
     override fun addListener(listener: ObservableProperty.Listener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.Listener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<T>) = listeners.removeListener(listener)
 }

@@ -18,7 +18,7 @@ internal class CombineLatestObservableProperty<T>(
 
     override fun addListener(listener: ObservableProperty.Listener<List<T>>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.Listener<List<T>>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<List<T>>) = listeners.removeListener(listener)
 
     private inner class IndexListener(private val index: Int): ObservableProperty.Listener<T> {
         override fun valueDidChange(oldValue: T, newValue: T) {

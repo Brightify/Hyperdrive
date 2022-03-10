@@ -42,7 +42,7 @@ internal class FlatMapLatestObservableProperty<T, U>(
 
     override fun addListener(listener: ObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<U>) = listeners.removeListener(listener)
 
     inner class PassthroughValueChangeListener: ObservableProperty.Listener<U> {
         override fun valueWillChange(oldValue: U, newValue: U) {

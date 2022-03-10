@@ -50,5 +50,5 @@ internal class AsyncBindingObservableProperty<T, U>(
 
     override fun addListener(listener: ObservableProperty.Listener<T>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: ObservableProperty.Listener<T>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: ObservableProperty.Listener<T>) = listeners.removeListener(listener)
 }

@@ -37,7 +37,7 @@ public interface ObservableProperty<T> {
      *
      * @return Whether the listener was present at the time of removal.
      */
-    public fun removeListener(listener: Listener<T>): Boolean
+    public fun removeListener(listener: Listener<T>)
 
     /**
      * Implemented by listeners to [ObservableProperty] value changes.

@@ -22,7 +22,7 @@ internal class ImmediateToDeferredObservablePropertyWrapper<T>(
     override fun addListener(listener: DeferredObservableProperty.Listener<T>): CancellationToken =
         listeners.addListener(listener)
 
-    override fun removeListener(listener: DeferredObservableProperty.Listener<T>): Boolean =
+    override fun removeListener(listener: DeferredObservableProperty.Listener<T>) =
         listeners.removeListener(listener)
 
     override val latestValue: Optional<T>

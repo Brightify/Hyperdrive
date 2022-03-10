@@ -3,7 +3,6 @@ package org.brightify.hyperdrive.multiplatformx.property.impl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.mapNotNull
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.Lifecycle
 import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
@@ -56,5 +55,5 @@ internal class AsyncMapDeferredObservableProperty<T, U>(
 
     override fun addListener(listener: DeferredObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)
 
-    override fun removeListener(listener: DeferredObservableProperty.Listener<U>): Boolean = listeners.removeListener(listener)
+    override fun removeListener(listener: DeferredObservableProperty.Listener<U>) = listeners.removeListener(listener)
 }
