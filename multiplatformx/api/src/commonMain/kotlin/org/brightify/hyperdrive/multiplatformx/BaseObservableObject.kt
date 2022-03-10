@@ -29,7 +29,7 @@ public abstract class BaseObservableObject: ObservableObject {
     internal val internalChangeTrackingTrigger = changeTrackingTrigger
     public final override val changeTracking: ObservableObject.ChangeTracking = changeTrackingTrigger
 
-    private val properties = mutableMapOf<String, ObservableProperty<*>>()
+    private val properties = mutableMapOf<String, PropertyRegistration<*>>()
 
     init {
         ensureNeverFrozen()
@@ -73,7 +73,7 @@ public abstract class BaseObservableObject: ObservableObject {
      */
     @Suppress("UNCHECKED_CAST")
     protected fun <T> observe(property: KProperty0<T>): Lazy<ObservableProperty<T>> = lazy {
-        properties.getValue(property.name) as ObservableProperty<T>
+        properties.getValue(property.name).property as ObservableProperty<T>
     }
 
     /**
@@ -85,7 +85,7 @@ public abstract class BaseObservableObject: ObservableObject {
      */
     @Suppress("UNCHECKED_CAST")
     protected fun <T> observe(property: KMutableProperty0<T>): Lazy<MutableObservableProperty<T>> = lazy {
-        properties.getValue(property.name) as MutableObservableProperty<T>
+        properties.getValue(property.name).property as MutableObservableProperty<T>
     }
 
     /**
@@ -152,8 +152,7 @@ public abstract class BaseObservableObject: ObservableObject {
         check(!properties.containsKey(property.name)) {
             "ViewModelProperty for name ${property.name} (property: $property) already registered!"
         }
-        properties[property.name] = observableProperty
-        observableProperty.addListener(object: ObservableProperty.Listener<T> {
+        val listenerRegistration = observableProperty.addListener(object: ObservableProperty.Listener<T> {
             override fun valueWillChange(oldValue: T, newValue: T) {
                 changeTrackingTrigger.notifyObjectWillChange()
             }
@@ -162,5 +161,11 @@ public abstract class BaseObservableObject: ObservableObject {
                 changeTrackingTrigger.notifyObjectDidChange()
             }
         })
+        properties[property.name] = PropertyRegistration(
+            property = observableProperty,
+            listenerRegistration = listenerRegistration,
+        )
     }
+
+    private class PropertyRegistration<T>(val property: ObservableProperty<T>, val listenerRegistration: CancellationToken)
 }

@@ -11,10 +11,8 @@ internal class CombineLatestObservableProperty<T>(
         private set
 
     private val listeners = ValueChangeListenerHandler(this)
-
-    init {
-        sources.mapIndexed { index, property -> property.addListener(IndexListener(index)) }.concat()
-    }
+    // Required to keep the IndexListener instances retained.
+    private val listenerRegistration = sources.mapIndexed { index, property -> property.addListener(IndexListener(index)) }.concat()
 
     override fun addListener(listener: ObservableProperty.Listener<List<T>>): CancellationToken = listeners.addListener(listener)
 
