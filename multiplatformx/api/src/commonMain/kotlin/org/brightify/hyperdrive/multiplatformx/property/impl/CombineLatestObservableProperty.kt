@@ -5,7 +5,7 @@ import org.brightify.hyperdrive.multiplatformx.concat
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 
 internal class CombineLatestObservableProperty<T>(
-    sources: List<ObservableProperty<T>>,
+    private val sources: List<ObservableProperty<T>>,
 ): ObservableProperty<List<T>> {
     override var value: List<T> = sources.map { it.value }
         private set
