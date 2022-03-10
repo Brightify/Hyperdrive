@@ -9,7 +9,6 @@ internal class MutableManagedPropertyProvider<OWNER: BaseObservableManageableObj
     private val managedPropertyFactory: (owner: OWNER) -> MutableObservableProperty<VM>,
 ): MutableObservablePropertyProvider<OWNER, VM>(
     observablePropertyFactory = { owner ->
-        managedPropertyFactory(owner)
-            .also { ManagedPropertyHandler(owner, it, publishedChanges) }
+        MutableManagedPropertyHandler(owner, managedPropertyFactory(owner), publishedChanges)
     }
 )

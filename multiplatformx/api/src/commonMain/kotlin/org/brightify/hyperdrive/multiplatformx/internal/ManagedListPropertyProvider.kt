@@ -9,7 +9,6 @@ internal class ManagedListPropertyProvider<OWNER: BaseObservableManageableObject
     private val managedPropertyFactory: (owner: OWNER) -> ObservableProperty<List<VM>>,
 ): ObservablePropertyProvider<OWNER, List<VM>>(
     observablePropertyFactory = { owner ->
-        managedPropertyFactory(owner)
-            .also { ManagedListPropertyHandler(owner, it, publishedChanges) }
+        ManagedListPropertyHandler(owner, managedPropertyFactory(owner), publishedChanges)
     }
 )

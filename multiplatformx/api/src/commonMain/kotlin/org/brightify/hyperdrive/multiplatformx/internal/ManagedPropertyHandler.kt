@@ -5,11 +5,11 @@ import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.ManageableViewModel
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
 
-internal class ManagedPropertyHandler<VM: ManageableViewModel?>(
+internal open class ManagedPropertyHandler<VM: ManageableViewModel?>(
     private val owner: BaseObservableManageableObject,
     private val property: ObservableProperty<VM>,
     private val publishedChanges: Boolean,
-): ObservableProperty.Listener<VM> {
+): ObservableProperty.Listener<VM>, ObservableProperty<VM> {
     private var publishJobCancellation: CancellationToken? = null
 
     init {
@@ -35,4 +35,11 @@ internal class ManagedPropertyHandler<VM: ManageableViewModel?>(
         publishJobCancellation?.cancel()
         oldChild?.lifecycle?.let(owner.lifecycle::removeChild)
     }
+
+    override val value: VM
+        get() = property.value
+
+    override fun addListener(listener: ObservableProperty.Listener<VM>): CancellationToken = property.addListener(listener)
+
+    override fun removeListener(listener: ObservableProperty.Listener<VM>) = property.removeListener(listener)
 }
