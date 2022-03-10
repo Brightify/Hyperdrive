@@ -26,7 +26,7 @@ internal class WeakListenerHandler<LISTENER: Any>() {
         }
     }
 
-    inline fun notifyListeners(notify: LISTENER.() -> Unit) {
+    fun notifyListeners(notify: LISTENER.() -> Unit) {
         check(!isNotifyingListeners) { "Reentrancy! Trying to notify listeners while notifying listeners!" }
         try {
             isNotifyingListeners = true
