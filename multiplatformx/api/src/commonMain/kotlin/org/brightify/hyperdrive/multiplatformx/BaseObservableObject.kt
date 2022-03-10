@@ -108,13 +108,19 @@ public abstract class BaseObservableObject: ObservableObject {
     }
 
     /**
-     * Property delegate used for property mutation tracking and propagating object changes from the current value.
+     * Property delegate used for property mutation tracking and propagating object changes from the current value when providing true
+     * to the `shallow` parameter.
      */
     protected fun <OWNER: BaseObservableObject, T: ObservableObject> published(
         initialValue: T,
+        shallow: Boolean = true,
         equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
-        return ObservableObjectPropertyProvider(initialValue, equalityPolicy)
+        return if (shallow) {
+            PublishedPropertyProvider(initialValue, equalityPolicy)
+        } else {
+            ObservableObjectPropertyProvider(initialValue, equalityPolicy)
+        }
     }
 
     /**
