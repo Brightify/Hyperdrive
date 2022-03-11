@@ -12,6 +12,7 @@ import org.brightify.hyperdrive.multiplatformx.property.impl.FlatMapLatestObserv
 import org.brightify.hyperdrive.multiplatformx.property.impl.ImmediateToDeferredObservablePropertyWrapper
 import org.brightify.hyperdrive.multiplatformx.property.impl.MapDeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.MapObservableProperty
+import org.brightify.hyperdrive.multiplatformx.property.impl.MergeObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.impl.NeverDeferredObservableProperty
 import kotlin.js.JsName
 
@@ -91,6 +92,14 @@ public fun <T: Any> ObservableProperty<T?>.filterNotNull(
     equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
 ): DeferredObservableProperty<T> {
     return filter { it != null }.map(equalityPolicy) { it!! }
+}
+
+public fun <T> merge(sources: List<ObservableProperty<T>>): DeferredObservableProperty<T> {
+    return MergeObservableProperty(sources.map { it.deferred() })
+}
+
+public fun <T> mergeDeferred(sources: List<DeferredObservableProperty<T>>): DeferredObservableProperty<T> {
+    return MergeObservableProperty(sources)
 }
 
 /**
