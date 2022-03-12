@@ -15,7 +15,7 @@ internal class MergeObservableProperty<T>(
 ): DeferredObservableProperty<T>, DeferredObservableProperty.Listener<T> {
 
     private val listeners = ValueChangeListenerHandler(this)
-    private val coroutineBridge = MutableSharedFlow<T>(onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val coroutineBridge = MutableSharedFlow<T>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     init {
         sources.forEach { property -> property.addListener(this) }
