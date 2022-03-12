@@ -11,6 +11,10 @@ internal class ImmediateToDeferredObservablePropertyWrapper<T>(
 ): DeferredObservableProperty<T>, ObservableProperty.Listener<T> {
     private val listeners = ValueChangeListenerHandler(this)
 
+    init {
+        wrapped.addListener(this)
+    }
+
     override fun valueWillChange(oldValue: T, newValue: T) {
         listeners.notifyValueWillChange(Optional.Some(oldValue), newValue)
     }
