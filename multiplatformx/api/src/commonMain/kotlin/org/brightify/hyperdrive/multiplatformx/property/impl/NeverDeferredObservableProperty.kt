@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
 import org.brightify.hyperdrive.utils.Optional
@@ -10,11 +11,11 @@ internal class NeverDeferredObservableProperty<T>: DeferredObservableProperty<T>
 
     private val listeners = ValueChangeListenerHandler(this)
 
-    override suspend fun await(): T {
+    override suspend fun await(): T = coroutineScope {
         awaitCancellation()
     }
 
-    override suspend fun nextValue(): T {
+    override suspend fun nextValue(): T = coroutineScope {
         awaitCancellation()
     }
 

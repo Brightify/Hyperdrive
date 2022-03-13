@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
@@ -25,14 +26,14 @@ internal class MapDeferredObservableProperty<T, U>(
         mapped.addListener(this)
     }
 
-    override suspend fun await(): U {
-        return latestValue.someOrDefault {
+    override suspend fun await(): U = coroutineScope {
+        latestValue.someOrDefault {
             nextValue()
         }
     }
 
-    override suspend fun nextValue(): U {
-        return valueFlow.first()
+    override suspend fun nextValue(): U = coroutineScope {
+        valueFlow.first()
     }
 
     override fun valueDidChange(oldValue: Optional<T>, newValue: T) {

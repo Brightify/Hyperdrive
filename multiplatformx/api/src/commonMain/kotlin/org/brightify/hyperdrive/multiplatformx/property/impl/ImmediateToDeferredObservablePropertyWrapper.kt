@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
+import kotlinx.coroutines.coroutineScope
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.multiplatformx.property.DeferredObservableProperty
 import org.brightify.hyperdrive.multiplatformx.property.ObservableProperty
@@ -32,7 +33,11 @@ internal class ImmediateToDeferredObservablePropertyWrapper<T>(
     override val latestValue: Optional<T>
         get() = Optional.Some(wrapped.value)
 
-    override suspend fun await(): T = wrapped.value
+    override suspend fun await(): T = coroutineScope {
+        wrapped.value
+    }
 
-    override suspend fun nextValue(): T = wrapped.nextValue()
+    override suspend fun nextValue(): T = coroutineScope {
+        wrapped.nextValue()
+    }
 }

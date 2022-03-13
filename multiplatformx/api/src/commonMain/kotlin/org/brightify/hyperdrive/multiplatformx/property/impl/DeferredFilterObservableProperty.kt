@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -32,14 +33,14 @@ internal class DeferredFilterObservableProperty<T>(
         filtered.addListener(this)
     }
 
-    override suspend fun await(): T {
-        return storage.value.someOrDefault {
+    override suspend fun await(): T = coroutineScope {
+        storage.value.someOrDefault {
             storage.filterSome().first()
         }
     }
 
-    override suspend fun nextValue(): T {
-        return storage.drop(1).filterSome().first()
+    override suspend fun nextValue(): T = coroutineScope {
+        storage.drop(1).filterSome().first()
     }
 
     override fun valueDidChange(oldValue: T, newValue: T) {

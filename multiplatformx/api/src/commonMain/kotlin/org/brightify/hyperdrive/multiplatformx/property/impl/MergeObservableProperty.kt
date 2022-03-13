@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
@@ -35,13 +36,13 @@ internal class MergeObservableProperty<T>(
     override var latestValue: Optional<T> = Optional.None
         private set
 
-    override suspend fun await(): T {
-        return latestValue.someOrDefault {
+    override suspend fun await(): T = coroutineScope {
+        latestValue.someOrDefault {
             nextValue()
         }
     }
 
-    override suspend fun nextValue(): T {
-        return coroutineBridge.first()
+    override suspend fun nextValue(): T = coroutineScope {
+        coroutineBridge.first()
     }
 }

@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -45,12 +46,12 @@ internal class AsyncMapDeferredObservableProperty<T, U>(
         queue.push(newValue)
     }
 
-    override suspend fun await(): U {
-        return storage.value.someOrDefault { storage.filterSome().first() }
+    override suspend fun await(): U = coroutineScope {
+        storage.value.someOrDefault { storage.filterSome().first() }
     }
 
-    override suspend fun nextValue(): U {
-        return storage.drop(1).filterSome().first()
+    override suspend fun nextValue(): U = coroutineScope {
+        storage.drop(1).filterSome().first()
     }
 
     override fun addListener(listener: DeferredObservableProperty.Listener<U>): CancellationToken = listeners.addListener(listener)

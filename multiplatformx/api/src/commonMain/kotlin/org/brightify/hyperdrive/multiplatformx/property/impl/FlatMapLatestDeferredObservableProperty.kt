@@ -1,6 +1,7 @@
 package org.brightify.hyperdrive.multiplatformx.property.impl
 
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
@@ -29,14 +30,14 @@ internal class FlatMapLatestDeferredObservableProperty<T, U>(
     private val switchMappingSubscriptionCancellation: CancellationToken
     private var activeBackingSubscriptionCancellation: CancellationToken?
 
-    override suspend fun await(): U {
-        return latestValue.someOrDefault {
+    override suspend fun await(): U = coroutineScope {
+        latestValue.someOrDefault {
             nextValue()
         }
     }
 
-    override suspend fun nextValue(): U {
-        return valueFlow.first()
+    override suspend fun nextValue(): U = coroutineScope {
+        valueFlow.first()
     }
 
     init {
