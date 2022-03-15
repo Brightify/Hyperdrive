@@ -3,7 +3,11 @@ package org.brightify.hyperdrive.multiplatformx.util
 import org.brightify.hyperdrive.multiplatformx.CancellationToken
 import org.brightify.hyperdrive.utils.WeakReference
 
-internal class WeakListenerHandler<LISTENER: Any>() {
+internal class WeakListenerHandler<LISTENER: Any>(
+    // As long as this handler lives (due to vended tokens) it should retain its owner.
+    @Suppress("unused")
+    private val owner: Any,
+) {
     private val listeners = mutableListOf<WeakReference<LISTENER>>()
     private var isNotifyingListeners = false
     private val pendingListenerModifications = mutableListOf<ListenerModification<LISTENER>>()

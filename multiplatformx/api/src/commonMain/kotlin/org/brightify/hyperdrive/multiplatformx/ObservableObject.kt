@@ -34,7 +34,7 @@ public interface ObservableObject {
     }
 
     public class ChangeTrackingTrigger: ChangeTracking, ChangeTracking.Listener {
-        private val listeners = WeakListenerHandler<ChangeTracking.Listener>()
+        private val listeners = WeakListenerHandler<ChangeTracking.Listener>(this)
 
         init {
             ensureNeverFrozen()
