@@ -115,7 +115,8 @@ public fun <T> combine(sources: List<ObservableProperty<T>>): ObservableProperty
 public fun <T1, T2> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
-): ObservableProperty<Pair<T1, T2>> = combine(source1, source2, ::Pair)
+    equalityPolicy: ObservableProperty.EqualityPolicy<Pair<T1, T2>> = defaultEqualityPolicy(),
+): ObservableProperty<Pair<T1, T2>> = combine(source1, source2, equalityPolicy, ::Pair)
 
 /**
  * Combine the last values of two [ObservableProperty] with a mapping function.
@@ -124,6 +125,7 @@ public fun <T1, T2> combine(
 public fun <T1, T2, U> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
+    equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
     combine: (T1, T2) -> U,
 ): ObservableProperty<U> {
     return CombineLatestObservableProperty(
@@ -132,7 +134,7 @@ public fun <T1, T2, U> combine(
             source2 as ObservableProperty<Any?>,
         )
     )
-    .map {
+    .map(equalityPolicy) {
         val (t1, t2) = it
         combine(t1 as T1, t2 as T2)
     }
@@ -145,7 +147,8 @@ public fun <T1, T2, T3, U> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
     source3: ObservableProperty<T3>,
-): ObservableProperty<Triple<T1, T2, T3>> = combine(source1, source2, source3, ::Triple)
+    equalityPolicy: ObservableProperty.EqualityPolicy<Triple<T1, T2, T3>> = defaultEqualityPolicy(),
+): ObservableProperty<Triple<T1, T2, T3>> = combine(source1, source2, source3, equalityPolicy, ::Triple)
 
 /**
  * Combine the last values of three [ObservableProperty] with a mapping function.
@@ -155,6 +158,7 @@ public fun <T1, T2, T3, U> combine(
     source1: ObservableProperty<T1>,
     source2: ObservableProperty<T2>,
     source3: ObservableProperty<T3>,
+    equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
     combine: (T1, T2, T3) -> U,
 ): ObservableProperty<U> {
     return CombineLatestObservableProperty(
@@ -163,7 +167,7 @@ public fun <T1, T2, T3, U> combine(
             source2 as ObservableProperty<Any?>,
             source3 as ObservableProperty<Any?>,
         )
-    ).map {
+    ).map(equalityPolicy) {
         val (t1, t2, t3) = it
         combine(t1 as T1, t2 as T2, t3 as T3)
     }
@@ -178,6 +182,7 @@ public fun <T1, T2, T3, T4, U> combine(
     source2: ObservableProperty<T2>,
     source3: ObservableProperty<T3>,
     source4: ObservableProperty<T4>,
+    equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
     combine: (T1, T2, T3, T4) -> U,
 ): ObservableProperty<U> {
     return CombineLatestObservableProperty(
@@ -187,7 +192,7 @@ public fun <T1, T2, T3, T4, U> combine(
             source3 as ObservableProperty<Any?>,
             source4 as ObservableProperty<Any?>,
         )
-    ).map {
+    ).map(equalityPolicy) {
         val (t1, t2, t3, t4) = it
         combine(t1 as T1, t2 as T2, t3 as T3, t4 as T4)
     }
@@ -203,6 +208,7 @@ public fun <T1, T2, T3, T4, T5, U> combine(
     source3: ObservableProperty<T3>,
     source4: ObservableProperty<T4>,
     source5: ObservableProperty<T5>,
+    equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
     combine: (T1, T2, T3, T4, T5) -> U,
 ): ObservableProperty<U> {
     return CombineLatestObservableProperty(
@@ -213,7 +219,7 @@ public fun <T1, T2, T3, T4, T5, U> combine(
             source4 as ObservableProperty<Any?>,
             source5 as ObservableProperty<Any?>,
         )
-    ).map {
+    ).map(equalityPolicy) {
         val (t1, t2, t3, t4, t5) = it
         combine(t1 as T1, t2 as T2, t3 as T3, t4 as T4, t5 as T5)
     }
