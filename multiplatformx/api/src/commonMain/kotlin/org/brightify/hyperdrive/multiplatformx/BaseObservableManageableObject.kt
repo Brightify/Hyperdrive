@@ -230,7 +230,7 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
      *
      * This variant takes in an [ObservableProperty] and a mapping function that converts it into a view model.
      */
-    protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel> managed(
+    protected fun <OWNER: BaseObservableManageableObject, T, VM: ManageableViewModel?> managed(
         property: ObservableProperty<T>,
         published: Boolean = false,
         equalityPolicy: ObservableProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
@@ -244,7 +244,7 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
      *
      * This variant takes in an [ObservableProperty].
      */
-    protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel> managed(
+    protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel?> managed(
         property: ObservableProperty<VM>,
         published: Boolean = false,
         equalityPolicy: ObservableProperty.EqualityPolicy<VM> = defaultEqualityPolicy(),
@@ -284,7 +284,7 @@ public abstract class BaseObservableManageableObject: BaseObservableObject(), Ob
      *
      * @sample org.brightify.hyperdrive.multiplatformx.BaseViewModelSamples.managedListTest
      */
-    protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel> managedList(
+    protected fun <OWNER: BaseObservableManageableObject, VM: ManageableViewModel?> managedList(
         childModels: List<VM>,
         published: Boolean = false,
         equalityPolicy: ObservableProperty.EqualityPolicy<List<VM>> = defaultEqualityPolicy(),
