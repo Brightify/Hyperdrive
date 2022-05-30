@@ -1,7 +1,7 @@
 plugins {
-    kotlin("multiplatform")
+    id("build-setup")
     kotlin("kapt")
-    kotlin("plugin.serialization")
+    alias(libs.plugins.kotlin.plugin.serialization)
 }
 
 repositories {

@@ -6,9 +6,9 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.Framework.BitcodeEmbeddingMode
 
 plugins {
 //    id("com.android.library")
-    kotlin("multiplatform")
-    id("com.chromaticnoise.multiplatform-swiftpackage")
-    kotlin("plugin.serialization")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.swiftpackage)
+    alias(libs.plugins.kotlin.plugin.serialization)
 }
 
 tasks.publish {

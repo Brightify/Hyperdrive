@@ -2,10 +2,10 @@ import org.brightify.hyperdrive.configurePlatforms
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
-    kotlin("multiplatform")
+    id("build-setup")
     `maven-publish`
     // Include in documentation generation.
-    id("org.jetbrains.dokka")
+    alias(libs.plugins.dokka)
 }
 
 kotlin {

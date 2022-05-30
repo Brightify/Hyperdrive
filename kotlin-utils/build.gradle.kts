@@ -1,7 +1,8 @@
 import org.brightify.hyperdrive.configurePlatforms
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
-    kotlin("multiplatform")
+    id("build-setup")
 }
 
 kotlin {

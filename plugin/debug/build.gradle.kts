@@ -1,9 +1,9 @@
 import org.brightify.hyperdrive.configurePlatforms
 
 plugins {
-    kotlin("multiplatform")
+    alias(libs.plugins.kotlin.multiplatform)
     // Include in documentation generation.
-    id("org.jetbrains.dokka")
+    alias(libs.plugins.dokka)
 }
 
 kotlin {

@@ -2,12 +2,17 @@
 
 package org.brightify.hyperdrive
 
+import org.gradle.api.Project
+import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.creating
 import org.gradle.kotlin.dsl.getting
 import org.gradle.kotlin.dsl.provideDelegate
 import org.gradle.kotlin.dsl.getValue
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import java.lang.*
+import java.lang.ClassLoader
 
+@Suppress("UNUSED_VARIABLE")
 fun KotlinMultiplatformExtension.configurePlatforms(appleSilicon: Boolean = false) {
     jvm()
     ios()

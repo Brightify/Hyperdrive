@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 
 plugins {
-    kotlin("jvm")
-    id("org.jetbrains.intellij")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.intellij)
 }
 
 val ideType: String by project

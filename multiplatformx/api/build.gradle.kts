@@ -1,10 +1,10 @@
 import org.brightify.hyperdrive.configurePlatforms
 
 plugins {
-    kotlin("multiplatform")
-    id("io.kotest.multiplatform")
+    id("build-setup")
+    alias(libs.plugins.kotest)
     // Include in documentation generation.
-    id("org.jetbrains.dokka")
+    alias(libs.plugins.dokka)
 }
 
 kotlin {

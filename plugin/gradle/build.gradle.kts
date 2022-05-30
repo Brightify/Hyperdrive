@@ -5,8 +5,8 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     `java-gradle-plugin`
-    id("com.github.gmazzo.buildconfig")
-    id("com.gradle.plugin-publish")
+    alias(libs.plugins.buildconfig)
+    alias(libs.plugins.gradlepublish)
 }
 
 buildConfig {

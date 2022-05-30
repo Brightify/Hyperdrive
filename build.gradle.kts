@@ -7,15 +7,16 @@ import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 plugins {
     `maven-publish`
     signing
-    id("io.github.gradle-nexus.publish-plugin")
-    id("org.jetbrains.dokka")
-    kotlin("multiplatform") apply false
-    kotlin("jvm") apply false
+    alias(libs.plugins.nexuspublish)
+    alias(libs.plugins.dokka)
+    id("build-setup") apply false
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
 }
 
 buildscript {
     dependencies {
-        classpath("com.android.tools.build:gradle:7.0.3")
+        // classpath("com.android.tools.build:gradle:7.0.3")
     }
 }
 
@@ -50,7 +51,7 @@ allprojects {
     afterEvaluate {
         extensions.findByType<JavaPluginExtension>()?.apply {
             toolchain {
-               languageVersion.set(JavaLanguageVersion.of(8))
+               languageVersion.set(JavaLanguageVersion.of(11))
             }
         }
 

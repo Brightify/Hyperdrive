@@ -2,8 +2,8 @@ import org.brightify.hyperdrive.configurePlatforms
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
+    id("build-setup")
+    alias(libs.plugins.kotlin.plugin.serialization)
 }
 
 kotlin {

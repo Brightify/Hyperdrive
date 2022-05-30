@@ -3,10 +3,10 @@ import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
 plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
+    id("build-setup")
+    alias(libs.plugins.kotlin.plugin.serialization)
     // Include in documentation generation.
-    id("org.jetbrains.dokka")
+    alias(libs.plugins.dokka)
 }
 
 kotlin {
