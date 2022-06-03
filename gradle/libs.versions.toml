@@ -8,8 +8,8 @@ auto-service = "1.0"
 kotlin-compile-testing = "1.4.8"
 jupiter = "5.7.2"
 compose = "1.1.1"
-compose-compiler = "1.1.1"
-multiplatformSettings = "0.8.1"
+compose-compiler = "1.2.0-beta02"
+multiplatformSettings = "1.0.0-alpha01"
 kodein = "7.10.0"
 sqldelight = "1.5.3"
 kotest = "5.2.3"
@@ -66,7 +66,7 @@ compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "
 compose-material = { module = "androidx.compose.material:material", version.ref = "compose" }
 
 multiplatformSettings-core = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
-multiplatformSettings-coroutinesNativeMt = { module = "com.russhwolf:multiplatform-settings-coroutines-native-mt", version.ref = "multiplatformSettings" }
+multiplatformSettings-coroutines = { module = "com.russhwolf:multiplatform-settings-coroutines", version.ref = "multiplatformSettings" }
 
 diff-js = { module = "io.github.petertrr:kotlin-multiplatform-diff-js", version = "0.2.0" }
 

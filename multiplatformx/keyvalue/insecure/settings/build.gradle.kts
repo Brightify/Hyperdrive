@@ -13,7 +13,7 @@ kotlin {
             dependencies {
                 api(project(":multiplatformx-keyvalue"))
                 api(libs.multiplatformSettings.core)
-                implementation(libs.multiplatformSettings.coroutinesNativeMt)
+                implementation(libs.multiplatformSettings.coroutines)
                 implementation(libs.stately.common)
                 implementation(libs.coroutines.core)
                 implementation(libs.serialization.core)
