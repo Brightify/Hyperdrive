@@ -263,9 +263,9 @@ subprojects {
                 gradle.taskGraph.hasTask("publishToSonatype")
             })
 
-            val mavenCentralSigningKey: String? by project
-            val mavenCentralSigningPassword: String? by project
-            useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
+            // val mavenCentralSigningKey: String? by project
+            // val mavenCentralSigningPassword: String? by project
+            // useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
 
             sign(publishing.publications)
         }
