@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
+import org.jetbrains.kotlin.types.TypeAttributes
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.typeUtil.createProjection
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
@@ -101,7 +102,7 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
                     supertypes.add(thisDescriptor.containingClass?.defaultType ?: return)
                 thisDescriptor.isKrpcDescriptor -> {
                     val type = KotlinTypeFactory.simpleNotNullType(
-                        Annotations.EMPTY,
+                        TypeAttributes.Empty,
                         thisDescriptor.module.findClassAcrossModuleDependencies(KnownType.API.serviceDescriptor) ?: return,
                         listOf(createProjection(thisDescriptor.containingClass?.defaultType ?: return, Variance.INVARIANT, null))
                     )
@@ -393,7 +394,7 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
 
         val requestWrapperProjection = createProjection(
             KotlinTypeFactory.simpleNotNullType(
-                Annotations.EMPTY,
+                TypeAttributes.Empty,
                 KnownType.API.requestWrapper(payloadParameters.count()).asClassDescriptor(this),
                 payloadParameters.map {
                     createProjection(it.type, Variance.INVARIANT, null)
@@ -406,7 +407,7 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
         return when {
             isServerStream && isClientStream -> {
                 KotlinTypeFactory.simpleNotNullType(
-                    Annotations.EMPTY,
+                    TypeAttributes.Empty,
                     KnownType.API.coldBistreamCallDescription.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
@@ -417,7 +418,7 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
             }
             isClientStream -> {
                 KotlinTypeFactory.simpleNotNullType(
-                    Annotations.EMPTY,
+                    TypeAttributes.Empty,
                     KnownType.API.coldUpstreamCallDescription.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
@@ -428,7 +429,7 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
             }
             isServerStream -> {
                 KotlinTypeFactory.simpleNotNullType(
-                    Annotations.EMPTY,
+                    TypeAttributes.Empty,
                     KnownType.API.coldDownstreamCallDescription.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,
@@ -438,7 +439,7 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
             }
             else -> {
                 KotlinTypeFactory.simpleNotNullType(
-                    Annotations.EMPTY,
+                    TypeAttributes.Empty,
                     KnownType.API.singleCallDescription.asClassDescriptor(this),
                     listOf(
                         requestWrapperProjection,

@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.SupertypeLoopChecker
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueClassRepresentation
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
@@ -28,7 +29,23 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassBody
+import org.jetbrains.kotlin.psi.KtContextReceiver
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtDestructuringDeclarationEntry
+import org.jetbrains.kotlin.psi.KtModifierList
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtPrimaryConstructor
+import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPureClassOrObject
+import org.jetbrains.kotlin.psi.KtPureElement
+import org.jetbrains.kotlin.psi.KtSecondaryConstructor
+import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
+import org.jetbrains.kotlin.psi.KtTypeAlias
+import org.jetbrains.kotlin.psi.allConstructors
 import org.jetbrains.kotlin.psi.synthetics.SyntheticClassOrObjectDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorFactory
@@ -287,7 +304,7 @@ class FactoryClassDescriptor(
     override fun isValue(): Boolean = false
     override fun getStaticScope(): MemberScope = MemberScope.Empty
     override fun getSealedSubclasses(): Collection<ClassDescriptor> = emptyList()
-    override fun getInlineClassRepresentation(): InlineClassRepresentation<SimpleType>? = null
+    override fun getValueClassRepresentation(): ValueClassRepresentation<SimpleType>? = null
     
     override fun getScopeForClassHeaderResolution(): LexicalScope = resolutionScopesSupport.scopeForClassHeaderResolution()
     override fun getScopeForConstructorHeaderResolution(): LexicalScope = resolutionScopesSupport.scopeForConstructorHeaderResolution()
@@ -331,11 +348,12 @@ class FactoryClassDescriptor(
         override fun getName(): String? = _name
         override fun isLocal(): Boolean = false
 
+        override fun getContextReceivers(): List<KtContextReceiver> = emptyList()
+
         override fun getDeclarations(): List<KtDeclaration> = emptyList()
         override fun getSuperTypeListEntries(): List<KtSuperTypeListEntry> = emptyList()
         override fun getCompanionObjects(): List<KtObjectDeclaration> = emptyList()
 
-        override fun getContextReceivers(): List<KtContextReceiver> = emptyList()
         override fun hasExplicitPrimaryConstructor(): Boolean = false
         override fun hasPrimaryConstructor(): Boolean = false
         override fun getPrimaryConstructor(): KtPrimaryConstructor? = null

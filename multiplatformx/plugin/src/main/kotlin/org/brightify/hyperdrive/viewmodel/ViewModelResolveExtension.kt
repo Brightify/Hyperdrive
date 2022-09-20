@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.resolve.lazy.declarations.PackageMemberDeclarationPr
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.types.DeferredType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
+import org.jetbrains.kotlin.types.TypeAttributes
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.expressions.FakeCallResolver
 import org.jetbrains.kotlin.types.typeUtil.createProjection
@@ -123,7 +124,7 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
                     true,
                 ).apply {
                     val type = KotlinTypeFactory.simpleNotNullType(
-                        Annotations.EMPTY,
+                        TypeAttributes.Empty,
                         if (realDescriptor.isVar) mutableObservableProperty else observableProperty,
                         listOf(createProjection(realDescriptor.returnTypeOrNothing, Variance.INVARIANT, null))
                     )

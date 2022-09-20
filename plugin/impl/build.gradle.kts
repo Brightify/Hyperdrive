@@ -17,7 +17,6 @@ dependencies {
 }
 
 tasks.shadowJar {
-    relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
     mergeServiceFiles()
 }
 

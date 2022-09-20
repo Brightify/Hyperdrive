@@ -9,7 +9,6 @@ repositories {
 }
 
 dependencies {
-    // compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.6.21")
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.android.gradle.plugin)
     compileOnly(gradleApi())
