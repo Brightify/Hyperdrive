@@ -53,7 +53,8 @@ kotlin {
 val krpcPlugin by configurations.creating
 
 dependencies {
-    krpcPlugin(project(":krpc-plugin"))
+    org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":krpc-plugin"))
+    org.jetbrains.kotlin.gradle.plugin.NATIVE_COMPILER_PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":krpc-plugin"))
 }
 
 val krpcPluginJar by tasks.creating(ShadowJar::class) {
@@ -63,7 +64,6 @@ val krpcPluginJar by tasks.creating(ShadowJar::class) {
 
 val krpcNativePluginJar by tasks.creating(ShadowJar::class) {
     configurations = listOf(krpcPlugin)
-    relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
 
     mergeServiceFiles()
 }
@@ -73,7 +73,7 @@ tasks.withType<KotlinJvmCompile> {
 
     kotlinOptions {
         freeCompilerArgs += listOf(
-            "-Xplugin=${krpcPluginJar.archiveFile.get().asFile.absolutePath}",
+            // "-Xplugin=${krpcPluginJar.archiveFile.get().asFile.absolutePath}",
             "-P", "plugin:org.brightify.hyperdrive.krpc:enabled=true"
         )
     }
@@ -85,7 +85,7 @@ tasks.withType<KotlinNativeCompile> {
     try {
         kotlinOptions {
             freeCompilerArgs += listOf(
-                "-Xplugin=${krpcNativePluginJar.archiveFile.get().asFile.absolutePath}",
+                // "-Xplugin=${krpcNativePluginJar.archiveFile.get().asFile.absolutePath}",
                 "-P", "plugin:org.brightify.hyperdrive.krpc:enabled=true"
             )
         }
