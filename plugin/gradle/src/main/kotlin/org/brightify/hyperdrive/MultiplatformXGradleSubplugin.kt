@@ -13,8 +13,9 @@ class MultiplatformXGradleSubplugin: KotlinCompilerPluginSupportPlugin {
     // TODO: Apply required dependencies?
     override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
         val project = kotlinCompilation.target.project
+        kotlinCompilation.addAllDependencies()
         return project.provider {
-            val hyperdrive = project.extensions.findByType() ?: HyperdriveExtension()
+            val hyperdrive = project.extensions.findByType<HyperdriveExtension>() ?: HyperdriveExtension()
             val multiplatformX = hyperdrive.multiplatformx
             if (multiplatformX != null) {
                 listOf(
@@ -35,7 +36,4 @@ class MultiplatformXGradleSubplugin: KotlinCompilerPluginSupportPlugin {
 
     override fun getPluginArtifact(): SubpluginArtifact =
         SubpluginArtifact(groupId = BuildConfig.KOTLIN_PLUGIN_GROUP, artifactId = BuildConfig.KOTLIN_PLUGIN_NAME, version = BuildConfig.KOTLIN_PLUGIN_VERSION)
-
-    override fun getPluginArtifactForNative(): SubpluginArtifact? =
-        SubpluginArtifact(groupId = BuildConfig.KOTLIN_PLUGIN_GROUP, artifactId = BuildConfig.KOTLIN_NATIVE_PLUGIN_NAME, version = BuildConfig.KOTLIN_PLUGIN_VERSION)
 }

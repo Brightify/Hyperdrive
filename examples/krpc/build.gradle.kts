@@ -23,8 +23,8 @@ multiplatformSwiftPackage {
 }
 
 dependencies {
-    PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":plugin-impl"))
-    NATIVE_COMPILER_PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":plugin-impl-native"))
+    // PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":plugin-impl"))
+    // NATIVE_COMPILER_PLUGIN_CLASSPATH_CONFIGURATION_NAME(project(":plugin-impl"))
 }
 
 //android {

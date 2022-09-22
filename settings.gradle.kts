@@ -26,7 +26,6 @@ val pluginModules = listOf(
     "api",
     "debug",
     "impl",
-    "impl-native",
     "gradle",
     "idea",
 )
@@ -106,7 +105,7 @@ val projects = listOf(
     pluginProjects,
     krpcProjects,
     multiplatformXProjects,
-    exampleProjects,
+    // exampleProjects,
     loggingProjects
 ).flatten()
 
