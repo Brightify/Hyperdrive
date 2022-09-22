@@ -1,7 +1,7 @@
 package org.brightify.hyperdrive.krpc.client.impl.ktor
 
 import io.ktor.client.*
-import io.ktor.client.features.websocket.*
+import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.isActive

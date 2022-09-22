@@ -1,10 +1,10 @@
 package org.brightify.hyperdrive.krpc.server.impl.ktor
 
-import io.ktor.application.*
-import io.ktor.http.cio.websocket.*
-import io.ktor.routing.*
+import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -20,9 +20,9 @@ class KtorServerFrontend(
     heartBeatInterval: Duration? = null,
 ): ProvidingServerConnector() {
     private val engine: NettyApplicationEngine = embeddedServer(Netty, port = port, host = host) {
-        routing {
-            install(WebSockets)
+        install(WebSockets)
 
+        routing {
             webSocket("/") {
                 val connection = WebSocketSessionConnection(this)
                 heartBeatInterval?.let { interval ->

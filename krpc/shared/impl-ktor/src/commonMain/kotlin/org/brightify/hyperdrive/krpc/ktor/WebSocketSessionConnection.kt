@@ -1,6 +1,6 @@
 package org.brightify.hyperdrive.krpc.ktor
 
-import io.ktor.http.cio.websocket.*
+import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.brightify.hyperdrive.Logger

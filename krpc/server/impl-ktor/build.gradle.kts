@@ -18,7 +18,7 @@ kotlin {
 
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.netty)
-                implementation(libs.ktor.websockets)
+                implementation(libs.ktor.server.websockets)
 
                 implementation(libs.bundles.serialization)
             }
