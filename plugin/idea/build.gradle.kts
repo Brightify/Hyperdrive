@@ -23,7 +23,7 @@ tasks.jar {
 
 intellij {
     pluginName.set("hyperdrive")
-    version.set("2021.2")
+    version.set("2022.2.3")
     type.set(ideType)
 
     plugins.addAll(
@@ -38,7 +38,7 @@ intellij {
 tasks.runPluginVerifier {
     ideVersions.set(
         listOf(
-            "IU-211.7142.36",
+            "IU-222.4345.14",
         )
     )
 }
@@ -60,7 +60,7 @@ tasks.patchPluginXml {
     sinceBuild.set(
         when (ideType) {
             "AS" -> "203"
-            else -> "211"
+            else -> "222"
         }
     )
 }

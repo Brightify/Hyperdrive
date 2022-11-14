@@ -119,11 +119,6 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
         declarationProvider: ClassMemberDeclarationProvider,
         result: MutableSet<ClassDescriptor>
     ) {
-        val thisDeclaration = declarationProvider.correspondingClassOrObject ?: return
-        val scope = declarationProvider.ownerInfo?.let {
-            ctx.declarationScopeProvider.getResolutionScopeForDeclaration(it.scopeAnchor)
-        } ?: (thisDescriptor as ClassDescriptorWithResolutionScopes).scopeForClassHeaderResolution
-
         val isKrpcClient = name == KnownType.Nested.client && thisDescriptor.isKrpcEnabled
         val isKrpcDescriptor = name == KnownType.Nested.descriptor && thisDescriptor.isKrpcEnabled
         val isKrpcDescriptorCall = name == KnownType.Nested.call && thisDescriptor.isKrpcDescriptor
@@ -132,6 +127,11 @@ open class KrpcResolveExtension: SyntheticResolveExtension {
         if (!(isKrpcClient || isKrpcDescriptorCall || isKrpcDescriptor)) {
             return
         }
+
+        val thisDeclaration = declarationProvider.correspondingClassOrObject ?: return
+        val scope = declarationProvider.ownerInfo?.let {
+            ctx.declarationScopeProvider.getResolutionScopeForDeclaration(it.scopeAnchor)
+        } ?: (thisDescriptor as ClassDescriptorWithResolutionScopes).scopeForClassHeaderResolution
 
         val cls = SyntheticClassOrObjectDescriptor(
             ctx,

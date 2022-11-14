@@ -72,8 +72,9 @@ class ViewModelIrGenerator(
         val observePropertyIndices = mutableSetOf<Int>()
         for ((index, declaration) in irClass.declarations.withIndex()) {
             val property = declaration as? IrProperty ?: continue
+            // Ignore overriden symbols
+            if (property.overriddenSymbols.isNotEmpty()) { continue }
             val referencedPropertyName = NamingHelper.getReferencedPropertyName(property.name.identifier) ?: continue
-
             val propertyGetter = property.getter ?: continue
             if (propertyGetter.body != null) { continue }
 

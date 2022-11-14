@@ -14,9 +14,7 @@ dependencies {
 }
 
 tasks.shadowJar {
+    relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
     mergeServiceFiles()
-}
-
-tasks.shadowJar {
     archiveClassifier.set("shadow")
 }

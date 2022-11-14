@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.resolve.lazy.LazyClassContext
 import org.jetbrains.kotlin.resolve.lazy.declarations.PackageMemberDeclarationProvider
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.types.DeferredType
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.TypeAttributes
 import org.jetbrains.kotlin.types.Variance
@@ -40,6 +41,7 @@ import org.jetbrains.kotlin.types.expressions.FakeCallResolver
 import org.jetbrains.kotlin.types.typeUtil.createProjection
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.types.typeUtil.replaceArgumentsWithStarProjections
+import org.jetbrains.kotlin.types.typeUtil.supertypes
 
 open class ViewModelResolveExtension(private val messageCollector: MessageCollector = MessageCollector.NONE): SyntheticResolveExtension {
     private companion object {
@@ -60,15 +62,15 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
 
     override fun getSyntheticFunctionNames(thisDescriptor: ClassDescriptor): List<Name> = emptyList()
 
-    // TODO: Not supported yet. :(
+    // TODO: Test this properly to verify it works before enabling it.
     // override fun addSyntheticSupertypes(thisDescriptor: ClassDescriptor, supertypes: MutableList<KotlinType>) {
     //     super.addSyntheticSupertypes(thisDescriptor, supertypes)
     //
-    //
     //    if (thisDescriptor.annotations.hasAnnotation(ViewModelNames.Annotation.viewModel)) {
-    //        supertypes.add(
-    //            thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.baseViewModel)!!.defaultType
-    //        )
+    //        val baseViewModelType = thisDescriptor.module.findClassAcrossModuleDependencies(ViewModelNames.API.baseViewModel)!!.defaultType
+    //        if (supertypes.none { it == baseViewModelType || it.supertypes().contains(baseViewModelType) }) {
+    //            supertypes.add(baseViewModelType)
+    //        }
     //    }
     // }
 
@@ -146,7 +148,7 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
                         },
                         null
                     )
-                    setType(type, emptyList(), thisDescriptor.thisAsReceiverParameter, null)
+                    setType(type, emptyList(), thisDescriptor.thisAsReceiverParameter, null, emptyList())
                 }
             )
         }
@@ -156,6 +158,7 @@ open class ViewModelResolveExtension(private val messageCollector: MessageCollec
         if (!thisDescriptor.annotations.hasAnnotation(ViewModelNames.Annotation.viewModel)) {
             return emptyList()
         }
+
         return thisDescriptor.unsubstitutedMemberScope.getClassifierNames()?.filter {
             val realDescriptor =
                 thisDescriptor.unsubstitutedMemberScope.getContributedVariables(it, NoLookupLocation.FROM_SYNTHETIC_SCOPE)
