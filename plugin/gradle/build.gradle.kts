@@ -9,37 +9,12 @@ plugins {
     alias(libs.plugins.gradlepublish)
 }
 
-val kotlinPluginTransitivityWorkaround = configurations.maybeCreate("kotlinPluginTransitivityWorkaround").apply {
-    isCanBeResolved = true
-    isCanBeConsumed = false
-    isVisible = false
-
-    exclude("org.jetbrains.kotlin")
-
-    attributes {
-        attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
-        attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_RUNTIME))
-        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, project.objects.named(LibraryElements.JAR))
-    }
-}
-
 buildConfig {
     packageName(project.group.toString())
     buildConfigField("String", "KOTLIN_PLUGIN_ID", "\"org.brightify.hyperdrive\"")
     buildConfigField("String", "KOTLIN_PLUGIN_GROUP", "\"${project.group}\"")
     buildConfigField("String", "KOTLIN_PLUGIN_VERSION", "\"${project.version}\"")
     buildConfigField("String", "KOTLIN_PLUGIN_NAME", "\"${project(":plugin-impl").name}\"")
-
-    buildConfigField(
-        "List<String>",
-        "KOTLIN_PLUGIN_DEPENDENCIES",
-        provider {
-            val dependencies = kotlinPluginTransitivityWorkaround.resolve()
-                .toSet()
-                .joinToString(", ") { "\"${it.absolutePath}\"" }
-            "listOf($dependencies)"
-        }
-    )
 }
 
 pluginBundle {
@@ -63,7 +38,6 @@ dependencies {
     compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin-api")
     compileOnly(kotlin("gradle-plugin"))
     implementation(project(":plugin-impl"))
-    kotlinPluginTransitivityWorkaround(project(":plugin-impl"))
 
     compileOnly(gradleApi())
     compileOnly(gradleKotlinDsl())

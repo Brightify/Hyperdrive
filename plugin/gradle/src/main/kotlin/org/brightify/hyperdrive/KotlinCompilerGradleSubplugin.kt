@@ -9,9 +9,3 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
 fun <T> PluginOption.subpluginOption(value: T): SubpluginOption = SubpluginOption(optionName, value.toString())
-
-fun KotlinCompilation<*>.addAllDependencies() {
-    kotlinOptions.freeCompilerArgs += BuildConfig.KOTLIN_PLUGIN_DEPENDENCIES.map {
-        "-Xplugin=${it}"
-    }
-}
