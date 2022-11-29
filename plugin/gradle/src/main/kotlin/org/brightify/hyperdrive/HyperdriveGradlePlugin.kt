@@ -15,34 +15,24 @@ import org.gradle.kotlin.dsl.exclude
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.project
+import org.gradle.kotlin.dsl.the
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 class HyperdriveGradlePlugin: Plugin<Project> {
     override fun apply(project: Project) {
         project.extensions.create<HyperdriveExtension>(EXTENSION_NAME)
-        project.apply<HyperdriveGradleKotlinSubplugin>()
-    }
+        project.apply<KrpcGradleSubplugin>()
+        project.apply<MultiplatformXGradleSubplugin>()
+        project.apply<DebugGradleSubplugin>()
 
-    companion object {
-        const val EXTENSION_NAME = "hyperdrive"
-    }
-}
-
-
-class HyperdriveGradleKotlinSubplugin: KotlinCompilerPluginSupportPlugin {
-    private companion object {
-        const val kotlinPluginTransitivityWorkaround = "kotlinPluginTransitivityWorkaround"
-    }
-
-    override fun apply(target: Project) {
-        super.apply(target)
-
-        with(target) {
-
-            val kotlinPluginTransitivityWorkaround = configurations.maybeCreate(kotlinPluginTransitivityWorkaround).apply {
+        with(project) {
+            val kotlinPluginTransitivityWorkaround = configurations.maybeCreate(KOTLIN_PLUGIN_TRANSITIVITY_WORKAROUND_CONFIGURATION).apply {
                 isCanBeResolved = true
                 isCanBeConsumed = false
                 isVisible = false
@@ -57,73 +47,42 @@ class HyperdriveGradleKotlinSubplugin: KotlinCompilerPluginSupportPlugin {
             }
 
             dependencies {
-                val pluginArtifact = getPluginArtifact()
                 kotlinPluginTransitivityWorkaround(
-                    group = pluginArtifact.groupId,
-                    name = pluginArtifact.groupId,
-                    version = pluginArtifact.version,
+                    group = BuildConfig.KOTLIN_PLUGIN_GROUP,
+                    name = BuildConfig.KOTLIN_PLUGIN_NAME,
+                    version = BuildConfig.KOTLIN_PLUGIN_VERSION,
                 )
+            }
+
+            afterEvaluate {
+                val pluginDependencies = project.configurations.named(KOTLIN_PLUGIN_TRANSITIVITY_WORKAROUND_CONFIGURATION).map { configuration ->
+                    configuration.resolvedConfiguration.firstLevelModuleDependencies
+                        .flatMap { it.children }
+                        .flatMap { it.allModuleArtifacts }
+                        .map { it.file }
+                        .toSet()
+                }
+                project.the<KotlinMultiplatformExtension>().targets {
+                    this.all { target ->
+                        if (target !is KotlinNativeTarget) {
+                            return@all
+                        }
+
+                        target.compilations.forEach { compilation ->
+                            compilation.compileKotlinTaskProvider.configure {
+                                it.kotlinOptions.freeCompilerArgs += pluginDependencies.get().map {
+                                    "-Xplugin=${it.absolutePath}"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = true
-
-    // TODO: Apply required dependencies?
-    override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
-        val project = kotlinCompilation.target.project
-
-        val pluginDependencies = project.configurations.getByName(kotlinPluginTransitivityWorkaround).resolve()
-            .toSet()
-            .joinToString(", ") { "\"${it.absolutePath}\"" }
-        kotlinCompilation.kotlinOptions.freeCompilerArgs += pluginDependencies.map {
-            "-Xplugin=${it}"
-        }
-
-        return project.provider {
-            val hyperdrive = project.extensions.findByType<HyperdriveExtension>() ?: HyperdriveExtension()
-
-            hyperdrive.debugOptions() + hyperdrive.krpcOptions() + hyperdrive.multiplatformxOptions()
-        }
+    companion object {
+        const val EXTENSION_NAME = "hyperdrive"
+        const val KOTLIN_PLUGIN_TRANSITIVITY_WORKAROUND_CONFIGURATION = "kotlinPluginTransitivityWorkaround"
     }
-
-    override fun getCompilerPluginId() = KrpcCommandLineProcessor.pluginId
-
-    override fun getPluginArtifact(): SubpluginArtifact =
-        SubpluginArtifact(
-            groupId = BuildConfig.KOTLIN_PLUGIN_GROUP,
-            artifactId = BuildConfig.KOTLIN_PLUGIN_NAME,
-            version = BuildConfig.KOTLIN_PLUGIN_VERSION,
-        )
-
-    private fun HyperdriveExtension.debugOptions(): List<SubpluginOption> = debug?.let { debug ->
-        listOf(
-            DebugCommandLineProcessor.Options.enabled.subpluginOption("true"),
-            DebugCommandLineProcessor.Options.disablePrintIR.subpluginOption(debug.disablePrintIR.toString()),
-            DebugCommandLineProcessor.Options.disablePrintKotlinLike.subpluginOption(debug.disablePrintKotlinLike.toString())
-        )
-    } ?: listOf(
-        DebugCommandLineProcessor.Options.enabled.subpluginOption("false")
-    )
-
-    private fun HyperdriveExtension.krpcOptions(): List<SubpluginOption> = krpc?.let { krpc ->
-        listOf(
-            KrpcCommandLineProcessor.Options.enabled.subpluginOption("true"),
-            KrpcCommandLineProcessor.Options.printIR.subpluginOption(krpc.printIR.toString()),
-            KrpcCommandLineProcessor.Options.printKotlinLike.subpluginOption(krpc.printKotlinLike.toString())
-        )
-    } ?: listOf(
-        KrpcCommandLineProcessor.Options.enabled.subpluginOption("false")
-    )
-
-    private fun HyperdriveExtension.multiplatformxOptions(): List<SubpluginOption> = multiplatformx?.let { multiplatformx ->
-        listOf(
-            MultiplatformxCommandLineProcessor.Options.enabled.subpluginOption("true"),
-            MultiplatformxCommandLineProcessor.Options.autoFactoryEnabled.subpluginOption(multiplatformx.isAutoFactoryEnabled),
-            MultiplatformxCommandLineProcessor.Options.viewModelEnabled.subpluginOption(multiplatformx.isViewModelEnabled),
-            MultiplatformxCommandLineProcessor.Options.viewModelAutoObserveEnabled.subpluginOption(multiplatformx.isComposableAutoObserveEnabled),
-        )
-    } ?: listOf(
-        MultiplatformxCommandLineProcessor.Options.enabled.subpluginOption("false")
-    )
 }
