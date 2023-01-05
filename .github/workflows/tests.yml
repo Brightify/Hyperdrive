@@ -25,7 +25,7 @@ jobs:
   build:
     runs-on: macos-latest
     concurrency:
-      group: iosbinary-${{ inputs.build_branch }}
+      group: tests-${{ inputs.build_branch }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v2
@@ -34,12 +34,12 @@ jobs:
           distribution: adopt
           java-version: 11
       - name: Cache build tooling
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.gradle/caches
             ~/.konan
-          key: ${{ runner.os }}-v4-${{ hashFiles('*.gradle.kts') }}
+          key: ${{ runner.os }}-v4-${{ hashFiles('**/*.gradle.kts', '**/gradle/wrapper/gradle-wrapper.properties', '**/libs.versions.toml') }}
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:

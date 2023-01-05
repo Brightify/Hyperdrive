@@ -11,8 +11,8 @@ jobs:
   build:
     runs-on: macos-latest
     concurrency:
-      group: iosbinary-${{ inputs.build_branch }}
-      cancel-in-progress: true
+      group: publish-${{ inputs.build_branch }}
+      cancel-in-progress: false
     permissions:
       contents: read
     env:
@@ -44,7 +44,7 @@ jobs:
       - name: Xcode?
         run: xcode-select -p
       - name: Publish
-        run: ./gradlew -PenableCompose publishToSonatype closeAndReleaseSonatypeStagingRepository
+        run: ./gradlew -p sources -PenableCompose publishToSonatype closeAndReleaseSonatypeStagingRepository
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
         if: ${{ false && failure() }}
