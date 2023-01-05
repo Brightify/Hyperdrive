@@ -25,7 +25,7 @@ allprojects {
     }
 
     group = "org.brightify.hyperdrive"
-
+    version = System.getenv("RELEASE_VERSION") ?: "1.0-SNAPSHOT"
 
     tasks.withType<KotlinJvmCompile> {
         kotlinOptions {
@@ -81,9 +81,7 @@ allprojects {
 subprojects {
     apply(plugin = "signing")
 
-    version = rootProject.version
-
-    val isSnapshot = true // project.version.withGroovyBuilder { "isSnapshot"() } as Boolean
+    val isSnapshot = project.version.toString().endsWith("-SNAPSHOT")
 
     val ignoredPublicationProjects = setOf("krpc-integration")
     val shouldPublish = !ignoredPublicationProjects.contains(project.name)
@@ -223,29 +221,9 @@ subprojects {
                         }
                     }
                     scm {
-                        connection.set("scm:git:git://github.com/Brightify/hyperdrive-kt.git")
-                        developerConnection.set("scm:git:git@github.com:Brightify/hyperdrive-kt.git")
-                        url.set("https://github.com/Brightify/hyperdrive-kt")
-                    }
-                }
-            }
-
-            repositories {
-                // Brightify repo.
-                maven(
-                    if (isSnapshot) {
-                        "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-snapshots"
-                    } else {
-                        "https://maven.pkg.jetbrains.space/brightify/p/brightify/brightify-releases"
-                    }
-                ) {
-                    name = "brightify"
-
-                    val brightifyUsername: String by project
-                    val brightifyPassword: String by project
-                    credentials {
-                        username = brightifyUsername
-                        password = brightifyPassword
+                        connection.set("scm:git:git://github.com/Brightify/Hyperdrive.git")
+                        developerConnection.set("scm:git:git@github.com:Brightify/Hyperdrive.git")
+                        url.set("https://github.com/Brightify/Hyperdrive")
                     }
                 }
             }
@@ -256,9 +234,10 @@ subprojects {
                 gradle.taskGraph.hasTask("publishToSonatype")
             })
 
-            // val mavenCentralSigningKey: String? by project
-            // val mavenCentralSigningPassword: String? by project
-            // useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassword)
+            val signingKeyId: String? by project
+            val signingKey: String? by project
+            val signingPassword: String? by project
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
 
             sign(publishing.publications)
         }
@@ -283,5 +262,5 @@ tasks.dokkaHtmlMultiModule.configure {
     suppressInheritedMembers.set(true)
     suppressObviousFunctions.set(true)
 
-    outputDirectory.set(rootDir.resolve("website/static/reference"))
+    outputDirectory.set(rootDir.resolve("../website/static/reference"))
 }
