@@ -7,6 +7,7 @@ import org.gradle.api.Project
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
+import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.create
@@ -55,23 +56,19 @@ class HyperdriveGradlePlugin: Plugin<Project> {
             }
 
             afterEvaluate {
-                val pluginDependencies = project.configurations.named(KOTLIN_PLUGIN_TRANSITIVITY_WORKAROUND_CONFIGURATION).map { configuration ->
-                    configuration.resolvedConfiguration.firstLevelModuleDependencies
-                        .flatMap { it.children }
-                        .flatMap { it.allModuleArtifacts }
-                        .map { it.file }
-                        .toSet()
-                }
                 project.the<KotlinMultiplatformExtension>().targets {
-                    this.all { target ->
+                    all { target ->
                         if (target !is KotlinNativeTarget) {
                             return@all
                         }
 
                         target.compilations.forEach { compilation ->
-                            compilation.compileKotlinTaskProvider.configure {
-                                it.kotlinOptions.freeCompilerArgs += pluginDependencies.get().map {
-                                    "-Xplugin=${it.absolutePath}"
+                            compilation.compileKotlinTaskProvider.configure { task ->
+                                task.doFirst {
+                                    task.compilerPluginClasspath = listOfNotNull(
+                                        task.compilerPluginClasspath,
+                                        kotlinPluginTransitivityWorkaround,
+                                    ).reduce(FileCollection::plus)
                                 }
                             }
                         }

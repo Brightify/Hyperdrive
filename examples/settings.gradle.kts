@@ -14,14 +14,29 @@ pluginManagement {
             }
         }
     }
+
+    includeBuild("../build-setup")
 }
 
-plugins {
-    id("io.alcide.gradle-semantic-build-versioning") version "4.2.2"
+dependencyResolutionManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
 }
 
-rootProject.name = "Hyperdrive"
+rootProject.name = "examples"
 
-includeBuild("build-setup")
-includeBuild("sources")
-includeBuild("examples")
+include(
+    ":krpc",
+    ":multiplatformx",
+)
+
+includeBuild("../sources")
