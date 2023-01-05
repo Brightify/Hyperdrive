@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.Framework.BitcodeEmbeddingMode
 
 
 plugins {
-//    id("com.android.library")
+    id("com.android.application")
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.swiftpackage)
     alias(libs.plugins.kotlin.plugin.serialization)
@@ -23,30 +23,26 @@ hyperdrive {
     krpc()
 }
 
-//android {
-//    compileSdkVersion(30)
-//
-//    dexOptions {
-//        javaMaxHeapSize = "2g"
-//    }
-//
-//    defaultConfig {
-//        minSdkVersion(16)
-//    }
-//
-//    sourceSets {
-//        val main by getting
-//        main.manifest.srcFile("src/androidMain/AndroidManifest.xml")
-//    }
-//    compileOptions {
-//        sourceCompatibility = JavaVersion.VERSION_1_8
-//        targetCompatibility = JavaVersion.VERSION_1_8
-//    }
-//}
+android {
+    compileSdk = 30
+
+    defaultConfig {
+        minSdk = 16
+    }
+
+    sourceSets {
+        val main by getting
+        main.manifest.srcFile("src/androidMain/AndroidManifest.xml")
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
 
 kotlin {
     jvm()
-//    android()
+    android()
     ios {
         binaries {
             framework {

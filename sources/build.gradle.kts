@@ -15,12 +15,6 @@ plugins {
     alias(libs.plugins.kotlin.plugin.serialization) apply false
 }
 
-buildscript {
-    dependencies {
-        classpath("com.android.tools.build:gradle:7.2.2")
-    }
-}
-
 allprojects {
     apply(plugin = "maven-publish")
 

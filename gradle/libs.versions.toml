@@ -13,7 +13,7 @@ multiplatformSettings = "1.0.0-alpha01"
 kodein = "7.14.0"
 sqldelight = "1.5.3"
 kotest = "5.4.2"
-android-gradle = "7.2.2"
+android-gradle = "7.3.0"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

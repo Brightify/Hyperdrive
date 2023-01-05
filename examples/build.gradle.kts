@@ -10,12 +10,6 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.plugin.serialization) apply false
 }
-//
-// buildscript {
-//     dependencies {
-//         classpath("com.android.tools.build:gradle:7.2.2")
-//     }
-// }
 
 allprojects {
     version = "1.0-SNAPSHOT"
