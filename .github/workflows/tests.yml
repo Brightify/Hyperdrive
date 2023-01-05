@@ -47,7 +47,7 @@ jobs:
       - name: Xcode?
         run: xcode-select -p
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew -p sources build
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
         if: ${{ false && failure() }}
