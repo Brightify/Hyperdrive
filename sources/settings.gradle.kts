@@ -39,7 +39,6 @@ val pluginModules = listOf(
     "debug",
     "impl",
     "gradle",
-    "idea",
 )
 
 val pluginProjects = pluginModules.map {
@@ -123,3 +122,9 @@ for ((name, path) in projects) {
     val project = project(":$name")
     project.projectDir = File(settingsDir, path)
 }
+
+include(":plugin-intellij-idea")
+project(":plugin-intellij-idea").projectDir = rootDir.resolve("plugin/ide/intellij-idea")
+
+include(":plugin-android-studio")
+project(":plugin-android-studio").projectDir = rootDir.resolve("plugin/ide/android-studio")

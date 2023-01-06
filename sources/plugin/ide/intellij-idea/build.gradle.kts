@@ -5,11 +5,21 @@ plugins {
     alias(libs.plugins.intellij)
 }
 
-val ideType: String by project
 description = "IntelliJ IDEA plugin for Hyperdrive."
 
 dependencies {
     implementation(project(":plugin-impl", configuration = "shadow"))
+}
+
+sourceSets.main {
+    kotlin.srcDir("../common/src/main/kotlin")
+    resources.srcDir("../common/src/main/resources")
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
 
 tasks.jar {
@@ -24,7 +34,7 @@ tasks.jar {
 intellij {
     pluginName.set("hyperdrive")
     version.set("2022.2.3")
-    type.set(ideType)
+    type.set("IC")
 
     plugins.addAll(
         "gradle",
@@ -44,12 +54,14 @@ tasks.runPluginVerifier {
 }
 
 tasks.buildPlugin {
-    archiveAppendix.set(ideType)
+    archiveAppendix.set("IC")
 }
 
 tasks.publishPlugin {
-    token.set(System.getenv("ORG_GRADLE_PROJECT_intellijPublishToken") ?: "")
-    channels.set(listOf(System.getenv("ORG_GRADLE_PROJECT_intellijChannels") ?: "default"))
+    val intellijPublishToken: String? by project
+    val intellijChannels: String? by project
+    token.set(intellijPublishToken)
+    channels.set(listOf(intellijChannels ?: "default"))
 }
 
 tasks.buildSearchableOptions {
@@ -57,10 +69,6 @@ tasks.buildSearchableOptions {
 }
 
 tasks.patchPluginXml {
-    sinceBuild.set(
-        when (ideType) {
-            "AS" -> "203"
-            else -> "222"
-        }
-    )
+    sinceBuild.set("222")
+    version.set("${project.version}-IC")
 }
