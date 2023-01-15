@@ -14,7 +14,7 @@ kodein = "7.14.0"
 sqldelight = "1.5.3"
 kotest = "5.4.2"
 android-gradle = "7.3.0"
-intellij = "1.11.0"
+intellij = "1.12.0"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

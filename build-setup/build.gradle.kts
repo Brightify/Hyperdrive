@@ -12,7 +12,9 @@ repositories {
 dependencies {
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.android.gradle.plugin)
-    implementation(libs.intellij.gradle.plugin)
+    implementation(libs.intellij.gradle.plugin) {
+        exclude(group = "org.jetbrains.kotlin")
+    }
     compileOnly(gradleApi())
     compileOnly(localGroovy())
 }
