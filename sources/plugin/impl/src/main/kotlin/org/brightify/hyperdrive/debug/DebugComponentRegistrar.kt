@@ -1,6 +1,5 @@
 package org.brightify.hyperdrive.debug
 
-import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -11,7 +10,6 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 
-@AutoService(ComponentRegistrar::class)
 class DebugComponentRegistrar: ComponentRegistrar {
     override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
         val isEnabled = configuration.getBoolean(DebugConfigurationKeys.isEnabled)

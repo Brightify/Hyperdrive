@@ -1,17 +1,11 @@
 plugins {
-    kotlin("jvm")
-    kotlin("kapt")
+    id("hyperdrive-kotlin-plugin")
     alias(libs.plugins.shadow)
 }
 
 dependencies {
     api(project(":multiplatformx-plugin"))
     api(project(":krpc-plugin"))
-
-    compileOnly(kotlin("stdlib"))
-    compileOnly(kotlin("compiler-embeddable"))
-    compileOnly(libs.auto.service)
-    kapt(libs.auto.service)
 }
 
 tasks.shadowJar {

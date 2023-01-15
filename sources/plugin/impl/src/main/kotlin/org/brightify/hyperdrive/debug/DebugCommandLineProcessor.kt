@@ -1,6 +1,5 @@
 package org.brightify.hyperdrive.debug
 
-import com.google.auto.service.AutoService
 import org.brightify.hyperdrive.PluginOption
 import org.brightify.hyperdrive.krpc.plugin.KrpcCommandLineProcessor
 import org.brightify.hyperdrive.krpc.plugin.KrpcConfigurationKeys
@@ -9,7 +8,6 @@ import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.config.CompilerConfiguration
 
-@AutoService(CommandLineProcessor::class)
 class DebugCommandLineProcessor: CommandLineProcessor {
     companion object {
         const val pluginId: String = "org.brightify.hyperdrive.debug"
