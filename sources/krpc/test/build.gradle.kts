@@ -41,7 +41,6 @@ kotlin {
 
     sourceSets {
         all {
-            languageSettings.optIn("kotlinx.serialization.ExperimentalSerializationApi")
         }
     }
 }
@@ -49,4 +48,3 @@ kotlin {
 tasks.withType<KotlinJvmTest> {
     useJUnitPlatform()
 }
-

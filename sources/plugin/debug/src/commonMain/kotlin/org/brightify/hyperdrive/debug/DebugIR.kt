@@ -18,7 +18,7 @@ package org.brightify.hyperdrive.debug
     AnnotationTarget.VALUE_PARAMETER,
 )
 @Retention(AnnotationRetention.SOURCE)
-annotation class DebugIR(
+public annotation class DebugIR(
     val printIR: Boolean = true,
     val printKotlinLike: Boolean = true,
 )

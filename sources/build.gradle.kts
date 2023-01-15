@@ -38,7 +38,6 @@ allprojects {
             jvmTarget = "1.8"
             freeCompilerArgs += listOf(
                 "-Xopt-in=kotlin.RequiresOptIn",
-                "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi",
             )
         }
     }
@@ -53,7 +52,6 @@ allprojects {
         extensions.findByType(org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension::class)?.apply {
             sourceSets.all {
                 languageSettings {
-                    optIn("kotlinx.serialization.ExperimentalSerializationApi")
                     progressiveMode = true
                 }
             }
@@ -62,7 +60,6 @@ allprojects {
         extensions.findByType(KotlinMultiplatformExtension::class)?.apply {
             sourceSets.all {
                 languageSettings {
-                    optIn("kotlinx.serialization.ExperimentalSerializationApi")
                     progressiveMode = true
                 }
             }

@@ -1,7 +1,6 @@
 package org.brightify.hyperdrive.krpc.session
 
 import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -14,7 +13,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.Serializable
 
-@OptIn(ExperimentalSerializationApi::class)
 private object ContextUpdateSerializerDescriptor {
     val keySerializer = String.serializer()
     val modificationDescriptor = buildClassSerialDescriptor("org.brightify.hyperdrive.krpc.api.ContextUpdate.Modification") {
@@ -41,7 +39,6 @@ private object ContextUpdateSerializerDescriptor {
     }
 }
 
-@OptIn(ExperimentalSerializationApi::class)
 public class IncomingContextUpdateSerializer(
     private val sessionContextKeyRegistry: SessionContextKeyRegistry,
 ): DeserializationStrategy<IncomingContextUpdate> {
@@ -130,7 +127,6 @@ public class IncomingContextUpdateSerializer(
     }
 }
 
-@OptIn(ExperimentalSerializationApi::class)
 public class OutgoingContextUpdateSerializer: SerializationStrategy<OutgoingContextUpdate> {
     override val descriptor: SerialDescriptor = ContextUpdateSerializerDescriptor.descriptor
 

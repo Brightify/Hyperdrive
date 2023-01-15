@@ -1,5 +1,5 @@
 [versions]
-kotlin = "1.7.20"
+kotlin = "1.7.22"
 kotlin-coroutines = "1.6.4"
 kotlin-serialization = "1.4.1"
 stately = "1.2.2"
@@ -26,7 +26,7 @@ dokka = { id = "org.jetbrains.dokka", version = "1.7.10" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }
 swiftpackage = { id = "com.chromaticnoise.multiplatform-swiftpackage", version = "2.0.3" }
 buildconfig = { id = "com.github.gmazzo.buildconfig", version = "3.0.3" }
-intellij = { id = "org.jetbrains.intellij", version = "1.11.0" }
+intellij = { id = "org.jetbrains.intellij", version = "1.12.0" }
 nexuspublish = { id = "io.github.gradle-nexus.publish-plugin", version = "1.1.0" }
 gradlepublish = { id = "com.gradle.plugin-publish", version = "1.0.0" }
 kotest = { id = "io.kotest.multiplatform", version.ref = "kotest" }
