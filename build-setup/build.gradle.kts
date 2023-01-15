@@ -4,6 +4,7 @@ plugins {
 }
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
     google()
 }
@@ -11,6 +12,7 @@ repositories {
 dependencies {
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.android.gradle.plugin)
+    implementation(libs.intellij.gradle.plugin)
     compileOnly(gradleApi())
     compileOnly(localGroovy())
 }
