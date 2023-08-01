@@ -1,6 +1,5 @@
 package org.brightify.hyperdrive
 
-import com.google.auto.service.AutoService
 import org.brightify.hyperdrive.autofactory.AutoFactoryIrGenerationExtension
 import org.brightify.hyperdrive.autofactory.AutoFactoryResolveExtension
 import org.brightify.hyperdrive.viewmodel.ViewModelIrGenerationExtension
@@ -29,7 +28,6 @@ object MultiplatformXConfigurationKeys {
     }
 }
 
-@AutoService(ComponentRegistrar::class)
 class MultiplatformXComponentRegistrar: ComponentRegistrar {
     override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
         val isEnabled = configuration.getBoolean(MultiplatformXConfigurationKeys.isEnabled)

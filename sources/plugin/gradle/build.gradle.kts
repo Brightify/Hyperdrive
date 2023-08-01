@@ -1,6 +1,3 @@
-import com.gradle.publish.PluginBundleExtension
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     kotlin("jvm")
     kotlin("kapt")
@@ -35,15 +32,15 @@ gradlePlugin {
 }
 
 dependencies {
+    compileOnly(kotlin("stdlib"))
+    compileOnly(kotlin("stdlib-jdk8"))
     compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin-api")
     compileOnly(kotlin("gradle-plugin"))
-    implementation(project(":plugin-impl"))
 
     compileOnly(gradleApi())
     compileOnly(gradleKotlinDsl())
 
-    compileOnly(libs.auto.service)
-    kapt(libs.auto.service)
+    implementation(project(":plugin-impl"))
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))

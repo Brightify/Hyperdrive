@@ -3,8 +3,6 @@ import org.brightify.hyperdrive.configurePlatforms
 plugins {
     id("hyperdrive-multiplatform")
     alias(libs.plugins.kotest)
-    // Include in documentation generation.
-    alias(libs.plugins.dokka)
 }
 
 kotlin {
@@ -27,14 +25,7 @@ kotlin {
                 implementation(libs.bundles.kotest.common)
                 implementation(libs.coroutines.test)
                 implementation(libs.bundles.kotest.jvm)
-                implementation(kotlin("test-junit5"))
-                implementation(libs.junit.jupiter)
                 implementation(libs.coroutines.test)
-            }
-        }
-        val jsTest by getting {
-            dependencies {
-                implementation(kotlin("test-js"))
             }
         }
     }

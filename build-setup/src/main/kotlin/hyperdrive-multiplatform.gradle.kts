@@ -1,6 +1,11 @@
+import org.gradle.accessors.dm.LibrariesForLibs
+
 plugins {
     kotlin("multiplatform")
+    id("org.jetbrains.dokka")
 }
+
+val libs = the<LibrariesForLibs>()
 
 kotlin {
     explicitApi()
@@ -41,9 +46,19 @@ kotlin {
                 implementation(kotlin("stdlib-js"))
             }
         }
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
+            }
+        }
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.junit.jupiter)
             }
         }
 

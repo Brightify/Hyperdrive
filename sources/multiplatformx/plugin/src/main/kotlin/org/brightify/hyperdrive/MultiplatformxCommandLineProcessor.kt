@@ -1,6 +1,5 @@
 package org.brightify.hyperdrive
 
-import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.cli.common.toBooleanLenient
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
@@ -8,7 +7,6 @@ import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.utils.keysToMap
 
-@AutoService(CommandLineProcessor::class)
 class MultiplatformxCommandLineProcessor: CommandLineProcessor {
     companion object {
         const val pluginId: String = "org.brightify.hyperdrive.multiplatformx"

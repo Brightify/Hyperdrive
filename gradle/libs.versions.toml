@@ -1,6 +1,6 @@
 [versions]
-kotlin = "1.7.20"
-kotlin-coroutines = "1.6.4"
+kotlin = "1.9.0"
+kotlin-coroutines = "1.7.3"
 kotlin-serialization = "1.4.1"
 stately = "1.2.2"
 ktor = "2.1.1"
@@ -15,6 +15,7 @@ sqldelight = "1.5.3"
 kotest = "5.4.2"
 android-gradle = "7.3.0"
 intellij = "1.12.0"
+dokka = "1.7.20"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -23,7 +24,7 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
-dokka = { id = "org.jetbrains.dokka", version = "1.7.10" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }
 swiftpackage = { id = "com.chromaticnoise.multiplatform-swiftpackage", version = "2.0.3" }
 buildconfig = { id = "com.github.gmazzo.buildconfig", version = "3.0.3" }
@@ -36,6 +37,7 @@ kotest = { id = "io.kotest.multiplatform", version.ref = "kotest" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle" }
 intellij-gradle-plugin = { module = "org.jetbrains.intellij.plugins:gradle-intellij-plugin", version.ref = "intellij" }
+dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlin-coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlin-coroutines" }
