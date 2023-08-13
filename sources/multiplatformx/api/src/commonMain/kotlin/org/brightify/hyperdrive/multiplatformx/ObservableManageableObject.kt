@@ -1,3 +1,0 @@
-package org.brightify.hyperdrive.multiplatformx
-
-public interface ObservableManageableObject: ObservableObject, ManageableObject

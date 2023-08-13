@@ -1,10 +1,16 @@
 import org.gradle.accessors.dm.LibrariesForLibs
 
 plugins {
+    id("hyperdrive-base")
     kotlin("jvm")
+    id("hyperdrive-publishable")
 }
 
 val libs = the<LibrariesForLibs>()
+
+kotlin {
+    jvmToolchain(11)
+}
 
 dependencies {
     compileOnly(kotlin("stdlib"))
@@ -12,7 +18,9 @@ dependencies {
     compileOnly(kotlin("compiler-embeddable"))
 
     testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit5"))
     testImplementation(kotlin("compiler-embeddable"))
-    testImplementation(libs.junit.jupiter)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JavaScriptLibraryMappings">
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-kotlin-utils-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-annotations-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-client-api-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-client-impl-ktor-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-client-impl-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-server-api-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-shared-api-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-shared-impl-ktor-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-shared-impl-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-krpc-test-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-logging-api-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-multiplatformx-api-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-multiplatformx-keyvalue-insecure-settings-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-multiplatformx-keyvalue-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages/sources-plugin-debug-test/node_modules" />
+    <excludedPredefinedLibrary name="hyperdrive-kt/sources/build/js/packages_imported/ktor-ktor-client-core-js-ir/2.1.1/node_modules" />
+  </component>
+</project>

@@ -3,12 +3,6 @@ plugins {
     `java-gradle-plugin`
 }
 
-repositories {
-    gradlePluginPortal()
-    mavenCentral()
-    google()
-}
-
 dependencies {
     // Adds the version catalog to the convention plugins classpath
     implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
@@ -21,17 +15,7 @@ dependencies {
     implementation(libs.dokka.gradle.plugin) {
         exclude(group = "org.jetbrains.kotlin")
     }
+    implementation(libs.nexusPublish.plugin)
     compileOnly(gradleApi())
     compileOnly(localGroovy())
-}
-
-gradlePlugin {
-    plugins {
-        create("build-setup") {
-            id = "build-setup"
-            implementationClass = "org.brightify.hyperdrive.BuildSetupPlugin"
-            displayName = "Hyperdrive Build Setup Plugin"
-            description = "Hyperdrive Build Setup Plugin"
-        }
-    }
 }

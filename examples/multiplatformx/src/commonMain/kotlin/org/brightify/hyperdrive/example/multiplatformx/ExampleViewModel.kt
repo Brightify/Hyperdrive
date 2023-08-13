@@ -1,9 +1,9 @@
 package org.brightify.hyperdrive.example.multiplatformx
 
-import org.brightify.hyperdrive.multiplatformx.AutoFactory
-import org.brightify.hyperdrive.multiplatformx.BaseViewModel
-import org.brightify.hyperdrive.multiplatformx.Provided
-import org.brightify.hyperdrive.multiplatformx.ViewModel
+import org.brightify.hyperdrive.AutoFactory
+import org.brightify.hyperdrive.BaseViewModel
+import org.brightify.hyperdrive.Provided
+import org.brightify.hyperdrive.ViewModel
 import kotlinx.coroutines.flow.StateFlow
 
 @ViewModel

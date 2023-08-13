@@ -1,23 +1,34 @@
 import org.gradle.accessors.dm.LibrariesForLibs
 
 plugins {
+    id("hyperdrive-base")
     kotlin("multiplatform")
     id("org.jetbrains.dokka")
+    id("hyperdrive-publishable")
 }
 
 val libs = the<LibrariesForLibs>()
 
 kotlin {
     explicitApi()
+    targetHierarchy.default()
 
     jvm()
-    ios()
+
+    iosArm64()
+    iosX64()
     iosSimulatorArm64()
-    tvos()
+
+    tvosArm64()
     tvosSimulatorArm64()
+    tvosX64()
 
     macosX64()
     macosArm64()
+
+    watchosDeviceArm64()
+    watchosSimulatorArm64()
+    watchosX64()
 
     js(IR) {
         browser {
@@ -31,87 +42,18 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib"))
             }
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
+                implementation(kotlin("test"))
             }
         }
 
-        val jsMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-js"))
-            }
-        }
-        val jsTest by getting {
-            dependencies {
-                implementation(kotlin("test-js"))
-            }
-        }
-        val jvmMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-jdk8"))
-            }
-        }
         val jvmTest by getting {
             dependencies {
                 implementation(libs.junit.jupiter)
             }
-        }
-
-        val darwinMain by creating {
-            dependsOn(commonMain)
-        }
-        val darwinTest by creating {
-            dependsOn(commonTest)
-        }
-
-        val iosMain by getting {
-            dependsOn(darwinMain)
-        }
-        val iosTest by getting {
-            dependsOn(darwinTest)
-        }
-        val iosSimulatorArm64Main by getting {
-            dependsOn(iosMain)
-        }
-        val iosSimulatorArm64Test by getting {
-            dependsOn(iosTest)
-        }
-
-        val tvosMain by getting {
-            dependsOn(darwinMain)
-        }
-        val tvosTest by getting {
-            dependsOn(darwinTest)
-        }
-        val tvosSimulatorArm64Main by getting {
-            dependsOn(tvosMain)
-        }
-        val tvosSimulatorArm64Test by getting {
-            dependsOn(tvosTest)
-        }
-
-        val macosMain by creating {
-            dependsOn(darwinMain)
-        }
-        val macosTest by creating {
-            dependsOn(darwinTest)
-        }
-        val macosX64Main by getting {
-            dependsOn(macosMain)
-        }
-        val macosX64Test by getting {
-            dependsOn(macosTest)
-        }
-        val macosArm64Main by getting {
-            dependsOn(macosMain)
-        }
-        val macosArm64Test by getting {
-            dependsOn(macosTest)
         }
     }
 }

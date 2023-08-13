@@ -1,0 +1,3 @@
+package org.brightify.hyperdrive
+
+public interface ManageableViewModel: ObservableManageableObject

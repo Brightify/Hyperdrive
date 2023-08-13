@@ -6,7 +6,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.brightify.hyperdrive.Logger
 import org.brightify.hyperdrive.LoggingLevel
-import org.brightify.hyperdrive.multiplatformx.MultiplatformGlobalScope
+import org.brightify.hyperdrive.MultiplatformGlobalScope
 import platform.Foundation.NSDate
 import platform.Foundation.NSDefaultRunLoopMode
 import platform.Foundation.NSRunLoop

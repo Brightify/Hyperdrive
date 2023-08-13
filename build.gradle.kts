@@ -1,2 +1,3 @@
 plugins {
+    id("hyperdrive-root")
 }

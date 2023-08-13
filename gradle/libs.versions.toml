@@ -1,21 +1,21 @@
 [versions]
 kotlin = "1.9.0"
 kotlin-coroutines = "1.7.3"
-kotlin-serialization = "1.4.1"
-stately = "1.2.2"
-ktor = "2.1.1"
+kotlin-serialization = "1.5.1"
+ktor = "2.3.2"
 auto-service = "1.0.1"
-kotlin-compile-testing = "1.4.9"
+kotlin-compile-testing = "1.5.0"
 jupiter = "5.9.0"
-compose = "1.2.1"
-compose-compiler = "1.3.2"
-multiplatformSettings = "1.0.0-alpha01"
-kodein = "7.14.0"
+compose = "1.4.3"
+compose-compiler = "1.5.1"
+multiplatformSettings = "1.0.0"
+kodein = "7.20.2"
 sqldelight = "1.5.3"
-kotest = "5.4.2"
-android-gradle = "7.3.0"
-intellij = "1.12.0"
-dokka = "1.7.20"
+kotest = "5.6.2"
+android-gradle = "8.0.2"
+intellij = "1.15.0"
+dokka = "1.8.10"
+nexusPublish = "1.1.0"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -29,7 +29,6 @@ shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }
 swiftpackage = { id = "com.chromaticnoise.multiplatform-swiftpackage", version = "2.0.3" }
 buildconfig = { id = "com.github.gmazzo.buildconfig", version = "3.0.3" }
 intellij = { id = "org.jetbrains.intellij", version.ref = "intellij" }
-nexuspublish = { id = "io.github.gradle-nexus.publish-plugin", version = "1.1.0" }
 gradlepublish = { id = "com.gradle.plugin-publish", version = "1.0.0" }
 kotest = { id = "io.kotest.multiplatform", version.ref = "kotest" }
 
@@ -38,6 +37,7 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle" }
 intellij-gradle-plugin = { module = "org.jetbrains.intellij.plugins:gradle-intellij-plugin", version.ref = "intellij" }
 dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+nexusPublish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublish" }
 
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlin-coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlin-coroutines" }
@@ -45,9 +45,6 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlin-serialization" }
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlin-serialization" }
 serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlin-serialization" }
-
-stately-common = { module = "co.touchlab:stately-common", version.ref = "stately" }
-stately-concurrency = { module = "co.touchlab:stately-concurrency", version.ref = "stately" }
 
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }

@@ -1,23 +1,14 @@
 import org.gradle.kotlin.dsl.provideDelegate
 
 plugins {
+    id("hyperdrive-base")
     kotlin("jvm")
     id("org.jetbrains.intellij")
-}
-
-dependencies {
-    implementation(project(":plugin-impl", configuration = "shadow"))
 }
 
 sourceSets.main {
     kotlin.srcDir("../common/src/main/kotlin")
     resources.srcDir("../common/src/main/resources")
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
 }
 
 tasks.jar {
@@ -50,4 +41,10 @@ tasks.publishPlugin {
 
 tasks.buildSearchableOptions {
     enabled = false
+}
+
+repositories {
+    mavenCentral()
+    google()
+    gradlePluginPortal()
 }
