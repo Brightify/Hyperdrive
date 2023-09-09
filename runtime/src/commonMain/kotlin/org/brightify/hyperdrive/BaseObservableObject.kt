@@ -1,5 +1,6 @@
 package org.brightify.hyperdrive
 
+import org.brightify.hyperdrive.internal.*
 import org.brightify.hyperdrive.internal.GetterSetterBoundPropertyProvider
 import org.brightify.hyperdrive.internal.ObservableObjectPropertyProvider
 import org.brightify.hyperdrive.internal.ObservablePropertyProvider
@@ -8,7 +9,6 @@ import org.brightify.hyperdrive.property.MutableObservableProperty
 import org.brightify.hyperdrive.property.ObservableProperty
 import org.brightify.hyperdrive.property.defaultEqualityPolicy
 import org.brightify.hyperdrive.property.impl.ConstantObservableProperty
-import org.brightify.hyperdrive.property.impl.FlatMapLatestObservableProperty
 import org.brightify.hyperdrive.property.map
 import org.brightify.hyperdrive.property.toKotlinMutableProperty
 import org.brightify.hyperdrive.property.toKotlinProperty
@@ -84,6 +84,11 @@ public abstract class BaseObservableObject: ObservableObject {
         properties.getValue(property.name).property as MutableObservableProperty<T>
     }
 
+    @Suppress("UNCHECKED_CAST")
+    protected fun <T> observe(property: KProperty<T>): Lazy<ObservableProperty<T>> = lazy {
+        properties.getValue(property.name).property as ObservableProperty<T>
+    }
+
     /**
      * Returns a constant observable property.
      */
@@ -99,8 +104,10 @@ public abstract class BaseObservableObject: ObservableObject {
     protected fun <OWNER: BaseObservableObject, T> published(
         initialValue: T,
         equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+        willSet: ((T) -> Unit)? = null,
+        didSet: ((T) -> Unit)? = null,
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
-        return PublishedPropertyProvider(initialValue, equalityPolicy)
+        return PublishedPropertyProvider(initialValue, equalityPolicy, willSet, didSet)
     }
 
     /**
@@ -113,7 +120,7 @@ public abstract class BaseObservableObject: ObservableObject {
         equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
     ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
         return if (shallow) {
-            PublishedPropertyProvider(initialValue, equalityPolicy)
+            PublishedPropertyProvider(initialValue, equalityPolicy, null, null)
         } else {
             ObservableObjectPropertyProvider(initialValue, equalityPolicy)
         }
@@ -135,6 +142,33 @@ public abstract class BaseObservableObject: ObservableObject {
         return GetterSetterBoundPropertyProvider({ fromProperty(property.get()) }, { property.set(toProperty(it)) }, equalityPolicy)
     }
 
+    protected fun <OWNER: BaseObservableObject, T> binding(
+        property: MutableObservableProperty<T>,
+        equalityPolicy: ObservableProperty.EqualityPolicy<T> = defaultEqualityPolicy(),
+        localWillChange: (T) -> Unit = { },
+        localDidChange: (T) -> Unit = { },
+        boundWillChange: (T) -> Unit = { },
+        boundDidChange: (T) -> Unit = { },
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, T>> {
+        return MutableObservablePropertyBoundPropertyProvider(
+            property,
+            equalityPolicy,
+            localWillChange,
+            localDidChange,
+            boundWillChange,
+            boundDidChange,
+        )
+    }
+
+    protected fun <OWNER: BaseObservableObject, T, P: ObservableProperty<T>, U> tracking(
+        property: P,
+        equalityPolicy: ObservableProperty.EqualityPolicy<U> = defaultEqualityPolicy(),
+        read: P.(T) -> U,
+        write: P.(U) -> Unit,
+    ): PropertyDelegateProvider<OWNER, ReadWriteProperty<OWNER, U>> {
+        return TrackingPropertyProvider(property, equalityPolicy, read, write)
+    }
+
     /**
      * Property delegate used for collecting changes of the provided [ObservableProperty].
      */
@@ -151,16 +185,16 @@ public abstract class BaseObservableObject: ObservableObject {
     }
 
     protected operator fun <OWNER: ObservableObject, T> ObservableProperty<T>.provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadOnlyProperty<OWNER, T> {
-        registerViewModelProperty(property, this)
+        trackObservablePropertyChanges(property, this)
         return toKotlinProperty()
     }
 
     protected operator fun <OWNER: ObservableObject, T> MutableObservableProperty<T>.provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadWriteProperty<OWNER, T> {
-        registerViewModelProperty(property, this)
+        trackObservablePropertyChanges(property, this)
         return toKotlinMutableProperty()
     }
 
-    internal fun <T> registerViewModelProperty(property: KProperty<*>, observableProperty: ObservableProperty<T>) {
+    protected fun <T> trackObservablePropertyChanges(property: KProperty<*>, observableProperty: ObservableProperty<T>) {
         check(!properties.containsKey(property.name)) {
             "ViewModelProperty for name ${property.name} (property: $property) already registered!"
         }
@@ -177,6 +211,10 @@ public abstract class BaseObservableObject: ObservableObject {
             property = observableProperty,
             listenerRegistration = listenerRegistration,
         )
+    }
+
+    internal fun <T> _internal_trackObservablePropertyChanges(property: KProperty<*>, observableProperty: ObservableProperty<T>) {
+        trackObservablePropertyChanges(property, observableProperty)
     }
 
     private class PropertyRegistration<T>(val property: ObservableProperty<T>, val listenerRegistration: CancellationToken)

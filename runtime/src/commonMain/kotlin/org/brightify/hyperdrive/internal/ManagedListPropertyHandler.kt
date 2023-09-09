@@ -13,23 +13,32 @@ internal open class ManagedListPropertyHandler<VM: ManageableViewModel?>(
     private val publishedChanges: Boolean,
 ): ObservableProperty.Listener<List<VM>>, ObservableProperty<List<VM>> {
     private var publishJobCancellation: CancellationToken? = null
-    private var addedChildren: Set<Lifecycle> = emptySet()
+    private var subscribedChildren = emptySet<Lifecycle>()
 
     init {
-        addChildren(property.value)
+        updateLifecycles(property.value)
         property.addListener(this)
     }
 
     override fun valueDidChange(oldValue: List<VM>, newValue: List<VM>) {
-        removeChildren()
-        addChildren(property.value)
+        updateLifecycles(newValue)
     }
 
-    private fun addChildren(children: List<VM>) {
-        val newLifecycles = children.mapNotNull { it?.lifecycle }.toSet()
-        owner.lifecycle.addChildren(newLifecycles)
-        addedChildren = newLifecycles
+    private fun updateLifecycles(newChildren: List<VM>) {
+        val newLifecycles = newChildren.mapNotNull{ it?.lifecycle }.toSet()
+        val lifecyclesToRemove = subscribedChildren - newLifecycles
+        val lifecyclesToAdd = newLifecycles - subscribedChildren
 
+        owner.lifecycle.removeChildren(lifecyclesToRemove)
+        owner.lifecycle.addChildren(lifecyclesToAdd)
+
+        subscribedChildren = newLifecycles
+
+        stopObservingChildren()
+        startObservingChildrenChangesIfNeeded(newChildren)
+    }
+
+    private fun startObservingChildrenChangesIfNeeded(children: List<VM>) {
         publishJobCancellation = if (publishedChanges) {
             children.mapNotNull { it?.changeTracking?.addListener(owner.internalChangeTrackingTrigger) }.concat()
         } else {
@@ -37,9 +46,8 @@ internal open class ManagedListPropertyHandler<VM: ManageableViewModel?>(
         }
     }
 
-    private fun removeChildren() {
+    private fun stopObservingChildren() {
         publishJobCancellation?.cancel()
-        owner.lifecycle.removeChildren(addedChildren)
     }
 
     override val value: List<VM>

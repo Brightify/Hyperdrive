@@ -18,6 +18,10 @@ internal open class ManagedPropertyHandler<VM: ManageableViewModel?>(
     }
 
     override fun valueDidChange(oldValue: VM, newValue: VM) {
+        if (newValue?.lifecycle == oldValue?.lifecycle) {
+            return
+        }
+
         removeChild(oldValue)
         addChild(property.value)
     }

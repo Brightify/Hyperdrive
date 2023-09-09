@@ -12,7 +12,7 @@ internal open class ObservablePropertyProvider<OWNER: BaseObservableObject, T>(
 ): PropertyDelegateProvider<OWNER, ReadOnlyProperty<OWNER, T>> {
     override fun provideDelegate(thisRef: OWNER, property: KProperty<*>): ReadOnlyProperty<OWNER, T> {
         return observablePropertyFactory(thisRef)
-            .also { thisRef.registerViewModelProperty(property, it) }
+            .also { thisRef._internal_trackObservablePropertyChanges(property, it) }
             .toKotlinProperty()
     }
 }
