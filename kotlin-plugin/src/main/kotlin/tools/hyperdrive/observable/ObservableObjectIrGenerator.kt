@@ -88,30 +88,35 @@ class ObservableObjectIrGenerator(
         declarations.filterIsInstance<IrProperty>()
             .filter { it.isVar }
             .forEach { property ->
-                val stateField = property.delegateToState(mutableState)
+                val stateField = property.delegateToState(mutableState) ?: return@forEach
                 // TODO: We should probably create a new field instead of reusing the old one,
                 //  because it could have weird behavior due to being a "PROPERTY_BACKING_FIELD".
                 addMember(stateField)
             }
     }
 
-    private fun IrProperty.delegateToState(mutableState: MutableStateSymbols): IrField {
-        val originalBackingField = backingField ?: error("$this has null `backingField`")
+    private fun IrProperty.delegateToState(mutableState: MutableStateSymbols): IrField? {
+        val originalBackingField = backingField ?: return null
         backingField = null
 
         val declarationBuilder = DeclarationIrBuilder(pluginContext, symbol)
         val originalType = originalBackingField.type
+
         originalBackingField.type = mutableState.self.typeWith(originalType)
         println("Changed backingField from ${originalType.classFqName} to ${originalBackingField.type.classFqName}")
+
+        originalBackingField.isFinal = true
 
         val originalInitializer = originalBackingField.initializer!!
         originalBackingField.initializer = declarationBuilder.irExprBody(
             declarationBuilder.irCall(mutableState.mutableStateOfFunction).apply {
+                this.type = originalBackingField.type
                 putTypeArgument(0, originalType)
                 putValueArgument(0, originalInitializer.expression)
             }
         )
 
+        getter!!.origin = IrDeclarationOrigin.SYNTHETIC_ACCESSOR
         getter!!.transformChildrenVoid(object: IrElementTransformerVoid() {
             override fun visitGetField(expression: IrGetField): IrExpression {
                 println("[get] ${expression.symbol == originalBackingField.symbol}")
@@ -119,7 +124,8 @@ class ObservableObjectIrGenerator(
                     declarationBuilder.irCall(
                         mutableState.valueGetter,
                     ).apply {
-                        this.dispatchReceiver = expression
+                        this.type = originalBackingField.type
+                        this.dispatchReceiver = expression.also { it.type = originalBackingField.type }
                     }
                 } else {
                     super.visitGetField(expression)
@@ -127,6 +133,7 @@ class ObservableObjectIrGenerator(
             }
         })
 
+        setter!!.origin = IrDeclarationOrigin.SYNTHETIC_ACCESSOR
         setter!!.transformChildrenVoid(object: IrElementTransformerVoid() {
             override fun visitSetField(expression: IrSetField): IrExpression {
                 println("[set] ${expression.symbol == originalBackingField.symbol}")
